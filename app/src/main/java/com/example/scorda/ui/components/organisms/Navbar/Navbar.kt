@@ -1,0 +1,69 @@
+package com.example.scorda.ui.components.organisms.Navbar
+
+import MoreDropdownMenu
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.FormatListNumbered
+import androidx.compose.material.icons.rounded.Gesture
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Navbar() {
+    TopAppBar(
+        title = {
+            Text(
+                "Scorda"
+            )
+        },
+        actions = {
+            IconButton(onClick = {}) {
+                Icon(
+                    imageVector = Icons.Rounded.MusicNote,
+                    contentDescription = "Browse all scores"
+                )
+            }
+            IconButton(onClick = {}) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = "Add scores"
+                )
+            }
+            IconButton(onClick = {}) {
+                Icon(
+                    imageVector = Icons.Rounded.GraphicEq,
+                    contentDescription = "Metronome, Tuner, Drone",
+                )
+            }
+            // score details
+            // global state setup
+            IconButton(onClick = {}) {
+                Icon(
+                    imageVector = Icons.Rounded.Gesture,
+                    contentDescription = "Annotate"
+                )
+            }
+            IconButton(onClick = {}) {
+                Icon(
+                    imageVector = Icons.Rounded.Search,
+                    contentDescription = "Search Scores"
+                )
+            }
+            IconButton(onClick = {}) {
+                Icon(
+                    imageVector = Icons.Rounded.FormatListNumbered,
+                    contentDescription = "Search Scores"
+                )
+            }
+            MoreDropdownMenu()
+        },
+    )
+}
