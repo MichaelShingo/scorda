@@ -6,7 +6,6 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.FormatListNumbered
 import androidx.compose.material.icons.rounded.Gesture
 import androidx.compose.material.icons.rounded.GraphicEq
-import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -25,12 +24,12 @@ fun Navbar() {
             )
         },
         actions = {
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Rounded.MusicNote,
-                    contentDescription = "Browse all scores"
-                )
-            }
+//            IconButton(onClick = {}) {
+//                Icon(
+//                    imageVector = Icons.Rounded.MusicNote,
+//                    contentDescription = "Browse all scores"
+//                )
+//            }
             IconButton(onClick = {}) {
                 Icon(
                     imageVector = Icons.Rounded.Add,
@@ -39,10 +38,11 @@ fun Navbar() {
             }
             IconButton(onClick = {}) {
                 Icon(
-                    imageVector = Icons.Rounded.GraphicEq,
-                    contentDescription = "Metronome, Tuner, Drone",
+                    imageVector = Icons.Rounded.FormatListNumbered,
+                    contentDescription = "Search Scores"
                 )
             }
+
             // score details
             // global state setup
             IconButton(onClick = {}) {
@@ -53,16 +53,17 @@ fun Navbar() {
             }
             IconButton(onClick = {}) {
                 Icon(
-                    imageVector = Icons.Rounded.Search,
-                    contentDescription = "Search Scores"
+                    imageVector = Icons.Rounded.GraphicEq,
+                    contentDescription = "Metronome, Tuner, Drone",
                 )
             }
             IconButton(onClick = {}) {
                 Icon(
-                    imageVector = Icons.Rounded.FormatListNumbered,
+                    imageVector = Icons.Rounded.Search,
                     contentDescription = "Search Scores"
                 )
             }
+
             MoreDropdownMenu()
         },
     )

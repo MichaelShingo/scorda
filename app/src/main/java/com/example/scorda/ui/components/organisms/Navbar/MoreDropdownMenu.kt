@@ -21,11 +21,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.scorda.R
+import com.example.scorda.ui.theme.LocalThemeViewModel
 
 @Composable
 fun MoreDropdownMenu() {
     var expanded by remember { mutableStateOf(false) }
+    val viewModel = LocalThemeViewModel.current
+    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
+
+
     Box(
         modifier = Modifier
     ) {
@@ -77,7 +83,10 @@ fun MoreDropdownMenu() {
                         contentDescription = stringResource(R.string.nav_dark_mode)
                     )
                 },
-                onClick = {}
+                onClick = {
+                    viewModel.toggleDarkMode()
+                    expanded = false
+                }
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.nav_sync)) },
