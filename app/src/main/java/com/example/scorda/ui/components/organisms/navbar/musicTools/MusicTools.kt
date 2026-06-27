@@ -1,16 +1,22 @@
 package com.example.scorda.ui.components.organisms.navbar.musictools
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.MusicVideo
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.scorda.R
@@ -19,12 +25,26 @@ import com.example.scorda.ui.components.organisms.metronome.Metronome
 import com.example.scorda.ui.components.organisms.tuner.Tuner
 import kotlinx.coroutines.launch
 
+data class MusicToolItem(
+    val title: String,
+    val icon: ImageVector
+)
+
 @Composable
 fun MusicTools(modifier: Modifier = Modifier) {
     val tabs = listOf(
-        stringResource(R.string.tools_metronome),
-        stringResource(R.string.tools_tuner),
-        stringResource(R.string.tools_drone)
+        MusicToolItem(
+            title = stringResource(R.string.tools_metronome),
+            icon = Icons.Rounded.MusicNote,
+        ),
+        MusicToolItem(
+            title = stringResource(R.string.tools_tuner),
+            icon = Icons.Rounded.MusicVideo
+        ),
+        MusicToolItem(
+            title = stringResource(R.string.tools_drone),
+            icon = Icons.Rounded.LibraryMusic
+        )
     )
 
     val pagerState = rememberPagerState(pageCount = { tabs.size })
@@ -36,7 +56,7 @@ fun MusicTools(modifier: Modifier = Modifier) {
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             divider = {}
         ) {
-            tabs.forEachIndexed { index, title ->
+            tabs.forEachIndexed { index, tab ->
                 Tab(
                     selected = pagerState.currentPage == index,
                     onClick = {
@@ -44,18 +64,21 @@ fun MusicTools(modifier: Modifier = Modifier) {
                             pagerState.animateScrollToPage(index)
                         }
                     },
-                    text = {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.titleSmall
+                    icon = {
+                        Icon(
+                            imageVector = tab.icon,
+                            contentDescription = tab.title
                         )
-                    }
+                    },
                 )
             }
         }
+
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .padding(16.dp)
         ) { pageIndex ->
             when (pageIndex) {
                 0 -> Metronome()
@@ -64,5 +87,4 @@ fun MusicTools(modifier: Modifier = Modifier) {
             }
         }
     }
-
 }
