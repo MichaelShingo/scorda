@@ -1,6 +1,5 @@
-package com.example.scorda.ui.components.organisms.Navbar
+package com.example.scorda.ui.components.organisms.navbar
 
-import MoreDropdownMenu
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.FormatListNumbered
@@ -13,6 +12,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import com.example.scorda.ui.components.organisms.navbar.musictools.MusicTools
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -20,7 +20,7 @@ fun Navbar() {
     TopAppBar(
         title = {
             Text(
-                "Scorda"
+                "Waltz for Stark and Frieren"
             )
         },
         actions = {
@@ -51,12 +51,13 @@ fun Navbar() {
                     contentDescription = "Annotate"
                 )
             }
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Rounded.GraphicEq,
-                    contentDescription = "Metronome, Tuner, Drone",
-                )
+            CustomAnchoredPopup(
+                icon = Icons.Rounded.GraphicEq,
+                contentDescription = "Metronome, Tuner, Drone",
+            ) {
+                MusicTools()
             }
+
             IconButton(onClick = {}) {
                 Icon(
                     imageVector = Icons.Rounded.Search,

@@ -1,3 +1,5 @@
+package com.example.scorda.ui.components.organisms.navbar
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CameraAlt
@@ -23,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.scorda.R
+import com.example.scorda.ui.components.organisms.navbar.musictools.MusicTools
 import com.example.scorda.ui.theme.LocalThemeViewModel
 
 @Composable
@@ -95,6 +98,14 @@ fun MoreDropdownMenu() {
                 },
                 onClick = {}
             )
+            CustomAnchoredPopup(
+                icon = Icons.Rounded.DashboardCustomize,
+                contentDescription = stringResource(R.string.nav_customize)
+
+            ) {
+                MusicTools()
+
+            }
             DropdownMenuItem(
                 text = {
                     Text(
