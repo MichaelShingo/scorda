@@ -2,7 +2,7 @@ package com.example.scorda.data.repository
 
 import android.net.Uri
 import com.example.scorda.data.database.AppDatabase
-import com.example.scorda.data.database.Score
+import com.example.scorda.data.database.entities.Score
 import com.example.scorda.logic.FileImporter
 import kotlinx.coroutines.flow.Flow
 

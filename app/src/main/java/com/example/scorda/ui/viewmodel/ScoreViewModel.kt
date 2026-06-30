@@ -9,7 +9,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.scorda.ScordaApplication
 import com.example.scorda.data.database.AppDatabase
-import com.example.scorda.data.database.Score
+import com.example.scorda.data.database.entities.Score
 import com.example.scorda.data.repository.ScoreRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
