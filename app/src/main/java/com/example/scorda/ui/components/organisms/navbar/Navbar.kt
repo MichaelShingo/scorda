@@ -1,7 +1,6 @@
 package com.example.scorda.ui.components.organisms.navbar
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.FormatListNumbered
 import androidx.compose.material.icons.rounded.Gesture
 import androidx.compose.material.icons.rounded.GraphicEq
@@ -12,11 +11,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.ui.components.organisms.navbar.musictools.MusicTools
+import com.example.scorda.ui.viewmodel.ScoreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Navbar() {
+    val viewModel: ScoreViewModel = viewModel(factory = ScoreViewModel.Factory)
+
     TopAppBar(
         title = {
             Text(
@@ -30,12 +33,7 @@ fun Navbar() {
 //                    contentDescription = "Browse all scores"
 //                )
 //            }
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Rounded.Add,
-                    contentDescription = "Add scores"
-                )
-            }
+            AddScoreButton(viewModel = viewModel)
             IconButton(onClick = {}) {
                 Icon(
                     imageVector = Icons.Rounded.FormatListNumbered,
