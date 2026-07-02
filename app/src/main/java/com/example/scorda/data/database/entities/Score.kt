@@ -23,11 +23,11 @@ data class Score(
     val filePath: String,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val rating: Int?,
-    val difficulty: Int?,
-    val duration: Int?,
-    val keySignature: KeySignature?,
-    val timeSignature: String?, // 4/4 format, parsed from numeric input
-    val composerId: Long?,
+    val rating: Int? = null,
+    val difficulty: Int? = null,
+    val duration: Int? = null,
+    val keySignature: KeySignature? = null,
+    val timeSignature: String? = null, // 4/4 format, parsed from numeric input
+    val composerId: Long? = null,
 )
 

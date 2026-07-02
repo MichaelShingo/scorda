@@ -26,7 +26,7 @@ import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
         ScoreGenreCrossRef::class,
         ScoreInstrumentCrossRef::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
