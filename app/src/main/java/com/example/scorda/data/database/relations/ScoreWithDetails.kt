@@ -10,7 +10,7 @@ import com.example.scorda.data.database.entities.Score
 import com.example.scorda.data.database.entities.ScoreGenreCrossRef
 import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
 
-data class ScoreDetails(
+data class ScoreWithDetails(
     @Embedded val score: Score,
     @Relation(
         parentColumn = "id", // Score PK

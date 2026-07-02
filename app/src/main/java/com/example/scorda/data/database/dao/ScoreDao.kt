@@ -10,7 +10,7 @@ import androidx.room.Update
 import com.example.scorda.data.database.entities.Score
 import com.example.scorda.data.database.entities.ScoreGenreCrossRef
 import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
-import com.example.scorda.data.database.relations.ScoreDetails
+import com.example.scorda.data.database.relations.ScoreWithDetails
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -20,11 +20,15 @@ interface ScoreDao {
 
     @Transaction
     @Query("SELECT * FROM scores WHERE id = :id")
-    fun getScoreDetailsById(id: Long): Flow<ScoreDetails?>
+    fun getScoreDetailsById(id: Long): Flow<ScoreWithDetails?>
 
     @Transaction
     @Query("SELECT * FROM scores ORDER BY createdAt DESC")
-    fun getScoresWithDetails(): Flow<List<ScoreDetails>>
+    fun getScoresWithDetails(): Flow<List<ScoreWithDetails>>
+
+    @Transaction
+    @Query("SELECT * FROM scores WHERE title LIKE '%' || :query || '%' ORDER BY title ASC")
+    fun searchScores(query: String): Flow<List<ScoreWithDetails>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(score: Score): Long

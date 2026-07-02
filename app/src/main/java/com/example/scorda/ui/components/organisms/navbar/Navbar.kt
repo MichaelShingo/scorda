@@ -17,7 +17,9 @@ import com.example.scorda.ui.viewmodel.ScoreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Navbar() {
+fun Navbar(
+    onSearchClick: () -> Unit
+) {
     val viewModel: ScoreViewModel = viewModel(factory = ScoreViewModel.Factory)
 
     TopAppBar(
@@ -41,8 +43,6 @@ fun Navbar() {
                 )
             }
 
-            // score details
-            // global state setup
             IconButton(onClick = {}) {
                 Icon(
                     imageVector = Icons.Rounded.Gesture,
@@ -56,7 +56,7 @@ fun Navbar() {
                 MusicTools()
             }
 
-            IconButton(onClick = {}) {
+            IconButton(onClick = onSearchClick) {
                 Icon(
                     imageVector = Icons.Rounded.Search,
                     contentDescription = "Search Scores"

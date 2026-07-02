@@ -11,6 +11,13 @@ code in this repository should be at prototyping level. It should pass the most 
 requirements for code quality and reliability that you would find in an established software
 product, and adhere to best practices for Kotlin/Android development, with scalability in mind.
 
+## Versions
+
+When writing code that involves 3rd party libraries, always check the version we are using in
+Scorda.
+
+- Particularly for Material 3, we are on version 1.4.0.
+
 ## Architecture
 
 - Use Clean Architecture with a layered approach.
