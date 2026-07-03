@@ -1,5 +1,6 @@
 package com.example.scorda.ui.viewmodel
 
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -51,6 +52,7 @@ class SearchViewModel(
         if (!active) _searchQuery.value = ""
     }
 
+
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
@@ -59,4 +61,8 @@ class SearchViewModel(
             }
         }
     }
+}
+
+val LocalSearchViewModel = staticCompositionLocalOf<SearchViewModel> {
+    error("No SearchViewModel provided")
 }

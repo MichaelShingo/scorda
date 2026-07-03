@@ -14,4 +14,5 @@
     <string name="tools_tuner">Tuner</string>
     <string name="tools_drone">Drone</string>
     <string name="search_scores_placeholder">Search scores</string>
+    <string name="search_scores_info">Score Details</string>
 </resources>

@@ -23,6 +23,7 @@ import com.example.scorda.ui.components.organisms.searchScores.SearchScores
 import com.example.scorda.ui.theme.LocalThemeViewModel
 import com.example.scorda.ui.theme.ScordaTheme
 import com.example.scorda.ui.theme.ThemeViewModel
+import com.example.scorda.ui.viewmodel.LocalSearchViewModel
 import com.example.scorda.ui.viewmodel.SearchViewModel
 
 class MainActivity : ComponentActivity() {
@@ -45,11 +46,14 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(isSearchActive) {
                 Log.d("SearchDebug", "isSearchActive changed to: $isSearchActive")
             }
-            CompositionLocalProvider(LocalThemeViewModel provides viewModel) {
+            CompositionLocalProvider(
+                LocalThemeViewModel provides viewModel,
+                LocalSearchViewModel provides searchViewModel
+            ) {
                 val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
 
                 ScordaTheme(darkTheme = isDarkMode) {
-                    Box(modifier = Modifier.fillMaxSize()) {
+                    Box(modifier = Modifier) {
                         Scaffold(
                             modifier = Modifier.fillMaxSize(),
                             topBar = {
@@ -64,16 +68,7 @@ class MainActivity : ComponentActivity() {
                             val searchQuery by searchViewModel.searchQuery.collectAsStateWithLifecycle()
                             val searchResults by searchViewModel.searchResults.collectAsStateWithLifecycle()
 
-                            SearchScores(
-                                query = searchQuery,
-                                onQueryChange = { searchViewModel.onQueryChange(it) },
-                                onSearch = { /* Handle explicit search if needed */ },
-                                active = isSearchActive,
-                                onActiveChange = { searchViewModel.onSearchActiveChange(it) }
-                            ) {
-                                // Render your results here
-//                                SearchResultList(searchResults)
-                            }
+                            SearchScores()
                         }
                     }
                 }
