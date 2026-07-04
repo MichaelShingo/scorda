@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "setlists")
-data class SetList(
+data class Setlist(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
 )

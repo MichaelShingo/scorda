@@ -17,7 +17,8 @@ import com.example.scorda.data.database.entities.Instrument
 import com.example.scorda.data.database.entities.Score
 import com.example.scorda.data.database.entities.ScoreGenreCrossRef
 import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
-import com.example.scorda.data.database.entities.SetList
+import com.example.scorda.data.database.entities.ScoreSetlistCrossRef
+import com.example.scorda.data.database.entities.Setlist
 
 @Database(
     entities = [
@@ -27,9 +28,10 @@ import com.example.scorda.data.database.entities.SetList
         Instrument::class,
         ScoreGenreCrossRef::class,
         ScoreInstrumentCrossRef::class,
-        SetList::class
+        Setlist::class,
+        ScoreSetlistCrossRef::class
     ],
-    version = 3,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

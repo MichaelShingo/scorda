@@ -6,7 +6,8 @@ import com.example.scorda.BuildConfig
 import com.example.scorda.data.database.entities.Score
 import com.example.scorda.data.database.entities.ScoreGenreCrossRef
 import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
-import com.example.scorda.data.database.entities.SetList
+import com.example.scorda.data.database.entities.ScoreSetlistCrossRef
+import com.example.scorda.data.database.entities.Setlist
 import com.example.scorda.data.database.seedData.SeedData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,18 +34,18 @@ class DatabaseSeeder(
                 Log.d("DatabaseSeeder", "Starting database seeding...")
 
                 // 1. Seed lookup tables
-                val composerIds = SeedData.composers.associate { it.lastName to db.composerDao().insert(it) }
+                val composerIds =
+                    SeedData.composers.associate { it.lastName to db.composerDao().insert(it) }
                 val genreIds = SeedData.genres.associate { it.name to db.genreDao().insert(it) }
-                val instrumentIds = SeedData.instruments.associate { it.name to db.instrumentDao().insert(it) }
+                val instrumentIds =
+                    SeedData.instruments.associate { it.name to db.instrumentDao().insert(it) }
 
-                // 2. Seed Scores and PDFs
+                // 2. Seed Setlists
+                val setlistIds = SeedData.setlists.associate { it to db.setlistDao().insert(Setlist(name = it)) }
+
+                // 3. Seed Scores and PDFs
                 SeedData.scores.forEach { seed ->
-                    seedScore(seed, composerIds, genreIds, instrumentIds)
-                }
-
-                // 3. Seed Setlists
-                SeedData.setlists.forEach { name ->
-                    db.setlistDao().insert(SetList(name = name))
+                    seedScore(seed, composerIds, genreIds, instrumentIds, setlistIds)
                 }
 
                 Log.d("DatabaseSeeder", "Database seeding completed successfully.")
@@ -58,7 +59,8 @@ class DatabaseSeeder(
         seed: SeedData.ScoreSeed,
         composerIds: Map<String, Long>,
         genreIds: Map<String, Long>,
-        instrumentIds: Map<String, Long>
+        instrumentIds: Map<String, Long>,
+        setlistIds: Map<String, Long>
     ) {
         val assetPath = "seed_data/scores/${seed.assetName}"
         val pdfFile = copyAssetToInternalStorage(assetPath, seed.assetName)
@@ -80,7 +82,13 @@ class DatabaseSeeder(
 
             // Link instruments
             seed.instruments.mapNotNull { instrumentIds[it] }.forEach { instrumentId ->
-                db.scoreDao().insertScoreInstrumentCrossRef(ScoreInstrumentCrossRef(scoreId, instrumentId))
+                db.scoreDao()
+                    .insertScoreInstrumentCrossRef(ScoreInstrumentCrossRef(scoreId, instrumentId))
+            }
+
+            // Link setlists
+            seed.setlists.mapNotNull { setlistIds[it] }.forEach { setlistId ->
+                db.scoreDao().insertScoreSetlistCrossRef(ScoreSetlistCrossRef(scoreId, setlistId))
             }
         } else {
             Log.w("DatabaseSeeder", "Could not copy asset: ${seed.assetName}. Score not inserted.")
