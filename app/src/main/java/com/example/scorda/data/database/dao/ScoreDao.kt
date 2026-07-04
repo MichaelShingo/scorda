@@ -18,6 +18,9 @@ interface ScoreDao {
     @Query("SELECT * FROM scores ORDER BY createdAt DESC")
     fun getAllScores(): Flow<List<Score>>
 
+    @Query("SELECT COUNT(*) FROM scores")
+    suspend fun getScoresCount(): Int
+
     @Transaction
     @Query("SELECT * FROM scores WHERE id = :id")
     fun getScoreDetailsById(id: Long): Flow<ScoreWithDetails?>

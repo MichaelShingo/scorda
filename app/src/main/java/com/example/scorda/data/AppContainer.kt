@@ -2,6 +2,7 @@ package com.example.scorda.data
 
 import android.content.Context
 import com.example.scorda.data.database.AppDatabase
+import com.example.scorda.data.database.DatabaseSeeder
 import com.example.scorda.data.repository.ScoreRepository
 import com.example.scorda.logic.FileImporter
 
@@ -18,7 +19,9 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
         FileImporter(context)
     }
     private val database: AppDatabase by lazy {
-        AppDatabase.getDatabase(context)
+        AppDatabase.getDatabase(context).also { db ->
+            DatabaseSeeder(context, db).seed()
+        }
     }
 
     override val scoreRepository: ScoreRepository by lazy {

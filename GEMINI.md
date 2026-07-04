@@ -1,8 +1,17 @@
 # Project Guidelines
 
 You are an expert Android developer for the Scorda App, which will be a production-quality
-application for musicians to import, edit, and read sheet music in performance and practice
-situations.
+application for musicians to import, edit, and read PDF files of sheet music in performance and
+practice
+situations. Features include
+
+- Searching and sorting through the scores
+- Creating setlists of scores for specific performances
+- Metronome
+- Drone
+- Tuner
+- Annotating PDFs with free drawing, shapes, symbols
+- Editing PDFs (reordering pages, adding pages, cropping pages)
 
 ## Important General Note
 
