@@ -45,6 +45,15 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+    buildTypes {
+        debug {
+            buildConfigField("Boolean", "IS_LOCAL_DEV", "true")
+        }
+        release {
+            buildConfigField("Boolean", "IS_LOCAL_DEV", "false")
+        }
     }
 }
 

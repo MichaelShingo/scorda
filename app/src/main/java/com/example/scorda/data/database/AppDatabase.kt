@@ -10,12 +10,15 @@ import com.example.scorda.data.database.dao.ComposerDao
 import com.example.scorda.data.database.dao.GenreDao
 import com.example.scorda.data.database.dao.InstrumentDao
 import com.example.scorda.data.database.dao.ScoreDao
+import com.example.scorda.data.database.dao.SetlistDao
 import com.example.scorda.data.database.entities.Composer
 import com.example.scorda.data.database.entities.Genre
 import com.example.scorda.data.database.entities.Instrument
 import com.example.scorda.data.database.entities.Score
 import com.example.scorda.data.database.entities.ScoreGenreCrossRef
 import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
+import com.example.scorda.data.database.entities.ScoreSetlistCrossRef
+import com.example.scorda.data.database.entities.Setlist
 
 @Database(
     entities = [
@@ -24,9 +27,11 @@ import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
         Genre::class,
         Instrument::class,
         ScoreGenreCrossRef::class,
-        ScoreInstrumentCrossRef::class
+        ScoreInstrumentCrossRef::class,
+        Setlist::class,
+        ScoreSetlistCrossRef::class
     ],
-    version = 2,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -35,6 +40,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun composerDao(): ComposerDao
     abstract fun genreDao(): GenreDao
     abstract fun instrumentDao(): InstrumentDao
+    abstract fun setlistDao(): SetlistDao
 
     companion object {
         @Volatile

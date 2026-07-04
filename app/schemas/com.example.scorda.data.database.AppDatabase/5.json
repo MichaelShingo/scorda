@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 2,
-    "identityHash": "39071bcf3bf7be35c698f8a28904e6ac",
+    "version": 5,
+    "identityHash": "1bf6b80732eeaff020e952fa99d8a2b7",
     "entities": [
       {
         "tableName": "scores",
@@ -332,11 +332,71 @@
             "id"
           ]
         }
+      },
+      {
+        "tableName": "score_setlist_cross_ref",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`scoreId` INTEGER NOT NULL, `setlistId` INTEGER NOT NULL, PRIMARY KEY(`scoreId`, `setlistId`), FOREIGN KEY(`scoreId`) REFERENCES `scores`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`setlistId`) REFERENCES `setlists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "scoreId",
+            "columnName": "scoreId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "setlistId",
+            "columnName": "setlistId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "scoreId",
+            "setlistId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_score_setlist_cross_ref_setlistId",
+            "unique": false,
+            "columnNames": [
+              "setlistId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_score_setlist_cross_ref_setlistId` ON `${TABLE_NAME}` (`setlistId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "scores",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "scoreId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "setlists",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "setlistId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '39071bcf3bf7be35c698f8a28904e6ac')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1bf6b80732eeaff020e952fa99d8a2b7')"
     ]
   }
 }
