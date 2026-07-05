@@ -13,8 +13,8 @@ import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
 data class ScoreWithDetails(
     @Embedded val score: Score,
     @Relation(
-        parentColumn = "id", // Score PK
-        entityColumn = "id", // Genre PK
+        parentColumn = "id", // Score id
+        entityColumn = "id", // Genre id
         associateBy = Junction(
             value = ScoreGenreCrossRef::class,
             parentColumn = "scoreId",

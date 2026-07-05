@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.scorda.ScordaApplication
-import com.example.scorda.data.database.AppDatabase
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.data.repository.ScoreRepository
 import kotlinx.coroutines.Dispatchers
@@ -34,13 +33,12 @@ class ScoreViewModel(
         }
     }
 
+
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[APPLICATION_KEY] as ScordaApplication
 
-                val context = this[APPLICATION_KEY]!!
-                val database = AppDatabase.getDatabase(context)
                 val repository = application.container.scoreRepository
                 ScoreViewModel(repository)
             }

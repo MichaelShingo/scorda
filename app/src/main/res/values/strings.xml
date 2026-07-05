@@ -15,4 +15,6 @@
     <string name="tools_drone">Drone</string>
     <string name="search_scores_placeholder">Search scores</string>
     <string name="search_scores_info">Score Details</string>
+    <string name="dialog_close">Close Dialog</string>
+    <string name="score_title">Title</string>
 </resources>
