@@ -17,4 +17,7 @@
     <string name="search_scores_info">Score Details</string>
     <string name="dialog_close">Close Dialog</string>
     <string name="score_title">Title</string>
+    <string name="score_composer">Composer</string>
+    <string name="score_add_dropdown_field">Add</string>
+    <string name="score_no_composers_found">No composers found.</string>
 </resources>

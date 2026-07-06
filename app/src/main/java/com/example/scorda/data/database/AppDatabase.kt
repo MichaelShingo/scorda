@@ -31,7 +31,7 @@ import com.example.scorda.data.database.entities.Setlist
         Setlist::class,
         ScoreSetlistCrossRef::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

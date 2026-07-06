@@ -19,12 +19,19 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.R
+import com.example.scorda.data.database.entities.Composer
 import com.example.scorda.data.database.relations.ScoreWithDetails
+import com.example.scorda.ui.components.atoms.composerDropdownMenu.SearchableDropdownMenu
+import com.example.scorda.ui.viewmodel.ComposerViewModel
+import com.example.scorda.ui.viewmodel.ScoreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +40,19 @@ fun ScoreDetailDialog(
     onDismissRequest: () -> Unit
 ) {
     val score = scoreWithDetails.score
+    val scoreViewModel: ScoreViewModel = viewModel(factory = ScoreViewModel.Factory)
+    val composerViewModel: ComposerViewModel = viewModel(factory = ComposerViewModel.Factory)
+
+    val composers by composerViewModel.composers.collectAsStateWithLifecycle()
+    val searchQuery by composerViewModel.searchQuery.collectAsStateWithLifecycle()
+    val onQueryChange = composerViewModel::onQueryChange
+    val insertComposerFromSearch = composerViewModel::insertComposerFromSearch
+    val getComposerFullName = composerViewModel::getCommaSeparatedFullName
+
+    fun handleComposerSelected(composer: Composer) {
+        // TODO update score
+    }
+
 
     BasicAlertDialog(
         onDismissRequest = onDismissRequest,
@@ -68,6 +88,17 @@ fun ScoreDetailDialog(
                             )
 
                         }
+                    }
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        SearchableDropdownMenu(
+                            label = stringResource(R.string.score_composer),
+                            items = composers,
+                            convertItemToText = getComposerFullName,
+                            searchQuery = searchQuery,
+                            onQueryChange = onQueryChange,
+                            onSelect = {},
+                            onInsert = insertComposerFromSearch
+                        )
                     }
 
                 }
