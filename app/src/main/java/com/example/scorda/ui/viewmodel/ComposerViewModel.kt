@@ -31,18 +31,22 @@ class ComposerViewModel(
                 if (query.isBlank()) {
                     list
                 } else {
+                    val trimmedQuery = query.trim()
                     list.filter { composer ->
-                        composer.lastName.contains(
-                            query,
+                        val first = composer.firstName ?: ""
+                        val last = composer.lastName
+
+                        if (last.contains(trimmedQuery, ignoreCase = true) ||
+                            first.contains(trimmedQuery, ignoreCase = true)
+                        ) return@filter true
+
+                        "$first $last".contains(
+                            trimmedQuery,
                             ignoreCase = true
-                        ) || (composer.firstName?.contains(query, ignoreCase = true) ?: false)
-                                || ("${composer.firstName} ${composer.lastName}").contains(
-                            query,
+                        ) || "$last $first".contains(
+                            trimmedQuery,
                             ignoreCase = true
-                        ) || ("${composer.lastName} ${composer.firstName}").contains(
-                            query,
-                            ignoreCase = true
-                        )
+                        ) || "$last, $first".contains(trimmedQuery, ignoreCase = true)
                     }
                 }
             }
@@ -63,20 +67,26 @@ class ComposerViewModel(
         }
     }
 
-    fun getCommaSeparatedFullName(composer: Composer): String =
-        "${composer.lastName}, ${composer.firstName}"
+    fun getCommaSeparatedFullName(composer: Composer): String {
+        if (composer.firstName.isNullOrEmpty()) {
+            return composer.lastName
+        }
+        return "${composer.lastName}, ${composer.firstName}"
+    }
 
 
     fun insertComposerFromSearch() {
         viewModelScope.launch {
             val (firstName, lastName) = parseComposerName(_searchQuery.value)
             if (lastName.isNotBlank()) {
-                repository.insertComposer(
-                    Composer(
-                        firstName = firstName,
-                        lastName = lastName,
-                    )
+                val composer = Composer(
+                    firstName = firstName,
+                    lastName = lastName,
                 )
+                repository.insertComposer(
+                    composer
+                )
+                _searchQuery.value = getCommaSeparatedFullName(composer)
             } else {
                 Log.d("ComposerViewModel", "Cannot insert composer with blank lastName.")
             }
@@ -96,7 +106,14 @@ class ComposerViewModel(
     }
 
     fun parseComposerName(input: String): Pair<String?, String> {
+
         val trimmed = input.trim()
+
+        if (trimmed.contains(",")) {
+            val nameList = trimmed.split(",")
+            return nameList[1].trim() to nameList[0].trim()
+        }
+
         val parts = trimmed.split("\\s+".toRegex())
 
         return when {
@@ -108,6 +125,13 @@ class ComposerViewModel(
                 firstName to lastName
             }
         }
+    }
+
+    fun getCommaSeparatedNameFromQuery(query: String): String {
+        val (firstName, lastName) = parseComposerName(query)
+        return getCommaSeparatedFullName(
+            Composer(firstName = firstName, lastName = lastName)
+        )
     }
 
     companion object {

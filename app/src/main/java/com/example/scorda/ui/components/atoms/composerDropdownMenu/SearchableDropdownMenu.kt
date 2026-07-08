@@ -2,11 +2,15 @@ package com.example.scorda.ui.components.atoms.composerDropdownMenu
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,7 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.scorda.R
 
-// this should be a generic searchable dropdown for genre, composer, instrument
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> SearchableDropdownMenu(
@@ -30,9 +33,12 @@ fun <T> SearchableDropdownMenu(
     onQueryChange: (String) -> Unit,
     onSelect: (item: T) -> Unit,
     modifier: Modifier = Modifier,
-    onInsert: () -> Unit,
+    onInsert: () -> Unit, // inserts based query in ViewModel
+    valueToAdd: String?,
 ) {
     var expanded by remember { mutableStateOf(false) }
+
+    val addDisplayText = valueToAdd ?: searchQuery
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -46,7 +52,24 @@ fun <T> SearchableDropdownMenu(
                 expanded = true
             },
             label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(
+                        onClick = {
+                            onQueryChange("")
+
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Clear,
+                            contentDescription = ""
+                        )
+                    }
+                } else {
+
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                }
+            },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, enabled = true)
@@ -71,11 +94,10 @@ fun <T> SearchableDropdownMenu(
                 )
             }
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.score_add_dropdown_field)) },
+                text = { Text("""${stringResource(R.string.score_add_dropdown_field)} "$addDisplayText"""") },
                 onClick = {
-                    onInsert(
-
-                    )
+                    onInsert()
+                    expanded = false
                 },
             )
         }

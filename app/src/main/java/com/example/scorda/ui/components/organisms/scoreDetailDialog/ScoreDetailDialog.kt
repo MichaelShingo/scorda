@@ -19,6 +19,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,8 +42,9 @@ fun ScoreDetailDialog(
 ) {
     val score = scoreWithDetails.score
     val scoreViewModel: ScoreViewModel = viewModel(factory = ScoreViewModel.Factory)
-    val composerViewModel: ComposerViewModel = viewModel(factory = ComposerViewModel.Factory)
+    val updateScore = scoreViewModel::updateScore
 
+    val composerViewModel: ComposerViewModel = viewModel(factory = ComposerViewModel.Factory)
     val composers by composerViewModel.composers.collectAsStateWithLifecycle()
     val searchQuery by composerViewModel.searchQuery.collectAsStateWithLifecycle()
     val onQueryChange = composerViewModel::onQueryChange
@@ -50,9 +52,21 @@ fun ScoreDetailDialog(
     val getComposerFullName = composerViewModel::getCommaSeparatedFullName
 
     fun handleComposerSelected(composer: Composer) {
-        // TODO update score
+        val updatedScore = score.copy(composerId = composer.id)
+        updateScore(updatedScore)
+        onQueryChange(composerViewModel.getCommaSeparatedFullName(composer))
     }
 
+
+    LaunchedEffect(scoreWithDetails.score.id) {
+        scoreWithDetails.composer?.let {
+            onQueryChange(composerViewModel.getCommaSeparatedFullName(it))
+        } ?: run {
+            onQueryChange("")
+        }
+    }
+
+    val valueToAdd = composerViewModel.getCommaSeparatedNameFromQuery(searchQuery)
 
     BasicAlertDialog(
         onDismissRequest = onDismissRequest,
@@ -96,8 +110,9 @@ fun ScoreDetailDialog(
                             convertItemToText = getComposerFullName,
                             searchQuery = searchQuery,
                             onQueryChange = onQueryChange,
-                            onSelect = {},
-                            onInsert = insertComposerFromSearch
+                            onSelect = ::handleComposerSelected,
+                            onInsert = insertComposerFromSearch,
+                            valueToAdd = valueToAdd,
                         )
                     }
 

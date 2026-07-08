@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.scorda.ScordaApplication
+import com.example.scorda.data.database.entities.Score
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.data.repository.ScoreRepository
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +34,18 @@ class ScoreViewModel(
         }
     }
 
+    fun updateScore(score: Score) {
+        viewModelScope.launch {
+            val updatedScore = score.copy()
+            repository.updateScore(score)
+        }
+    }
+
+    fun deleteScore(score: Score) {
+        viewModelScope.launch {
+            repository.deleteScore(score)
+        }
+    }
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
