@@ -35,6 +35,7 @@ fun <T> SearchableDropdownMenu(
     modifier: Modifier = Modifier,
     onInsert: () -> Unit, // inserts based query in ViewModel
     valueToAdd: String?,
+    onClear: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -56,8 +57,8 @@ fun <T> SearchableDropdownMenu(
                 if (searchQuery.isNotEmpty()) {
                     IconButton(
                         onClick = {
+                            onClear()
                             onQueryChange("")
-
                         }
                     ) {
                         Icon(
@@ -66,7 +67,6 @@ fun <T> SearchableDropdownMenu(
                         )
                     }
                 } else {
-
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                 }
             },

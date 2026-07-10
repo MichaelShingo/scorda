@@ -43,6 +43,7 @@ fun ScoreDetailDialog(
     val score = scoreWithDetails.score
     val scoreViewModel: ScoreViewModel = viewModel(factory = ScoreViewModel.Factory)
     val updateScore = scoreViewModel::updateScore
+    val clearComposer = scoreViewModel::clearComposer
 
     val composerViewModel: ComposerViewModel = viewModel(factory = ComposerViewModel.Factory)
     val composers by composerViewModel.composers.collectAsStateWithLifecycle()
@@ -51,10 +52,18 @@ fun ScoreDetailDialog(
     val insertComposerFromSearch = composerViewModel::insertComposerFromSearch
     val getComposerFullName = composerViewModel::getCommaSeparatedFullName
 
+
     fun handleComposerSelected(composer: Composer) {
-        val updatedScore = score.copy(composerId = composer.id)
-        updateScore(updatedScore)
-        onQueryChange(composerViewModel.getCommaSeparatedFullName(composer))
+        scoreViewModel.connectComposer(score, composer)
+        composerViewModel.onQueryChange(composerViewModel.getCommaSeparatedFullName(composer))
+    }
+
+    fun handleInsert() {
+        composerViewModel.insertComposerFromSearch { newComposer ->
+            handleComposerSelected(
+                newComposer
+            )
+        }
     }
 
 
@@ -67,6 +76,10 @@ fun ScoreDetailDialog(
     }
 
     val valueToAdd = composerViewModel.getCommaSeparatedNameFromQuery(searchQuery)
+
+    fun onClearComposer() {
+        clearComposer(score)
+    }
 
     BasicAlertDialog(
         onDismissRequest = onDismissRequest,
@@ -111,8 +124,9 @@ fun ScoreDetailDialog(
                             searchQuery = searchQuery,
                             onQueryChange = onQueryChange,
                             onSelect = ::handleComposerSelected,
-                            onInsert = insertComposerFromSearch,
+                            onInsert = ::handleInsert,
                             valueToAdd = valueToAdd,
+                            onClear = ::onClearComposer
                         )
                     }
 

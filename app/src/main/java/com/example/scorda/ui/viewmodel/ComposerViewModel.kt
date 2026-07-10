@@ -75,7 +75,7 @@ class ComposerViewModel(
     }
 
 
-    fun insertComposerFromSearch() {
+    fun insertComposerFromSearch(onSuccess: (Composer) -> Unit) {
         viewModelScope.launch {
             val (firstName, lastName) = parseComposerName(_searchQuery.value)
             if (lastName.isNotBlank()) {
@@ -83,13 +83,17 @@ class ComposerViewModel(
                     firstName = firstName,
                     lastName = lastName,
                 )
-                repository.insertComposer(
+                val newId = repository.insertComposer(
                     composer
                 )
-                _searchQuery.value = getCommaSeparatedFullName(composer)
+                val savedComposer = composer.copy(id = newId)
+
+                _searchQuery.value = getCommaSeparatedFullName(savedComposer)
+                onSuccess(savedComposer)
             } else {
                 Log.d("ComposerViewModel", "Cannot insert composer with blank lastName.")
             }
+
         }
     }
 
