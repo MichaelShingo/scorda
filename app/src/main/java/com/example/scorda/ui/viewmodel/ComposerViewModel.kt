@@ -18,6 +18,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+data class ComposerUiState(
+    val composers: List<Composer> = emptyList(),
+    val searchQuery: String = "",
+    val valToAdd: String = "",
+)
+
 class ComposerViewModel(
     private val repository: ComposerRepository
 
@@ -25,36 +31,41 @@ class ComposerViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    val composers: StateFlow<List<Composer>> =
-        repository.observeComposers()
-            .combine(_searchQuery) { list, query ->
-                if (query.isBlank()) {
-                    list
-                } else {
-                    val trimmedQuery = query.trim()
-                    list.filter { composer ->
-                        val first = composer.firstName ?: ""
-                        val last = composer.lastName
+    val uiState: StateFlow<ComposerUiState> = combine(
+        repository.observeComposers(),
+        _searchQuery
+    ) { list, query ->
+        ComposerUiState(
+            composers = filterComposers(list, query),
+            searchQuery = query,
+            valToAdd = getCommaSeparatedNameFromQuery(query),
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ComposerUiState())
 
-                        if (last.contains(trimmedQuery, ignoreCase = true) ||
-                            first.contains(trimmedQuery, ignoreCase = true)
-                        ) return@filter true
+    fun filterComposers(list: List<Composer>, query: String): List<Composer> {
+        if (query.isBlank()) {
+            return list
+        } else {
+            val trimmedQuery = query.trim()
+            return list.filter { composer ->
+                val first = composer.firstName ?: ""
+                val last = composer.lastName
 
-                        "$first $last".contains(
-                            trimmedQuery,
-                            ignoreCase = true
-                        ) || "$last $first".contains(
-                            trimmedQuery,
-                            ignoreCase = true
-                        ) || "$last, $first".contains(trimmedQuery, ignoreCase = true)
-                    }
-                }
+                if (last.contains(trimmedQuery, ignoreCase = true) ||
+                    first.contains(trimmedQuery, ignoreCase = true)
+                ) return@filter true
+
+                "$first $last".contains(
+                    trimmedQuery,
+                    ignoreCase = true
+                ) || "$last $first".contains(
+                    trimmedQuery,
+                    ignoreCase = true
+                ) || "$last, $first".contains(trimmedQuery, ignoreCase = true)
             }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = emptyList()
-            )
+        }
+    }
+
 
     fun onQueryChange(newQuery: String) {
         _searchQuery.value = newQuery

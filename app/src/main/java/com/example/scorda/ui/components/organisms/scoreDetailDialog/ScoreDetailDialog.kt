@@ -30,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.R
 import com.example.scorda.data.database.entities.Composer
 import com.example.scorda.data.database.relations.ScoreWithDetails
+import com.example.scorda.data.database.seedData.SeedData.composers
 import com.example.scorda.ui.components.atoms.composerDropdownMenu.SearchableDropdownMenu
 import com.example.scorda.ui.viewmodel.ComposerViewModel
 import com.example.scorda.ui.viewmodel.ScoreViewModel
@@ -42,15 +43,9 @@ fun ScoreDetailDialog(
 ) {
     val score = scoreWithDetails.score
     val scoreViewModel: ScoreViewModel = viewModel(factory = ScoreViewModel.Factory)
-    val updateScore = scoreViewModel::updateScore
-    val clearComposer = scoreViewModel::clearComposer
 
     val composerViewModel: ComposerViewModel = viewModel(factory = ComposerViewModel.Factory)
-    val composers by composerViewModel.composers.collectAsStateWithLifecycle()
-    val searchQuery by composerViewModel.searchQuery.collectAsStateWithLifecycle()
-    val onQueryChange = composerViewModel::onQueryChange
-    val insertComposerFromSearch = composerViewModel::insertComposerFromSearch
-    val getComposerFullName = composerViewModel::getCommaSeparatedFullName
+    val composerUiState by composerViewModel.uiState.collectAsStateWithLifecycle()
 
 
     fun handleComposerSelected(composer: Composer) {
@@ -69,16 +64,16 @@ fun ScoreDetailDialog(
 
     LaunchedEffect(scoreWithDetails.score.id) {
         scoreWithDetails.composer?.let {
-            onQueryChange(composerViewModel.getCommaSeparatedFullName(it))
+            composerViewModel.onQueryChange(composerViewModel.getCommaSeparatedFullName(it))
         } ?: run {
-            onQueryChange("")
+            composerViewModel.onQueryChange("")
         }
     }
 
-    val valueToAdd = composerViewModel.getCommaSeparatedNameFromQuery(searchQuery)
+    val valueToAdd = composerViewModel.getCommaSeparatedNameFromQuery(composerUiState.searchQuery)
 
     fun onClearComposer() {
-        clearComposer(score)
+        scoreViewModel.clearComposer(score)
     }
 
     BasicAlertDialog(
@@ -120,9 +115,9 @@ fun ScoreDetailDialog(
                         SearchableDropdownMenu(
                             label = stringResource(R.string.score_composer),
                             items = composers,
-                            convertItemToText = getComposerFullName,
-                            searchQuery = searchQuery,
-                            onQueryChange = onQueryChange,
+                            convertItemToText = { composerViewModel.getCommaSeparatedFullName(it) },
+                            searchQuery = composerUiState.searchQuery,
+                            onQueryChange = { composerViewModel.onQueryChange(it) },
                             onSelect = ::handleComposerSelected,
                             onInsert = ::handleInsert,
                             valueToAdd = valueToAdd,
