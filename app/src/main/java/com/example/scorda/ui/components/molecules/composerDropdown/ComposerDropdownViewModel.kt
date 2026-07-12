@@ -1,4 +1,4 @@
-package com.example.scorda.ui.components.molecules.composerDropdownMenu
+package com.example.scorda.ui.components.molecules.composerDropdown
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -19,22 +19,22 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-data class ComposerDropdownMenuUiState(
+data class ComposerDropdownUiState(
     val composers: List<Composer> = emptyList(),
     val searchQuery: String = "",
     val valToAdd: String = "",
 )
 
-class ComposerDropdownMenuViewModel(
+class ComposerDropdownViewModel(
     private val repository: ComposerRepository
 ) : ViewModel() {
     private val _searchQuery = MutableStateFlow("")
 
-    val uiState: StateFlow<ComposerDropdownMenuUiState> = combine(
+    val uiState: StateFlow<ComposerDropdownUiState> = combine(
         repository.observeComposers(),
         _searchQuery
     ) { list, query ->
-        ComposerDropdownMenuUiState(
+        ComposerDropdownUiState(
             composers = filterComposers(list, query),
             searchQuery = query,
             valToAdd = getCommaSeparatedNameFromQuery(query),
@@ -42,7 +42,7 @@ class ComposerDropdownMenuViewModel(
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
-        ComposerDropdownMenuUiState()
+        ComposerDropdownUiState()
     )
 
     fun getCommaSeparatedNameFromQuery(query: String): String {
@@ -108,7 +108,7 @@ class ComposerDropdownMenuViewModel(
             initializer {
                 val application = this[APPLICATION_KEY] as ScordaApplication
                 val repository = application.container.composerRepository
-                ComposerDropdownMenuViewModel(repository)
+                ComposerDropdownViewModel(repository)
             }
         }
     }

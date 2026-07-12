@@ -1,12 +1,13 @@
-package com.example.scorda.ui.components.molecules.composerDropdownMenu.instrumentMultiSelect
+package com.example.scorda.ui.components.molecules.instrumentMultiSelect
 
-import InstrumentMultiSelectViewModel
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.scorda.R
 import com.example.scorda.data.database.entities.Instrument
 import com.example.scorda.ui.components.atoms.searchableMultiSelect.SearchableMultiSelect
 
@@ -24,6 +25,7 @@ fun InstrumentMultiSelect(
 
     SearchableMultiSelect(
         modifier = modifier,
+        label = stringResource(R.string.score_instruments),
         items = uiState.instruments.filter { instrument ->
             !currentInstruments.contains(instrument)
         },

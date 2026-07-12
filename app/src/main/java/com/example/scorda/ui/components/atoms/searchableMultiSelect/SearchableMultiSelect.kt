@@ -23,6 +23,7 @@ import com.example.scorda.ui.components.atoms.searchableDropdown.SearchableDropd
 @Composable
 fun <T> SearchableMultiSelect(
     modifier: Modifier = Modifier,
+    label: String,
     items: List<T>,
     currentItems: List<T>,
     onRemove: (item: T) -> Unit,
@@ -57,7 +58,7 @@ fun <T> SearchableMultiSelect(
                             trailingIcon = {
                                 Icon(
                                     imageVector = Icons.Rounded.Close,
-                                    contentDescription = stringResource(R.string.remove_instrument),
+                                    contentDescription = stringResource(R.string.remove_item),
                                     modifier = Modifier.size(InputChipDefaults.IconSize)
                                 )
                             }
@@ -68,7 +69,7 @@ fun <T> SearchableMultiSelect(
         }
         SearchableDropdown<T>(
             modifier = Modifier.fillMaxWidth(),
-            label = stringResource(R.string.score_instruments),
+            label = label,
             items = items,
             convertItemToText = convertItemToText,
             searchQuery = searchQuery,

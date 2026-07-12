@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.scorda.ScordaApplication
 import com.example.scorda.data.database.entities.Composer
+import com.example.scorda.data.database.entities.Genre
 import com.example.scorda.data.database.entities.Instrument
 import com.example.scorda.data.database.entities.Score
 import com.example.scorda.data.database.relations.ScoreWithDetails
@@ -77,6 +78,24 @@ class ScoreViewModel(
             repository.disconnectInstrument(
                 scoreId = score.id,
                 instrumentId = instrument.id
+            )
+        }
+    }
+
+    fun connectGenre(score: Score, genre: Genre) {
+        viewModelScope.launch {
+            repository.connectGenre(
+                scoreId = score.id,
+                genreId = genre.id,
+            )
+        }
+    }
+
+    fun disconnectGenre(score: Score, genre: Genre) {
+        viewModelScope.launch {
+            repository.disconnectGenre(
+                scoreId = score.id,
+                genreId = genre.id,
             )
         }
     }

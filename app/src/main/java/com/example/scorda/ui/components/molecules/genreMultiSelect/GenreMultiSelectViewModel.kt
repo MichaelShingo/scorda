@@ -1,3 +1,5 @@
+package com.example.scorda.ui.components.molecules.genreMultiSelect
+
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -6,8 +8,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.scorda.ScordaApplication
-import com.example.scorda.data.database.entities.Instrument
-import com.example.scorda.data.repository.InstrumentRepository
+import com.example.scorda.data.database.entities.Genre
+import com.example.scorda.data.repository.GenreRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -15,41 +17,41 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-data class InstrumentMultiSelectUIState(
-    val instruments: List<Instrument> = emptyList(),
+data class GenreMultiSelectUIState(
+    val genres: List<Genre> = emptyList(),
     val searchQuery: String = "",
 )
 
-class InstrumentMultiSelectViewModel(
-    private val repository: InstrumentRepository
+class GenreMultiSelectViewModel(
+    private val repository: GenreRepository
 ) : ViewModel() {
     private val _searchQuery = MutableStateFlow<String>("")
 
-    val uiState: StateFlow<InstrumentMultiSelectUIState> = combine(
-        repository.observeInstruments(),
+    val uiState: StateFlow<GenreMultiSelectUIState> = combine(
+        repository.observeGenres(),
         _searchQuery,
-    ) { instruments, query ->
-        InstrumentMultiSelectUIState(
-            instruments = filterInstruments(instruments, query),
+    ) { genres, query ->
+        GenreMultiSelectUIState(
+            genres = filterGenres(genres, query),
             searchQuery = query
         )
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
-        InstrumentMultiSelectUIState()
+        GenreMultiSelectUIState()
     )
 
-    fun convertInstrumentToText(instrument: Instrument): String {
-        return instrument.name
+    fun convertGenreToText(genre: Genre): String {
+        return genre.name
     }
 
-    private fun filterInstruments(instruments: List<Instrument>, query: String): List<Instrument> {
+    private fun filterGenres(genres: List<Genre>, query: String): List<Genre> {
         if (query.isBlank()) {
-            return instruments
+            return genres
         } else {
             val trimmedQuery = query.trim()
-            return instruments.filter { instrument ->
-                instrument.name.contains(trimmedQuery, ignoreCase = true)
+            return genres.filter { genre ->
+                genre.name.contains(trimmedQuery, ignoreCase = true)
             }
         }
     }
@@ -58,20 +60,20 @@ class InstrumentMultiSelectViewModel(
         _searchQuery.value = newQuery
     }
 
-    fun insertInstrumentFromSearch(onSuccess: (Instrument) -> Unit) {
+    fun insertGenreFromSearch(onSuccess: (Genre) -> Unit) {
         viewModelScope.launch {
             val query = _searchQuery.value
             if (query.isNotBlank()) {
-                val instrument = Instrument(
+                val genre = Genre(
                     name = _searchQuery.value,
                 )
-                val newId = repository.insertInstrument(
-                    instrument
+                val newId = repository.insertGenre(
+                    genre
                 )
-                val savedInstrument = instrument.copy(id = newId)
-                onSuccess(savedInstrument)
+                val savedGenre = genre.copy(id = newId)
+                onSuccess(savedGenre)
             } else {
-                Log.d("InstrumentMultiSelectVM", "Cannot insert instrument with blank name.")
+                Log.d("GenreMultiSelectVM", "Cannot insert genre with blank name.")
             }
 
         }
@@ -81,8 +83,8 @@ class InstrumentMultiSelectViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[APPLICATION_KEY] as ScordaApplication
-                val repository = application.container.instrumentRepository
-                InstrumentMultiSelectViewModel(repository)
+                val repository = application.container.genreRepository
+                GenreMultiSelectViewModel(repository)
             }
         }
     }

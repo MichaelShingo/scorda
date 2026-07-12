@@ -27,8 +27,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.R
 import com.example.scorda.data.database.relations.ScoreWithDetails
-import com.example.scorda.ui.components.molecules.composerDropdownMenu.ComposerDropdownMenu
-import com.example.scorda.ui.components.molecules.composerDropdownMenu.instrumentMultiSelect.InstrumentMultiSelect
+import com.example.scorda.ui.components.molecules.composerDropdown.ComposerDropdown
+import com.example.scorda.ui.components.molecules.genreMultiSelect.GenreMultiSelect
+import com.example.scorda.ui.components.molecules.instrumentMultiSelect.InstrumentMultiSelect
 import com.example.scorda.ui.viewmodel.ScoreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,7 +80,7 @@ fun ScoreDetailDialog(
                         }
                     }
                     Box(modifier = Modifier.fillMaxWidth()) {
-                        ComposerDropdownMenu(
+                        ComposerDropdown(
                             currentComposer = scoreWithDetails.composer,
                             onClear = {
                                 scoreViewModel.clearComposer(score)
@@ -93,6 +94,13 @@ fun ScoreDetailDialog(
                             currentInstruments = scoreWithDetails.instruments,
                             onSelect = { scoreViewModel.connectInstrument(score, it) },
                             onRemove = { scoreViewModel.disconnectInstrument(score, it) },
+                        )
+                    }
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        GenreMultiSelect(
+                            currentGenres = scoreWithDetails.genres,
+                            onSelect = { scoreViewModel.connectGenre(score, it) },
+                            onRemove = { scoreViewModel.disconnectGenre(score, it) },
                         )
                     }
 

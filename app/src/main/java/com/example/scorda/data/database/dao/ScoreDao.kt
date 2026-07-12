@@ -44,13 +44,16 @@ interface ScoreDao {
     suspend fun delete(score: Score)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertScoreGenreCrossRef(crossRef: ScoreGenreCrossRef)
-
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertScoreInstrumentCrossRef(crossRef: ScoreInstrumentCrossRef)
 
     @Delete
     suspend fun deleteScoreInstrumentCrossRef(crossRef: ScoreInstrumentCrossRef)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertScoreGenreCrossRef(crossRef: ScoreGenreCrossRef)
+
+    @Delete
+    suspend fun deleteScoreGenreCrossRef(crossRef: ScoreGenreCrossRef)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertScoreSetlistCrossRef(crossRef: ScoreSetlistCrossRef)

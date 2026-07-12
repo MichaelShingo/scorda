@@ -4,6 +4,7 @@ import android.net.Uri
 import android.util.Log
 import com.example.scorda.data.database.AppDatabase
 import com.example.scorda.data.database.entities.Score
+import com.example.scorda.data.database.entities.ScoreGenreCrossRef
 import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.logic.FileImporter
@@ -71,6 +72,20 @@ class ScoreRepository(
                 scoreId,
                 instrumentId
             )
+        )
+    }
+
+    suspend fun connectGenre(scoreId: Long, genreId: Long) {
+        scoreDao.insertScoreGenreCrossRef(
+            ScoreGenreCrossRef(
+                scoreId, genreId
+            )
+        )
+    }
+
+    suspend fun disconnectGenre(scoreId: Long, genreId: Long) {
+        scoreDao.deleteScoreGenreCrossRef(
+            ScoreGenreCrossRef(scoreId, genreId)
         )
     }
 }
