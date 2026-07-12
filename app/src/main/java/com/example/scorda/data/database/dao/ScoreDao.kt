@@ -49,6 +49,11 @@ interface ScoreDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertScoreInstrumentCrossRef(crossRef: ScoreInstrumentCrossRef)
 
+    @Delete
+    suspend fun deleteScoreInstrumentCrossRef(crossRef: ScoreInstrumentCrossRef)
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertScoreSetlistCrossRef(crossRef: ScoreSetlistCrossRef)
+
+
 }

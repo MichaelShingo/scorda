@@ -1,4 +1,4 @@
-package com.example.scorda.ui.components.molecules
+package com.example.scorda.ui.components.molecules.composerDropdownMenu
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -9,7 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.R
 import com.example.scorda.data.database.entities.Composer
-import com.example.scorda.ui.components.atoms.composerDropdownMenu.SearchableDropdownMenu
+import com.example.scorda.ui.components.atoms.searchableDropdownMenu.SearchableDropdownMenu
 import com.example.scorda.util.getCommaSeparatedFullName
 
 @Composable
@@ -32,8 +32,6 @@ fun ComposerDropdownMenu(
         }
     }
 
-    val valueToAdd = viewModel.getCommaSeparatedNameFromQuery(uiState.searchQuery)
-
     SearchableDropdownMenu<Composer>(
         label = stringResource(R.string.score_composer),
         items = uiState.composers,
@@ -49,7 +47,7 @@ fun ComposerDropdownMenu(
                 onSelect(newComposer)
             }
         },
-        valueToAdd = valueToAdd,
+        valueToAdd = uiState.valToAdd,
         onClear = {
             onClear()
             viewModel.onQueryChange("")

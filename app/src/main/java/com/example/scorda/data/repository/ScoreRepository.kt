@@ -4,6 +4,7 @@ import android.net.Uri
 import android.util.Log
 import com.example.scorda.data.database.AppDatabase
 import com.example.scorda.data.database.entities.Score
+import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.logic.FileImporter
 import kotlinx.coroutines.flow.Flow
@@ -56,5 +57,20 @@ class ScoreRepository(
             }
         }
         scoreDao.delete(score)
+    }
+
+    suspend fun connectInstrument(scoreId: Long, instrumentId: Long) {
+        scoreDao.insertScoreInstrumentCrossRef(
+            ScoreInstrumentCrossRef(scoreId, instrumentId)
+        )
+    }
+
+    suspend fun disconnectInstrument(scoreId: Long, instrumentId: Long) {
+        scoreDao.deleteScoreInstrumentCrossRef(
+            ScoreInstrumentCrossRef(
+                scoreId,
+                instrumentId
+            )
+        )
     }
 }

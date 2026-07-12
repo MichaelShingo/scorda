@@ -1,5 +1,6 @@
 package com.example.scorda.ui.components.organisms.scoreDetailDialog
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,7 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.R
 import com.example.scorda.data.database.relations.ScoreWithDetails
-import com.example.scorda.ui.components.molecules.ComposerDropdownMenu
+import com.example.scorda.ui.components.molecules.composerDropdownMenu.ComposerDropdownMenu
+import com.example.scorda.ui.components.molecules.composerDropdownMenu.instrumentMultiSelect.InstrumentMultiSelect
 import com.example.scorda.ui.viewmodel.ScoreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,8 +39,6 @@ fun ScoreDetailDialog(
 ) {
     val score = scoreWithDetails.score
     val scoreViewModel: ScoreViewModel = viewModel(factory = ScoreViewModel.Factory)
-
-
 
     BasicAlertDialog(
         onDismissRequest = onDismissRequest,
@@ -51,7 +51,10 @@ fun ScoreDetailDialog(
                 shape = MaterialTheme.shapes.extraLarge,
                 tonalElevation = AlertDialogDefaults.TonalElevation
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                     Box(modifier = Modifier.fillMaxWidth()) {
                         IconButton(
                             onClick = onDismissRequest,
@@ -83,6 +86,13 @@ fun ScoreDetailDialog(
                             },
                             onSelect = { scoreViewModel.connectComposer(score, it) },
                             key = score.id
+                        )
+                    }
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        InstrumentMultiSelect(
+                            currentInstruments = scoreWithDetails.instruments,
+                            onSelect = { scoreViewModel.connectInstrument(score, it) },
+                            onRemove = { scoreViewModel.disconnectInstrument(score, it) },
                         )
                     }
 

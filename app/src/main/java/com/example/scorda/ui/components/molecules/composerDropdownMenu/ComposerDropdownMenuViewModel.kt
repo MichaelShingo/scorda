@@ -1,4 +1,4 @@
-package com.example.scorda.ui.components.molecules
+package com.example.scorda.ui.components.molecules.composerDropdownMenu
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -15,7 +15,6 @@ import com.example.scorda.util.parseComposerName
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -30,7 +29,6 @@ class ComposerDropdownMenuViewModel(
     private val repository: ComposerRepository
 ) : ViewModel() {
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     val uiState: StateFlow<ComposerDropdownMenuUiState> = combine(
         repository.observeComposers(),
