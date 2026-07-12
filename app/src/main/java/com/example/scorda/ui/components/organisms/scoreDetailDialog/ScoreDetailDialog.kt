@@ -34,6 +34,7 @@ import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.ui.components.molecules.composerDropdown.ComposerDropdown
 import com.example.scorda.ui.components.molecules.genreMultiSelect.GenreMultiSelect
 import com.example.scorda.ui.components.molecules.instrumentMultiSelect.InstrumentMultiSelect
+import com.example.scorda.ui.components.molecules.keySignatureSelect.KeySignatureSelect
 import com.example.scorda.ui.components.molecules.tagMultiSelect.TagMultiSelect
 import com.example.scorda.ui.viewmodel.ScoreViewModel
 
@@ -118,6 +119,12 @@ fun ScoreDetailDialog(
                             currentTags = scoreWithDetails.tags,
                             onSelect = { scoreViewModel.connectTag(score, it) },
                             onRemove = { scoreViewModel.disconnectTag(score, it) },
+                        )
+                    }
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        KeySignatureSelect(
+                            currentKeySignature = score.keySignature,
+                            onChange = { scoreViewModel.updateScore(score.copy(keySignature = it)) }
                         )
                     }
 

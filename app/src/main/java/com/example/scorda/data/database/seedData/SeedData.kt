@@ -94,17 +94,17 @@ object SeedData {
         ScoreSeed("40 Etudes", "Kreutzer - 40 Etudes.pdf", "Kreutzer", null, listOf("Etude / Study"), listOf("Violin"), listOf("Practice Routine")),
 
         // Classical / Romantic
-        ScoreSeed("Sonatas and Partitas", "Bach - Sonatas and Partitas.pdf", "Bach", KeySignature.G_MINOR, listOf("Baroque"), listOf("Violin"), listOf("Recital 2024")),
-        ScoreSeed("Romance in F major", "Beethoven - Romance in F major.pdf", "Beethoven", KeySignature.F_MAJOR, listOf("Classical"), listOf("Violin"), listOf("Recital 2024")),
-        ScoreSeed("Romance in G Major", "Beethoven - Romance in G Major.pdf", "Beethoven", KeySignature.G_MAJOR, listOf("Classical"), listOf("Violin"), listOf("Recital 2024")),
-        ScoreSeed("Violin Concerto in A major", "Mozart - Violin Concerto in A major.pdf", "Mozart", KeySignature.A_MAJOR, listOf("Classical"), listOf("Violin"), listOf("Recital 2024")),
-        ScoreSeed("Violin Concerto in G Major", "Mozart - Violin Concerto in G Major.pdf", "Mozart", KeySignature.G_MAJOR, listOf("Classical"), listOf("Violin"), listOf("Recital 2024")),
+        ScoreSeed("Sonatas and Partitas", "Bach - Sonatas and Partitas.pdf", "Bach", KeySignature.G_NATURAL_MINOR, listOf("Baroque"), listOf("Violin"), listOf("Recital 2024")),
+        ScoreSeed("Romance in F major", "Beethoven - Romance in F major.pdf", "Beethoven", KeySignature.F_NATURAL_MAJOR, listOf("Classical"), listOf("Violin"), listOf("Recital 2024")),
+        ScoreSeed("Romance in G Major", "Beethoven - Romance in G Major.pdf", "Beethoven", KeySignature.G_NATURAL_MAJOR, listOf("Classical"), listOf("Violin"), listOf("Recital 2024")),
+        ScoreSeed("Violin Concerto in A major", "Mozart - Violin Concerto in A major.pdf", "Mozart", KeySignature.A_NATURAL_MAJOR, listOf("Classical"), listOf("Violin"), listOf("Recital 2024")),
+        ScoreSeed("Violin Concerto in G Major", "Mozart - Violin Concerto in G Major.pdf", "Mozart", KeySignature.G_NATURAL_MAJOR, listOf("Classical"), listOf("Violin"), listOf("Recital 2024")),
         ScoreSeed("Autumn", "Vivaldi - Autumn.pdf", "Vivaldi", null, listOf("Baroque"), listOf("Violin"), listOf("Recital 2024")),
-        ScoreSeed("Spring", "Vivaldi - Spring.pdf", "Vivaldi", KeySignature.E_MAJOR, listOf("Baroque"), listOf("Violin"), listOf("Recital 2024")),
-        ScoreSeed("Summer", "Vivaldi - Summer.pdf", "Vivaldi", KeySignature.G_MINOR, listOf("Baroque"), listOf("Violin"), listOf("Recital 2024")),
-        ScoreSeed("Winter", "Vivaldi - Winter.pdf", "Vivaldi", KeySignature.F_MINOR, listOf("Baroque"), listOf("Violin"), listOf("Recital 2024")),
-        ScoreSeed("Canon in D", "Pachelbel - Canon in D.pdf", "Pachelbel", KeySignature.D_MAJOR, listOf("Baroque", "Wedding"), listOf("Violin", "Ensemble"), listOf("Wedding Gigs")),
-        ScoreSeed("Meditation from Thais", "Massenet - Meditation from Thais.pdf", "Massenet", KeySignature.D_MAJOR, listOf("Romantic"), listOf("Violin", "Piano"), listOf("Recital 2024", "Wedding Gigs")),
+        ScoreSeed("Spring", "Vivaldi - Spring.pdf", "Vivaldi", KeySignature.E_NATURAL_MAJOR, listOf("Baroque"), listOf("Violin"), listOf("Recital 2024")),
+        ScoreSeed("Summer", "Vivaldi - Summer.pdf", "Vivaldi", KeySignature.G_NATURAL_MINOR, listOf("Baroque"), listOf("Violin"), listOf("Recital 2024")),
+        ScoreSeed("Winter", "Vivaldi - Winter.pdf", "Vivaldi", KeySignature.F_NATURAL_MINOR, listOf("Baroque"), listOf("Violin"), listOf("Recital 2024")),
+        ScoreSeed("Canon in D", "Pachelbel - Canon in D.pdf", "Pachelbel", KeySignature.D_NATURAL_MAJOR, listOf("Baroque", "Wedding"), listOf("Violin", "Ensemble"), listOf("Wedding Gigs")),
+        ScoreSeed("Meditation from Thais", "Massenet - Meditation from Thais.pdf", "Massenet", KeySignature.D_NATURAL_MAJOR, listOf("Romantic"), listOf("Violin", "Piano"), listOf("Recital 2024", "Wedding Gigs")),
         ScoreSeed("Czardas", "Monti - Czardas.pdf", "Monti", null, listOf("Romantic"), listOf("Violin", "Piano"), listOf("Recital 2024")),
         ScoreSeed("Ave Maria", "Schubert - Wilhelmj - Ave Maria.pdf", "Schubert", null, listOf("Romantic", "Wedding"), listOf("Violin", "Piano"), listOf("Wedding Gigs")),
 
@@ -124,8 +124,8 @@ object SeedData {
         ScoreSeed("Bluebird", "Naruto OP3 - Bluebird - Full Score.pdf", "Mizuno", null, listOf("Anime"), listOf("Ensemble"), listOf("Anime Favorites")),
 
         // Pop / Rock
-        ScoreSeed("Perfect", "Ed Sheeran - Perfect - Violin and Chords.pdf", "Sheeran", KeySignature.A_MAJOR, listOf("Pop", "Wedding"), listOf("Violin"), listOf("Wedding Gigs", "Pop Songs")),
-        ScoreSeed("Thinking Out Loud", "Ed Sheeran - Thinking Out Loud - Full Score.pdf", "Sheeran", KeySignature.D_MAJOR, listOf("Pop", "Wedding"), listOf("Ensemble"), listOf("Wedding Gigs", "Pop Songs")),
+        ScoreSeed("Perfect", "Ed Sheeran - Perfect - Violin and Chords.pdf", "Sheeran", KeySignature.A_NATURAL_MAJOR, listOf("Pop", "Wedding"), listOf("Violin"), listOf("Wedding Gigs", "Pop Songs")),
+        ScoreSeed("Thinking Out Loud", "Ed Sheeran - Thinking Out Loud - Full Score.pdf", "Sheeran", KeySignature.D_NATURAL_MAJOR, listOf("Pop", "Wedding"), listOf("Ensemble"), listOf("Wedding Gigs", "Pop Songs")),
         ScoreSeed("Can You Feel the Love Tonight", "Elton John - Can You Feel the Love Tonight.pdf", "John", null, listOf("Pop", "Soundtrack"), listOf("Piano"), listOf("Pop Songs")),
         ScoreSeed("Your Song", "Elton John - Your Song.pdf", "John", null, listOf("Pop"), listOf("Piano"), listOf("Pop Songs")),
         ScoreSeed("Isn't She Lovely", "Stevie Wonder - Isn't She Lovely.pdf", "Wonder", null, listOf("Pop", "Jazz"), listOf("Piano"), listOf("Pop Songs")),
@@ -164,13 +164,13 @@ object SeedData {
         ScoreSeed("You Are the Sunshine of My Life", "Stevie Wonder - You Are the Sunshine of My Life.pdf", "Wonder", null, listOf("Pop"), listOf("Ensemble"), listOf("Pop Songs")),
 
         // Kreisler
-        ScoreSeed("Liebesfreud", "Kreisler - Liebesfreud.pdf", "Kreisler", KeySignature.C_MAJOR, listOf("Romantic"), listOf("Violin", "Piano"), listOf("Recital 2024")),
+        ScoreSeed("Liebesfreud", "Kreisler - Liebesfreud.pdf", "Kreisler", KeySignature.C_NATURAL_MAJOR, listOf("Romantic"), listOf("Violin", "Piano"), listOf("Recital 2024")),
         ScoreSeed("Praeludium and Allegro", "Kreisler - Praeludium and Allegro.pdf", "Kreisler", null, listOf("Romantic"), listOf("Violin", "Piano"), listOf("Recital 2024")),
         ScoreSeed("Syncopation", "Kreisler - Syncopation.pdf", "Kreisler", null, listOf("Modern", "Jazz"), listOf("Violin", "Piano"), listOf("Recital 2024")),
 
         // More Soundtracks
         ScoreSeed("Gladiator", "Gladiator - Full Score.pdf", "Zimmer", null, listOf("Soundtrack"), listOf("Ensemble"), listOf("Recital 2024")),
-        ScoreSeed("Imperial March", "Imperial March - Darth Vader Theme.pdf", "Williams", KeySignature.G_MINOR, listOf("Soundtrack"), listOf("Ensemble"), listOf("Pop Songs")),
+        ScoreSeed("Imperial March", "Imperial March - Darth Vader Theme.pdf", "Williams", KeySignature.G_NATURAL_MINOR, listOf("Soundtrack"), listOf("Ensemble"), listOf("Pop Songs")),
         ScoreSeed("Deborah's Theme", "Deborah's Theme - Full Score.pdf", "Morricone", null, listOf("Soundtrack"), listOf("Ensemble"), listOf("Wedding Gigs")),
 
         // One Piece

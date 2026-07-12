@@ -36,7 +36,7 @@ import com.example.scorda.data.database.entities.Tag
         Tag::class,
         ScoreTagCrossRef::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

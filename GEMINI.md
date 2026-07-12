@@ -20,6 +20,11 @@ code in this repository should be at prototyping level. It should pass the most 
 requirements for code quality and reliability that you would find in an established software
 product, and adhere to best practices for Kotlin/Android development, with scalability in mind.
 
+## On Limiting Scope of Edits
+
+- When you edit code, only the edit the portions that you were asked to edit. Do not assume that
+  other related features should be edited before you are explicitly instructed to do so.
+
 ## Versions
 
 When writing code that involves 3rd party libraries, always check the version we are using in
