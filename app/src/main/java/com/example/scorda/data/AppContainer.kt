@@ -8,6 +8,7 @@ import com.example.scorda.data.repository.GenreRepository
 import com.example.scorda.data.repository.InstrumentRepository
 import com.example.scorda.data.repository.ScoreRepository
 import com.example.scorda.data.repository.SetlistRepository
+import com.example.scorda.data.repository.TagRepository
 import com.example.scorda.logic.FileImporter
 
 /**
@@ -19,6 +20,7 @@ interface AppContainer {
     val genreRepository: GenreRepository
     val setlistRepository: SetlistRepository
     val instrumentRepository: InstrumentRepository
+    val tagRepository: TagRepository
     val settingsRepository: SettingsRepository
 
 }
@@ -51,6 +53,10 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val instrumentRepository: InstrumentRepository by lazy {
         InstrumentRepository(database)
+    }
+
+    override val tagRepository: TagRepository by lazy {
+        TagRepository(database)
     }
 
     override val settingsRepository: SettingsRepository by lazy {

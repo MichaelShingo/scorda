@@ -6,6 +6,7 @@ import com.example.scorda.data.database.AppDatabase
 import com.example.scorda.data.database.entities.Score
 import com.example.scorda.data.database.entities.ScoreGenreCrossRef
 import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
+import com.example.scorda.data.database.entities.ScoreTagCrossRef
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.logic.FileImporter
 import kotlinx.coroutines.flow.Flow
@@ -86,6 +87,18 @@ class ScoreRepository(
     suspend fun disconnectGenre(scoreId: Long, genreId: Long) {
         scoreDao.deleteScoreGenreCrossRef(
             ScoreGenreCrossRef(scoreId, genreId)
+        )
+    }
+
+    suspend fun connectTag(scoreId: Long, tagId: Long) {
+        scoreDao.insertScoreTagCrossRef(
+            ScoreTagCrossRef(scoreId, tagId)
+        )
+    }
+
+    suspend fun disconnectTag(scoreId: Long, tagId: Long) {
+        scoreDao.deleteScoreTagCrossRef(
+            ScoreTagCrossRef(scoreId, tagId)
         )
     }
 }

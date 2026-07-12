@@ -30,6 +30,7 @@ import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.ui.components.molecules.composerDropdown.ComposerDropdown
 import com.example.scorda.ui.components.molecules.genreMultiSelect.GenreMultiSelect
 import com.example.scorda.ui.components.molecules.instrumentMultiSelect.InstrumentMultiSelect
+import com.example.scorda.ui.components.molecules.tagMultiSelect.TagMultiSelect
 import com.example.scorda.ui.viewmodel.ScoreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -101,6 +102,13 @@ fun ScoreDetailDialog(
                             currentGenres = scoreWithDetails.genres,
                             onSelect = { scoreViewModel.connectGenre(score, it) },
                             onRemove = { scoreViewModel.disconnectGenre(score, it) },
+                        )
+                    }
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        TagMultiSelect(
+                            currentTags = scoreWithDetails.tags,
+                            onSelect = { scoreViewModel.connectTag(score, it) },
+                            onRemove = { scoreViewModel.disconnectTag(score, it) },
                         )
                     }
 

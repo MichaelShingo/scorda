@@ -12,6 +12,7 @@ import com.example.scorda.data.database.entities.Composer
 import com.example.scorda.data.database.entities.Genre
 import com.example.scorda.data.database.entities.Instrument
 import com.example.scorda.data.database.entities.Score
+import com.example.scorda.data.database.entities.Tag
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.data.repository.ScoreRepository
 import kotlinx.coroutines.Dispatchers
@@ -96,6 +97,24 @@ class ScoreViewModel(
             repository.disconnectGenre(
                 scoreId = score.id,
                 genreId = genre.id,
+            )
+        }
+    }
+
+    fun connectTag(score: Score, tag: Tag) {
+        viewModelScope.launch {
+            repository.connectTag(
+                scoreId = score.id,
+                tagId = tag.id,
+            )
+        }
+    }
+
+    fun disconnectTag(score: Score, tag: Tag) {
+        viewModelScope.launch {
+            repository.disconnectTag(
+                scoreId = score.id,
+                tagId = tag.id,
             )
         }
     }

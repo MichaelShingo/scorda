@@ -9,6 +9,8 @@ import com.example.scorda.data.database.entities.Instrument
 import com.example.scorda.data.database.entities.Score
 import com.example.scorda.data.database.entities.ScoreGenreCrossRef
 import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
+import com.example.scorda.data.database.entities.ScoreTagCrossRef
+import com.example.scorda.data.database.entities.Tag
 
 data class ScoreWithDetails(
     @Embedded val score: Score,
@@ -33,6 +35,17 @@ data class ScoreWithDetails(
         )
     )
     val instruments: List<Instrument>,
+
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "id",
+        associateBy = Junction(
+            value = ScoreTagCrossRef::class,
+            parentColumn = "scoreId",
+            entityColumn = "tagId",
+        )
+    )
+    val tags: List<Tag>,
 
     @Relation(
         parentColumn = "composerId", // column in Score
