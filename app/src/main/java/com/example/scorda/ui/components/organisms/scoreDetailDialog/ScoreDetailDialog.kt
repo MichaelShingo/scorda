@@ -20,6 +20,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -41,6 +45,8 @@ fun ScoreDetailDialog(
 ) {
     val score = scoreWithDetails.score
     val scoreViewModel: ScoreViewModel = viewModel(factory = ScoreViewModel.Factory)
+
+    var editedTitle by remember(score.id) { mutableStateOf(score.title) }
 
     BasicAlertDialog(
         onDismissRequest = onDismissRequest,
@@ -73,8 +79,11 @@ fun ScoreDetailDialog(
                             OutlinedTextField(
                                 label = { Text(stringResource(R.string.score_title)) },
                                 modifier = Modifier.fillMaxWidth(),
-                                value = score.title,
-                                onValueChange = { },
+                                value = editedTitle,
+                                onValueChange = {
+                                    editedTitle = it
+                                    scoreViewModel.updateScore(score.copy(title = it))
+                                },
                                 singleLine = true,
                             )
 

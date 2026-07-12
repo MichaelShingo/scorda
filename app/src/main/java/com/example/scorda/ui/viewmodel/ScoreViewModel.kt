@@ -16,6 +16,8 @@ import com.example.scorda.data.database.entities.Tag
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.data.repository.ScoreRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -38,10 +40,12 @@ class ScoreViewModel(
         }
     }
 
+    private var updateJob: Job? = null
     fun updateScore(score: Score) {
-        viewModelScope.launch {
-            val updatedScore = score.copy()
-            repository.updateScore(updatedScore)
+        updateJob?.cancel()
+        updateJob = viewModelScope.launch {
+            delay(500)
+            repository.updateScore(score)
         }
     }
 
