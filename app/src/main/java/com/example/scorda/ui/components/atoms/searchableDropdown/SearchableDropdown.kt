@@ -1,4 +1,4 @@
-package com.example.scorda.ui.components.atoms.searchableDropdownMenu
+package com.example.scorda.ui.components.atoms.searchableDropdown
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -25,7 +25,7 @@ import com.example.scorda.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun <T> SearchableDropdownMenu(
+fun <T> SearchableDropdown(
     label: String,
     items: List<T>,
     convertItemToText: (item: T) -> String,

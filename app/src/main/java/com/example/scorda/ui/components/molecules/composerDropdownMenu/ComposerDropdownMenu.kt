@@ -9,7 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.R
 import com.example.scorda.data.database.entities.Composer
-import com.example.scorda.ui.components.atoms.searchableDropdownMenu.SearchableDropdownMenu
+import com.example.scorda.ui.components.atoms.searchableDropdown.SearchableDropdown
 import com.example.scorda.util.getCommaSeparatedFullName
 
 @Composable
@@ -32,7 +32,7 @@ fun ComposerDropdownMenu(
         }
     }
 
-    SearchableDropdownMenu<Composer>(
+    SearchableDropdown<Composer>(
         label = stringResource(R.string.score_composer),
         items = uiState.composers,
         convertItemToText = { getCommaSeparatedFullName(it) },
