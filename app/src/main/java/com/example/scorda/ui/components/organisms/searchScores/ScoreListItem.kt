@@ -5,15 +5,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.scorda.R
 import com.example.scorda.data.database.relations.ScoreWithDetails
+import com.example.scorda.ui.components.organisms.scoreDetailDialog.ScoreDetailDialog
 
 @Composable
 fun ScoreListItem(
@@ -21,11 +27,8 @@ fun ScoreListItem(
     modifier: Modifier,
 ) {
     val score = scoreWithDetails.score
+    var isOpenScoreDetailDialog by remember { mutableStateOf<Boolean>(false) }
 
-    fun onClick() {
-        // set open score
-    }
-    
     ListItem(
         headlineContent = {
             Text(
@@ -53,12 +56,24 @@ fun ScoreListItem(
             )
         },
         trailingContent = {
-            Icon(
-                imageVector = Icons.Rounded.Info,
-                contentDescription = stringResource(R.string.search_scores_info),
-                tint = MaterialTheme.colorScheme.outline,
-            )
+            IconButton(
+                onClick = { isOpenScoreDetailDialog = true }
+
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Info,
+                    contentDescription = stringResource(R.string.search_scores_info),
+                    tint = MaterialTheme.colorScheme.outline,
+                )
+            }
+
         },
-        modifier = modifier.clickable { onClick() }
+        modifier = modifier.clickable { }
     )
+    if (isOpenScoreDetailDialog) {
+        ScoreDetailDialog(
+            scoreWithDetails = scoreWithDetails,
+            onDismissRequest = { isOpenScoreDetailDialog = false },
+        )
+    }
 }

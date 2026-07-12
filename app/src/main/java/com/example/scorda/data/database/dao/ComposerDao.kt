@@ -18,12 +18,14 @@ interface ComposerDao {
     @Query("SELECT * FROM composers WHERE id = :id")
     fun getComposerById(id: Long): Flow<Composer?>
 
-    @Query("""
-        SELECT * FROM composers 
-        WHERE firstName LIKE '%' || :query || '%' 
-        OR lastName LIKE '%' || :query || '%' 
-        ORDER BY lastName ASC
-    """)
+    @Query(
+        """
+    SELECT * FROM composers 
+    WHERE (IFNULL(firstName, '') || ' ' || lastName) LIKE '%' || :query || '%' 
+       OR (lastName || ' ' || IFNULL(firstName, '')) LIKE '%' || :query || '%'
+    ORDER BY lastName ASC
+"""
+    )
     fun searchComposers(query: String): Flow<List<Composer>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
