@@ -1,0 +1,24 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!--
+      Original viewport: ~26.58 x 107.58
+      Scaling to fit roughly 20dp height: 20 / 107.58 ≈ 0.185
+      Scaled width: 26.58 * 0.185 ≈ 4.92
+
+      Centering:
+      Translate X: (24 - 4.92) / 2 ≈ 9.54
+      Translate Y: (24 - 20) / 2 ≈ 2.0
+    -->
+    <group
+        android:scaleX="0.185"
+        android:scaleY="0.185"
+        android:translateX="9.54"
+        android:translateY="2.0">
+        <path
+            android:fillColor="#FF000000"
+            android:pathData="M 26.578125,106.17187 L 22.640625,107.57812 L 22.640625,75.375001 L 0,85.218751 L 0,1.6875 L 3.796875,0.0 L 3.796875,32.765625 L 26.578125,22.359375 L 26.578125,106.17187 z M 22.640625,61.171871 L 22.640625,38.671875 L 3.796875,46.96875 L 3.796875,69.468751 L 22.640625,61.171871 z" />
+    </group>
+</vector>

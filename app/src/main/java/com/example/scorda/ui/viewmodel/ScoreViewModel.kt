@@ -9,10 +9,15 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.scorda.ScordaApplication
 import com.example.scorda.data.database.entities.Composer
+import com.example.scorda.data.database.entities.Genre
+import com.example.scorda.data.database.entities.Instrument
 import com.example.scorda.data.database.entities.Score
+import com.example.scorda.data.database.entities.Tag
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.data.repository.ScoreRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -35,10 +40,12 @@ class ScoreViewModel(
         }
     }
 
+    private var updateJob: Job? = null
     fun updateScore(score: Score) {
-        viewModelScope.launch {
-            val updatedScore = score.copy()
-            repository.updateScore(updatedScore)
+        updateJob?.cancel()
+        updateJob = viewModelScope.launch {
+            delay(500)
+            repository.updateScore(score)
         }
     }
 
@@ -62,6 +69,59 @@ class ScoreViewModel(
         }
     }
 
+    fun connectInstrument(score: Score, instrument: Instrument) {
+        viewModelScope.launch {
+            repository.connectInstrument(
+                scoreId = score.id,
+                instrumentId = instrument.id
+            )
+        }
+    }
+
+    fun disconnectInstrument(score: Score, instrument: Instrument) {
+        viewModelScope.launch {
+            repository.disconnectInstrument(
+                scoreId = score.id,
+                instrumentId = instrument.id
+            )
+        }
+    }
+
+    fun connectGenre(score: Score, genre: Genre) {
+        viewModelScope.launch {
+            repository.connectGenre(
+                scoreId = score.id,
+                genreId = genre.id,
+            )
+        }
+    }
+
+    fun disconnectGenre(score: Score, genre: Genre) {
+        viewModelScope.launch {
+            repository.disconnectGenre(
+                scoreId = score.id,
+                genreId = genre.id,
+            )
+        }
+    }
+
+    fun connectTag(score: Score, tag: Tag) {
+        viewModelScope.launch {
+            repository.connectTag(
+                scoreId = score.id,
+                tagId = tag.id,
+            )
+        }
+    }
+
+    fun disconnectTag(score: Score, tag: Tag) {
+        viewModelScope.launch {
+            repository.disconnectTag(
+                scoreId = score.id,
+                tagId = tag.id,
+            )
+        }
+    }
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

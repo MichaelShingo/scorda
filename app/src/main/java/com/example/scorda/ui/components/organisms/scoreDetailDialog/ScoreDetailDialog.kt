@@ -1,5 +1,6 @@
 package com.example.scorda.ui.components.organisms.scoreDetailDialog
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -26,7 +31,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.R
 import com.example.scorda.data.database.relations.ScoreWithDetails
-import com.example.scorda.ui.components.molecules.ComposerDropdownMenu
+import com.example.scorda.ui.components.molecules.composerDropdown.ComposerDropdown
+import com.example.scorda.ui.components.molecules.genreMultiSelect.GenreMultiSelect
+import com.example.scorda.ui.components.molecules.instrumentMultiSelect.InstrumentMultiSelect
+import com.example.scorda.ui.components.molecules.keySignatureSelect.KeySignatureSelect
+import com.example.scorda.ui.components.molecules.tagMultiSelect.TagMultiSelect
 import com.example.scorda.ui.viewmodel.ScoreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,7 +47,7 @@ fun ScoreDetailDialog(
     val score = scoreWithDetails.score
     val scoreViewModel: ScoreViewModel = viewModel(factory = ScoreViewModel.Factory)
 
-
+    var editedTitle by remember(score.id) { mutableStateOf(score.title) }
 
     BasicAlertDialog(
         onDismissRequest = onDismissRequest,
@@ -51,7 +60,10 @@ fun ScoreDetailDialog(
                 shape = MaterialTheme.shapes.extraLarge,
                 tonalElevation = AlertDialogDefaults.TonalElevation
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                     Box(modifier = Modifier.fillMaxWidth()) {
                         IconButton(
                             onClick = onDismissRequest,
@@ -68,21 +80,51 @@ fun ScoreDetailDialog(
                             OutlinedTextField(
                                 label = { Text(stringResource(R.string.score_title)) },
                                 modifier = Modifier.fillMaxWidth(),
-                                value = score.title,
-                                onValueChange = { },
+                                value = editedTitle,
+                                onValueChange = {
+                                    editedTitle = it
+                                    scoreViewModel.updateScore(score.copy(title = it))
+                                },
                                 singleLine = true,
                             )
 
                         }
                     }
                     Box(modifier = Modifier.fillMaxWidth()) {
-                        ComposerDropdownMenu(
+                        ComposerDropdown(
                             currentComposer = scoreWithDetails.composer,
                             onClear = {
                                 scoreViewModel.clearComposer(score)
                             },
                             onSelect = { scoreViewModel.connectComposer(score, it) },
                             key = score.id
+                        )
+                    }
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        InstrumentMultiSelect(
+                            currentInstruments = scoreWithDetails.instruments,
+                            onSelect = { scoreViewModel.connectInstrument(score, it) },
+                            onRemove = { scoreViewModel.disconnectInstrument(score, it) },
+                        )
+                    }
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        GenreMultiSelect(
+                            currentGenres = scoreWithDetails.genres,
+                            onSelect = { scoreViewModel.connectGenre(score, it) },
+                            onRemove = { scoreViewModel.disconnectGenre(score, it) },
+                        )
+                    }
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        TagMultiSelect(
+                            currentTags = scoreWithDetails.tags,
+                            onSelect = { scoreViewModel.connectTag(score, it) },
+                            onRemove = { scoreViewModel.disconnectTag(score, it) },
+                        )
+                    }
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        KeySignatureSelect(
+                            currentKeySignature = score.keySignature,
+                            onChange = { scoreViewModel.updateScore(score.copy(keySignature = it)) }
                         )
                     }
 

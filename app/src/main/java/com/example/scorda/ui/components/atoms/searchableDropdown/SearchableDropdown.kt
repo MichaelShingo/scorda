@@ -1,4 +1,4 @@
-package com.example.scorda.ui.components.atoms.composerDropdownMenu
+package com.example.scorda.ui.components.atoms.searchableDropdown
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -25,7 +25,7 @@ import com.example.scorda.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun <T> SearchableDropdownMenu(
+fun <T> SearchableDropdown(
     label: String,
     items: List<T>,
     convertItemToText: (item: T) -> String,
@@ -34,8 +34,9 @@ fun <T> SearchableDropdownMenu(
     onSelect: (item: T) -> Unit,
     modifier: Modifier = Modifier,
     onInsert: () -> Unit, // inserts based query in ViewModel
-    valueToAdd: String?,
-    onClear: () -> Unit
+    valueToAdd: String? = null,
+    onClear: () -> Unit,
+    closeOnSelectItem: Boolean? = true
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -89,7 +90,7 @@ fun <T> SearchableDropdownMenu(
                     text = { Text(text) },
                     onClick = {
                         onSelect(item)
-                        expanded = false
+                        expanded = closeOnSelectItem != true
                     }
                 )
             }
@@ -97,7 +98,7 @@ fun <T> SearchableDropdownMenu(
                 text = { Text("""${stringResource(R.string.score_add_dropdown_field)} "$addDisplayText"""") },
                 onClick = {
                     onInsert()
-                    expanded = false
+                    expanded = closeOnSelectItem != true
                 },
             )
         }

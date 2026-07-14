@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- The original path is ~6x19. We translate it to center it within the 24x24 viewport. -->
+    <!-- Offset X: -84.196 (SVG translate) + 9 (Centering: 12 - 6/2) = -75.196 -->
+    <!-- Offset Y: -436.068 (SVG translate) + 0.765 (SVG translate) + 2.5 (Centering: 12 - 19/2) = -432.803 -->
+    <group
+        android:translateX="-75.196"
+        android:translateY="-432.803">
+        <path
+            android:fillColor="#FF000000"
+            android:pathData="M 86.102,447.457 L 86.102,442.753 L 88.102,442.201 L 88.102,446.881 L 86.102,447.457 z M 90.040,446.319 L 88.665,446.713 L 88.665,442.033 L 90.040,441.649 L 90.040,439.705 L 88.665,440.089 L 88.665,435.30723 L 88.102,435.30723 L 88.102,440.23400 L 86.102,440.80900 L 86.102,436.15923 L 85.571,436.15923 L 85.571,440.98600 L 84.196,441.37100 L 84.196,443.31900 L 85.571,442.93500 L 85.571,447.60600 L 84.196,447.98900 L 84.196,449.92900 L 85.571,449.54500 L 85.571,454.29977 L 86.102,454.29977 L 86.102,449.37500 L 88.102,448.82500 L 88.102,453.45077 L 88.665,453.45077 L 88.665,448.65100 L 90.040,448.26600 L 90.040,446.31900 z" />
+    </group>
+</vector>

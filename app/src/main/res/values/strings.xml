@@ -20,4 +20,11 @@
     <string name="score_composer">Composer</string>
     <string name="score_add_dropdown_field">Add</string>
     <string name="score_no_composers_found">No composers found.</string>
+    <string name="score_composer_field_label">Composer</string>
+    <string name="score_instrument_field_label">Instrument</string>
+    <string name="remove_instrument">Remove instrument</string>
+    <string name="remove_item">Remove item</string>
+    <string name="score_instruments">Instruments</string>
+    <string name="score_genres">Genres</string>
+    <string name="score_tags">Tags</string>
 </resources>

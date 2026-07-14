@@ -11,6 +11,7 @@ import com.example.scorda.data.database.entities.Score
 import com.example.scorda.data.database.entities.ScoreGenreCrossRef
 import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
 import com.example.scorda.data.database.entities.ScoreSetlistCrossRef
+import com.example.scorda.data.database.entities.ScoreTagCrossRef
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import kotlinx.coroutines.flow.Flow
 
@@ -44,11 +45,25 @@ interface ScoreDao {
     suspend fun delete(score: Score)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertScoreGenreCrossRef(crossRef: ScoreGenreCrossRef)
+    suspend fun insertScoreInstrumentCrossRef(crossRef: ScoreInstrumentCrossRef)
+
+    @Delete
+    suspend fun deleteScoreInstrumentCrossRef(crossRef: ScoreInstrumentCrossRef)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertScoreInstrumentCrossRef(crossRef: ScoreInstrumentCrossRef)
+    suspend fun insertScoreGenreCrossRef(crossRef: ScoreGenreCrossRef)
+
+    @Delete
+    suspend fun deleteScoreGenreCrossRef(crossRef: ScoreGenreCrossRef)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertScoreSetlistCrossRef(crossRef: ScoreSetlistCrossRef)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertScoreTagCrossRef(crossRef: ScoreTagCrossRef)
+
+    @Delete
+    suspend fun deleteScoreTagCrossRef(crossRef: ScoreTagCrossRef)
+
+
 }
