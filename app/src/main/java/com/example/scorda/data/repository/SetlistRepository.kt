@@ -1,6 +1,7 @@
 package com.example.scorda.data.repository
 
 import com.example.scorda.data.database.AppDatabase
+import com.example.scorda.data.database.entities.ScoreSetlistCrossRef
 import com.example.scorda.data.database.entities.Setlist
 import com.example.scorda.data.database.relations.SetlistWithDetails
 import kotlinx.coroutines.flow.Flow
@@ -8,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 class SetlistRepository(
     private val db: AppDatabase
 ) {
-    val setlistDao = db.setlistDao()
+    private val setlistDao = db.setlistDao()
 
     fun observeSetlists(): Flow<List<Setlist>> = setlistDao.getAllSetlists()
 
@@ -25,5 +26,11 @@ class SetlistRepository(
 
     suspend fun deleteSetlist(setlist: Setlist) = setlistDao.delete(setlist)
 
+    suspend fun addScoreToSetlist(scoreId: Long, setlistId: Long) {
+        setlistDao.insertScoreSetlistCrossRef(ScoreSetlistCrossRef(scoreId, setlistId))
+    }
 
+    suspend fun removeScoreFromSetlist(scoreId: Long, setlistId: Long) {
+        setlistDao.deleteScoreSetlistCrossRef(ScoreSetlistCrossRef(scoreId, setlistId))
+    }
 }

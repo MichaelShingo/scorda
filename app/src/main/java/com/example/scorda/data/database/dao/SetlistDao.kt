@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import com.example.scorda.data.database.entities.ScoreSetlistCrossRef
 import com.example.scorda.data.database.entities.Setlist
 import com.example.scorda.data.database.relations.SetlistWithDetails
 import kotlinx.coroutines.flow.Flow
@@ -32,4 +33,10 @@ interface SetlistDao {
 
     @Delete
     suspend fun delete(setlist: Setlist)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertScoreSetlistCrossRef(crossRef: ScoreSetlistCrossRef)
+
+    @Delete
+    suspend fun deleteScoreSetlistCrossRef(crossRef: ScoreSetlistCrossRef)
 }

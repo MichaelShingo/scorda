@@ -13,6 +13,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.ui.components.organisms.navbar.musictools.MusicTools
+import com.example.scorda.ui.components.organisms.setlists.SetlistScreen
 import com.example.scorda.ui.viewmodel.ScoreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,11 +37,12 @@ fun Navbar(
 //                )
 //            }
             AddScoreButton(viewModel = viewModel)
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Rounded.FormatListNumbered,
-                    contentDescription = "Search Scores"
-                )
+            CustomAnchoredPopup(
+                icon = Icons.Rounded.FormatListNumbered,
+                contentDescription = "Setlists",
+                size = CustomAnchoredPopupSize.Large
+            ) {
+                SetlistScreen()
             }
 
             IconButton(onClick = {}) {

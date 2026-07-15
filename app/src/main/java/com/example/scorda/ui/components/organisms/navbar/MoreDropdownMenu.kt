@@ -100,11 +100,10 @@ fun MoreDropdownMenu() {
             )
             CustomAnchoredPopup(
                 icon = Icons.Rounded.DashboardCustomize,
-                contentDescription = stringResource(R.string.nav_customize)
-
+                contentDescription = stringResource(R.string.nav_customize),
+                size = CustomAnchoredPopupSize.Large
             ) {
                 MusicTools()
-
             }
             DropdownMenuItem(
                 text = {
