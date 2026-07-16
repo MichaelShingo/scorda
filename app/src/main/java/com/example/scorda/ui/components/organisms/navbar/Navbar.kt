@@ -19,30 +19,25 @@ import com.example.scorda.ui.viewmodel.ScoreViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Navbar(
-    onSearchClick: () -> Unit
+    onSearchClick: () -> Unit,
 ) {
     val viewModel: ScoreViewModel = viewModel(factory = ScoreViewModel.Factory)
 
     TopAppBar(
         title = {
-            Text(
-                "Waltz for Stark and Frieren"
-            )
+            Text("Waltz for Stark and Frieren")
         },
         actions = {
-//            IconButton(onClick = {}) {
-//                Icon(
-//                    imageVector = Icons.Rounded.MusicNote,
-//                    contentDescription = "Browse all scores"
-//                )
-//            }
             AddScoreButton(viewModel = viewModel)
+
             CustomAnchoredPopup(
                 icon = Icons.Rounded.FormatListNumbered,
                 contentDescription = "Setlists",
-                size = CustomAnchoredPopupSize.Large
-            ) {
-                SetlistScreen()
+                size = CustomAnchoredPopupSize.Large,
+            ) { onDismiss ->
+                SetlistScreen(
+                    onClose = onDismiss
+                )
             }
 
             IconButton(onClick = {}) {

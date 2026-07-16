@@ -63,7 +63,7 @@ fun CustomAnchoredPopup(
     contentDescription: String,
     modifier: Modifier = Modifier,
     size: CustomAnchoredPopupSize = CustomAnchoredPopupSize.Medium,
-    content: @Composable () -> Unit,
+    content: @Composable (() -> Unit) -> Unit,
 ) {
     var isPopupVisible by remember { mutableStateOf(false) }
     val density = LocalDensity.current
@@ -110,7 +110,7 @@ fun CustomAnchoredPopup(
 
     Box(modifier = modifier) {
         IconButton(
-            onClick = { isPopupVisible = true },
+            onClick = { isPopupVisible = !isPopupVisible },
             colors = IconButtonDefaults.iconButtonColors(
                 contentColor = if (isPopupVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 containerColor = if (isPopupVisible) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
@@ -149,7 +149,7 @@ fun CustomAnchoredPopup(
                         shadowElevation = 12.dp,
                         color = MaterialTheme.colorScheme.surfaceContainer,
                     ) {
-                        content()
+                        content { isPopupVisible = false }
                     }
                 }
             }

@@ -8,18 +8,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.rememberNavController
 import com.example.scorda.data.SettingsRepository
 import com.example.scorda.ui.components.organisms.navbar.Navbar
 import com.example.scorda.ui.components.organisms.searchScores.SearchScores
+import com.example.scorda.ui.navigation.LocalNavController
+import com.example.scorda.ui.navigation.ScordaNavHost
 import com.example.scorda.ui.theme.LocalThemeViewModel
 import com.example.scorda.ui.theme.ScordaTheme
 import com.example.scorda.ui.theme.ThemeViewModel
@@ -37,23 +38,25 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val settingsRepository = SettingsRepository(applicationContext)
-        val viewModel = ThemeViewModel(settingsRepository)
-
-
+        val themeViewModel = ThemeViewModel(settingsRepository)
 
         setContent {
+            val navController = rememberNavController()
             val isSearchActive by searchViewModel.isSearchActive.collectAsStateWithLifecycle()
+            
             LaunchedEffect(isSearchActive) {
                 Log.d("SearchDebug", "isSearchActive changed to: $isSearchActive")
             }
+
             CompositionLocalProvider(
-                LocalThemeViewModel provides viewModel,
-                LocalSearchViewModel provides searchViewModel
+                LocalThemeViewModel provides themeViewModel,
+                LocalSearchViewModel provides searchViewModel,
+                LocalNavController provides navController
             ) {
-                val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
+                val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
 
                 ScordaTheme(darkTheme = isDarkMode) {
-                    Box(modifier = Modifier) {
+                    Box(modifier = Modifier.fillMaxSize()) {
                         Scaffold(
                             modifier = Modifier.fillMaxSize(),
                             topBar = {
@@ -62,33 +65,18 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                         ) { innerPadding ->
+                            ScordaNavHost(
+                                navController = navController,
+                                modifier = Modifier.padding(innerPadding)
+                            )
                         }
 
                         if (isSearchActive) {
-                            val searchQuery by searchViewModel.searchQuery.collectAsStateWithLifecycle()
-                            val searchResults by searchViewModel.searchResults.collectAsStateWithLifecycle()
-
                             SearchScores()
                         }
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ScordaTheme {
-        Greeting("Android")
     }
 }
