@@ -19,6 +19,7 @@ pdfbox = "2.0.27.0"
 androidx-pdf = "1.0.0-alpha19"
 fragment = "1.8.5"
 
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -44,6 +45,8 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 androidx-pdf-viewer = { group = "androidx.pdf", name = "pdf-viewer", version.ref = "androidx-pdf" }
+androidx-pdf-compose = { group = "androidx.pdf", name = "pdf-compose", version.ref = "androidx-pdf" }
+androidx-pdf-core = { group = "androidx.pdf", name = "pdf-core", version.ref = "androidx-pdf" }
 androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragment" }
 androidx-pdf-viewer-fragment = { module = "androidx.pdf:pdf-viewer-fragment", version.ref = "androidx-pdf" }
 

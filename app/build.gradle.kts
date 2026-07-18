@@ -7,16 +7,12 @@ plugins {
 
 android {
     namespace = "com.example.scorda"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.scorda"
         minSdk = 28
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 
@@ -78,8 +74,11 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.datastore.preferences)
+    
+    // PDF Viewer
     implementation(libs.androidx.pdf.viewer)
-    implementation(libs.androidx.fragment.ktx)
-    implementation(libs.androidx.pdf.viewer)
+    implementation(libs.androidx.pdf.compose)
+    implementation(libs.androidx.pdf.core)
     implementation(libs.androidx.pdf.viewer.fragment)
+    implementation(libs.androidx.fragment.ktx)
 }
