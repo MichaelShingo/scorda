@@ -64,61 +64,64 @@ fun ScoreView() {
     BoxWithConstraints(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val doc = pdfDocument
         if (selectedScore != null && doc != null) {
-            val pagerState = rememberPagerState(pageCount = { doc.pageCount })
+            // Key the entire viewer on the score ID to reset PagerState and caches when switching scores
+            key(selectedScore.score.id) {
+                val pagerState = rememberPagerState(pageCount = { doc.pageCount })
 
-            // Get screen dimensions in pixels for zoom calculation
-            val density = LocalDensity.current
-            val screenWidthPx = with(density) { maxWidth.toPx() }
-            val screenHeightPx = with(density) { maxHeight.toPx() }
+                // Get screen dimensions in pixels for zoom calculation
+                val density = LocalDensity.current
+                val screenWidthPx = with(density) { maxWidth.toPx() }
+                val screenHeightPx = with(density) { maxHeight.toPx() }
 
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                beyondViewportPageCount = 1,
-                pageSpacing = 0.dp
-            ) { pageIndex ->
-                key(pageIndex) {
-                    val singlePageDoc = remember(doc, pageIndex) {
-                        SinglePagePdfDocument(doc, pageIndex)
-                    }
-                    val pdfViewerState = remember { PdfViewerState() }
-                    var isLoaded by remember { mutableStateOf(false) }
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                    beyondViewportPageCount = 1,
+                    pageSpacing = 0.dp
+                ) { pageIndex ->
+                    key(pageIndex) {
+                        val singlePageDoc = remember(doc, pageIndex) {
+                            SinglePagePdfDocument(doc, pageIndex)
+                        }
+                        val pdfViewerState = remember { PdfViewerState() }
+                        var isLoaded by remember { mutableStateOf(false) }
 
-                    // Fetch page info to calculate the perfect "Fit" zoom
-                    val pageInfo by produceState<PdfDocument.PageInfo?>(null, singlePageDoc) {
-                        value = singlePageDoc.getPageInfo(0)
-                    }
+                        // Fetch page info to calculate the perfect "Fit" zoom
+                        val pageInfo by produceState<PdfDocument.PageInfo?>(null, singlePageDoc) {
+                            value = singlePageDoc.getPageInfo(0)
+                        }
 
-                    // Calculate zoom factor to fit the page to the screen width/height
-                    val fitZoom = remember(pageInfo, screenWidthPx, screenHeightPx) {
-                        val info = pageInfo ?: return@remember 1.0f
-                        val zoomW = screenWidthPx / info.width
-                        val zoomH = screenHeightPx / info.height
-                        // Use the smaller of the two to ensure the entire page fits on screen
-                        minOf(zoomW, zoomH)
-                    }
+                        // Calculate zoom factor to fit the page to the screen width/height
+                        val fitZoom = remember(pageInfo, screenWidthPx, screenHeightPx) {
+                            val info = pageInfo ?: return@remember 1.0f
+                            val zoomW = screenWidthPx / info.width
+                            val zoomH = screenHeightPx / info.height
+                            // Use the smaller of the two to ensure the entire page fits on screen
+                            minOf(zoomW, zoomH)
+                        }
 
-                    // Apply the "Fit" zoom when the page is selected and loaded
-                    val isSelected = pagerState.currentPage == pageIndex
-                    LaunchedEffect(isSelected, isLoaded, fitZoom) {
-                        if (isSelected && isLoaded && fitZoom > 0f) {
-                            pdfViewerState.zoomScroll {
-                                zoomTo(fitZoom)
+                        // Apply the "Fit" zoom when the page is selected and loaded
+                        val isSelected = pagerState.currentPage == pageIndex
+                        LaunchedEffect(isSelected, isLoaded, fitZoom) {
+                            if (isSelected && isLoaded && fitZoom > 0f) {
+                                pdfViewerState.zoomScroll {
+                                    zoomTo(fitZoom)
+                                }
                             }
                         }
-                    }
 
-                    PdfViewer(
-                        modifier = Modifier.fillMaxSize(),
-                        pdfDocument = singlePageDoc,
-                        state = pdfViewerState,
-                        // Clamping during init avoids the math glitch
-                        minZoom = if (isLoaded) 0.1f else fitZoom,
-                        maxZoom = if (isLoaded) 10.0f else fitZoom,
-                        onFirstContentLoad = {
-                            isLoaded = true
-                        }
-                    )
+                        PdfViewer(
+                            modifier = Modifier.fillMaxSize(),
+                            pdfDocument = singlePageDoc,
+                            state = pdfViewerState,
+                            // Clamping during init avoids the math glitch
+                            minZoom = if (isLoaded) 0.1f else fitZoom,
+                            maxZoom = if (isLoaded) 10.0f else fitZoom,
+                            onFirstContentLoad = {
+                                isLoaded = true
+                            }
+                        )
+                    }
                 }
             }
         } else if (selectedScore != null) {
