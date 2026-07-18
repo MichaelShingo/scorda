@@ -4,19 +4,24 @@ import android.graphics.PointF
 import android.graphics.Rect
 import android.net.Uri
 import android.util.SparseArray
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.pdf.PdfDocument
@@ -29,6 +34,7 @@ import androidx.pdf.content.PageSelection
 import androidx.pdf.models.FormWidgetInfo
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
 
 @Composable
@@ -40,7 +46,6 @@ fun ScoreView() {
     val context = LocalContext.current
     val pdfLoader = remember { SandboxedPdfLoader(context) }
 
-    // Load the master document and ensure it's closed when disposed
     val pdfDocument by produceState<PdfDocument?>(initialValue = null, selectedScore) {
         val path = selectedScore?.score?.filePath
         if (path != null) {
@@ -50,18 +55,21 @@ fun ScoreView() {
                 null
             }
             value = doc
-            awaitDispose {
-                doc?.close()
-            }
+            awaitDispose { doc?.close() }
         } else {
             value = null
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val doc = pdfDocument
         if (selectedScore != null && doc != null) {
             val pagerState = rememberPagerState(pageCount = { doc.pageCount })
+
+            // Get screen dimensions in pixels for zoom calculation
+            val density = LocalDensity.current
+            val screenWidthPx = with(density) { maxWidth.toPx() }
+            val screenHeightPx = with(density) { maxHeight.toPx() }
 
             HorizontalPager(
                 state = pagerState,
@@ -69,19 +77,49 @@ fun ScoreView() {
                 beyondViewportPageCount = 1,
                 pageSpacing = 0.dp
             ) { pageIndex ->
-                // Create a proxy that only shows this specific page
-                val singlePageDoc = remember(doc, pageIndex) {
-                    SinglePagePdfDocument(doc, pageIndex)
-                }
-                
-                // Each page needs its own viewer state for zoom/scroll
-                val pdfViewerState = remember { PdfViewerState() }
+                key(pageIndex) {
+                    val singlePageDoc = remember(doc, pageIndex) {
+                        SinglePagePdfDocument(doc, pageIndex)
+                    }
+                    val pdfViewerState = remember { PdfViewerState() }
+                    var isLoaded by remember { mutableStateOf(false) }
 
-                PdfViewer(
-                    modifier = Modifier.fillMaxSize(),
-                    pdfDocument = singlePageDoc,
-                    state = pdfViewerState
-                )
+                    // Fetch page info to calculate the perfect "Fit" zoom
+                    val pageInfo by produceState<PdfDocument.PageInfo?>(null, singlePageDoc) {
+                        value = singlePageDoc.getPageInfo(0)
+                    }
+
+                    // Calculate zoom factor to fit the page to the screen width/height
+                    val fitZoom = remember(pageInfo, screenWidthPx, screenHeightPx) {
+                        val info = pageInfo ?: return@remember 1.0f
+                        val zoomW = screenWidthPx / info.width
+                        val zoomH = screenHeightPx / info.height
+                        // Use the smaller of the two to ensure the entire page fits on screen
+                        minOf(zoomW, zoomH)
+                    }
+
+                    // Apply the "Fit" zoom when the page is selected and loaded
+                    val isSelected = pagerState.currentPage == pageIndex
+                    LaunchedEffect(isSelected, isLoaded, fitZoom) {
+                        if (isSelected && isLoaded && fitZoom > 0f) {
+                            pdfViewerState.zoomScroll {
+                                zoomTo(fitZoom)
+                            }
+                        }
+                    }
+
+                    PdfViewer(
+                        modifier = Modifier.fillMaxSize(),
+                        pdfDocument = singlePageDoc,
+                        state = pdfViewerState,
+                        // Clamping during init avoids the math glitch
+                        minZoom = if (isLoaded) 0.1f else fitZoom,
+                        maxZoom = if (isLoaded) 10.0f else fitZoom,
+                        onFirstContentLoad = {
+                            isLoaded = true
+                        }
+                    )
+                }
             }
         } else if (selectedScore != null) {
             CircularProgressIndicator()
@@ -93,12 +131,14 @@ fun ScoreView() {
 
 /**
  * A proxy implementation of [PdfDocument] that isolates a single page.
- * This prevents [PdfViewer] from scrolling vertically to other pages.
  */
 private class SinglePagePdfDocument(
     private val delegate: PdfDocument,
     private val originalPageIndex: Int
 ) : PdfDocument by delegate {
+
+    private val listenerMap =
+        ConcurrentHashMap<PdfDocument.OnPdfContentInvalidatedListener, PdfDocument.OnPdfContentInvalidatedListener>()
 
     override val pageCount: Int = 1
 
@@ -118,20 +158,31 @@ private class SinglePagePdfDocument(
         return if (pageRange.contains(0)) listOf(getPageInfo(0)) else emptyList()
     }
 
-    override suspend fun getPageInfos(pageRange: IntRange, pageInfoFlags: Long): List<PdfDocument.PageInfo> {
+    override suspend fun getPageInfos(
+        pageRange: IntRange,
+        pageInfoFlags: Long
+    ): List<PdfDocument.PageInfo> {
         return if (pageRange.contains(0)) listOf(getPageInfo(0, pageInfoFlags)) else emptyList()
     }
 
-    override suspend fun searchDocument(query: String, pageRange: IntRange): SparseArray<List<PageMatchBounds>> {
+    override suspend fun searchDocument(
+        query: String,
+        pageRange: IntRange
+    ): SparseArray<List<PageMatchBounds>> {
         val result = SparseArray<List<PageMatchBounds>>()
         if (pageRange.contains(0)) {
-            val originalResult = delegate.searchDocument(query, originalPageIndex..originalPageIndex)
+            val originalResult =
+                delegate.searchDocument(query, originalPageIndex..originalPageIndex)
             originalResult.get(originalPageIndex)?.let { result.put(0, it) }
         }
         return result
     }
 
-    override suspend fun getSelectionBounds(pageNumber: Int, start: PointF, stop: PointF): PageSelection? {
+    override suspend fun getSelectionBounds(
+        pageNumber: Int,
+        start: PointF,
+        stop: PointF
+    ): PageSelection? {
         if (pageNumber != 0) throw IllegalArgumentException("Index out of bounds")
         return delegate.getSelectionBounds(originalPageIndex, start, stop)
     }
@@ -153,7 +204,10 @@ private class SinglePagePdfDocument(
 
     override fun getPageBitmapSource(pageNumber: Int): PdfDocument.BitmapSource {
         if (pageNumber != 0) throw IllegalArgumentException("Index out of bounds")
-        return delegate.getPageBitmapSource(originalPageIndex)
+        val originalSource = delegate.getPageBitmapSource(originalPageIndex)
+        return object : PdfDocument.BitmapSource by originalSource {
+            override val pageNumber: Int = 0
+        }
     }
 
     override suspend fun getFormWidgetInfos(pageNum: Int, types: Long): List<FormWidgetInfo> {
@@ -161,18 +215,28 @@ private class SinglePagePdfDocument(
         return delegate.getFormWidgetInfos(originalPageIndex, types)
     }
 
-    override fun addOnPdfContentInvalidatedListener(executor: Executor, listener: PdfDocument.OnPdfContentInvalidatedListener) {
-        delegate.addOnPdfContentInvalidatedListener(executor, object : PdfDocument.OnPdfContentInvalidatedListener {
+    override fun addOnPdfContentInvalidatedListener(
+        executor: Executor,
+        listener: PdfDocument.OnPdfContentInvalidatedListener
+    ) {
+        val wrapper = object : PdfDocument.OnPdfContentInvalidatedListener {
             override fun onPdfContentInvalidated(pageNumber: Int, dirtyAreas: List<Rect>) {
                 if (pageNumber == originalPageIndex) {
                     listener.onPdfContentInvalidated(0, dirtyAreas)
                 }
             }
-        })
+        }
+        listenerMap[listener] = wrapper
+        delegate.addOnPdfContentInvalidatedListener(executor, wrapper)
+    }
+
+    override fun removeOnPdfContentInvalidatedListener(listener: PdfDocument.OnPdfContentInvalidatedListener) {
+        listenerMap.remove(listener)?.let { wrapper ->
+            delegate.removeOnPdfContentInvalidatedListener(wrapper)
+        }
     }
 
     override fun close() {
-        // Do not close the shared delegate document here. 
-        // Closure is managed by the parent Composable's produceState.
+        // Shared delegate closure is managed by the parent
     }
 }
