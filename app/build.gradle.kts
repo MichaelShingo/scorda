@@ -1,3 +1,9 @@
+import com.android.build.gradle.ProguardFiles.getDefaultProguardFile
+import org.gradle.kotlin.dsl.android
+import org.gradle.kotlin.dsl.ksp
+import org.gradle.kotlin.dsl.libs
+import org.jetbrains.kotlin.gradle.internal.types.error.ErrorModuleDescriptor.platform
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -74,11 +80,12 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.datastore.preferences)
-    
+
     // PDF Viewer
     implementation(libs.androidx.pdf.viewer)
     implementation(libs.androidx.pdf.compose)
     implementation(libs.androidx.pdf.core)
     implementation(libs.androidx.pdf.viewer.fragment)
     implementation(libs.androidx.fragment.ktx)
+    implementation("androidx.compose.foundation:foundation:1.7.0")
 }
