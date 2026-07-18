@@ -1,9 +1,16 @@
 package com.example.scorda.ui.components.organisms.navbar
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -11,50 +18,157 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+
+sealed interface CustomAnchoredPopupSize {
+    val width: Dp
+    val maxHeight: Dp
+
+    data object Small : CustomAnchoredPopupSize {
+        override val width = 200.dp
+        override val maxHeight = 280.dp
+    }
+
+    data object Medium : CustomAnchoredPopupSize {
+        override val width = 280.dp
+        override val maxHeight = 340.dp
+    }
+
+    data object Large : CustomAnchoredPopupSize {
+        override val width = 360.dp
+        override val maxHeight = 480.dp
+    }
+
+    data class Custom(
+        override val width: Dp,
+        override val maxHeight: Dp
+    ) : CustomAnchoredPopupSize
+}
 
 @Composable
 fun CustomAnchoredPopup(
     icon: ImageVector,
     contentDescription: String,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    size: CustomAnchoredPopupSize = CustomAnchoredPopupSize.Medium,
+    content: @Composable (() -> Unit) -> Unit,
 ) {
     var isPopupVisible by remember { mutableStateOf(false) }
-    Box(modifier = modifier) {
-        IconButton(onClick = { isPopupVisible = true }) {
-            Icon(imageVector = icon, contentDescription = contentDescription)
+    val density = LocalDensity.current
 
+    // This state tracks the caret's horizontal position relative to the popup's left edge
+    var caretXOffset by remember { mutableStateOf(0.dp) }
+    val caretWidth = 16.dp
+
+    // We use a custom provider to calculate the exact position of the popup
+    // and where the caret needs to be to point at the button.
+    val popupPositionProvider = remember(density, size.width) {
+        object : PopupPositionProvider {
+            override fun calculatePosition(
+                anchorBounds: IntRect,
+                windowSize: IntSize,
+                layoutDirection: LayoutDirection,
+                popupContentSize: IntSize
+            ): IntOffset {
+                // 1. Calculate ideal X (centered under button)
+                val idealX = anchorBounds.left + (anchorBounds.width - popupContentSize.width) / 2
+
+                // 2. Clamp X to screen edges (handling the "too close to edge" issue)
+                val x = idealX.coerceIn(0, windowSize.width - popupContentSize.width)
+
+                // 3. Position Y (approx 56dp below anchor top)
+                val y = anchorBounds.top + with(density) { 56.dp.roundToPx() }
+
+                // 4. Calculate where the caret should be relative to the popup's X
+                val anchorCenterX = anchorBounds.left + anchorBounds.width / 2
+
+                // Ensure caret tip stays within the surface boundaries
+                val minCaretX = with(density) { (caretWidth / 2 + 12.dp).roundToPx() }
+                val maxCaretX = with(density) { (size.width - caretWidth / 2 - 12.dp).roundToPx() }
+
+                val relativeCaretX = (anchorCenterX - x).coerceIn(minCaretX, maxCaretX)
+
+                // Update the caret offset state
+                caretXOffset = with(density) { relativeCaretX.toDp() }
+
+                return IntOffset(x, y)
+            }
+        }
+    }
+
+    Box(modifier = modifier) {
+        IconButton(
+            onClick = { isPopupVisible = !isPopupVisible },
+            colors = IconButtonDefaults.iconButtonColors(
+                contentColor = if (isPopupVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                containerColor = if (isPopupVisible) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
+            )
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+            )
         }
 
         if (isPopupVisible) {
             Popup(
-                alignment = Alignment.BottomCenter,
-                offset = IntOffset(0, 500),
+                popupPositionProvider = popupPositionProvider,
                 onDismissRequest = { isPopupVisible = false },
                 properties = PopupProperties(
                     focusable = true,
                     dismissOnClickOutside = true,
                     dismissOnBackPress = true,
+                    usePlatformDefaultWidth = false
                 )
             ) {
-                Surface(
-                    modifier = Modifier
-                        .heightIn(min = 120.dp, max = 240.dp),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    tonalElevation = 6.dp,
-                    shadowElevation = 12.dp,
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                ) {
-                    content()
+                Column {
+                    Caret(
+                        modifier = Modifier
+                            .offset(x = caretXOffset - (caretWidth / 2))
+                            .size(width = caretWidth, height = 8.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                    )
+                    Surface(
+                        modifier = Modifier
+                            .width(size.width)
+                            .heightIn(min = size.width, max = size.maxHeight),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        tonalElevation = 6.dp,
+                        shadowElevation = 12.dp,
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                    ) {
+                        content { isPopupVisible = false }
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun Caret(
+    modifier: Modifier = Modifier,
+    color: Color
+) {
+    val caretShape = GenericShape { size, _ ->
+        moveTo(size.width / 2f, 0f)
+        lineTo(size.width, size.height)
+        lineTo(0f, size.height)
+        close()
+    }
+    Box(
+        modifier = modifier.background(color = color, shape = caretShape)
+    )
 }

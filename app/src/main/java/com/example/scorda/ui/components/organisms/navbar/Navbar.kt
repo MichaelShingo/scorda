@@ -13,33 +13,30 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.ui.components.organisms.navbar.musictools.MusicTools
+import com.example.scorda.ui.components.organisms.setlists.SetlistScreen
 import com.example.scorda.ui.viewmodel.ScoreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Navbar(
-    onSearchClick: () -> Unit
+    onSearchClick: () -> Unit,
 ) {
     val viewModel: ScoreViewModel = viewModel(factory = ScoreViewModel.Factory)
 
     TopAppBar(
         title = {
-            Text(
-                "Waltz for Stark and Frieren"
-            )
+            Text("Waltz for Stark and Frieren")
         },
         actions = {
-//            IconButton(onClick = {}) {
-//                Icon(
-//                    imageVector = Icons.Rounded.MusicNote,
-//                    contentDescription = "Browse all scores"
-//                )
-//            }
             AddScoreButton(viewModel = viewModel)
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Rounded.FormatListNumbered,
-                    contentDescription = "Search Scores"
+
+            CustomAnchoredPopup(
+                icon = Icons.Rounded.FormatListNumbered,
+                contentDescription = "Setlists",
+                size = CustomAnchoredPopupSize.Large,
+            ) { onDismiss ->
+                SetlistScreen(
+                    onClose = onDismiss
                 )
             }
 
