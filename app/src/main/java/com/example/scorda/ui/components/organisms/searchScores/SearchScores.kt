@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.scorda.R
+import com.example.scorda.ui.components.molecules.scoreListItem.ScoreListItem
 import com.example.scorda.ui.viewmodel.LocalSearchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

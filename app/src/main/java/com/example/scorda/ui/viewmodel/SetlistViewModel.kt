@@ -10,14 +10,19 @@ import com.example.scorda.ScordaApplication
 import com.example.scorda.data.database.entities.Setlist
 import com.example.scorda.data.database.relations.SetlistWithDetails
 import com.example.scorda.data.repository.SetlistRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class SetlistViewModel(
     private val repository: SetlistRepository
 ) : ViewModel() {
+
+    private val _selectedSetlistId = MutableStateFlow<Long?>(null)
 
     val setlists: StateFlow<List<Setlist>> =
         repository.observeSetlists()
@@ -27,13 +32,20 @@ class SetlistViewModel(
                 initialValue = emptyList()
             )
 
-    fun getSetlist(id: Long): StateFlow<SetlistWithDetails?> {
-        return repository.observeSetlist(id)
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = null
-            )
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val selectedSetlist: StateFlow<SetlistWithDetails?> = _selectedSetlistId
+        .flatMapLatest { id ->
+            if (id == null) kotlinx.coroutines.flow.flowOf(null)
+            else repository.observeSetlist(id)
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = null
+        )
+
+    fun selectSetlist(id: Long?) {
+        _selectedSetlistId.value = id
     }
 
     fun addSetlist(name: String) {

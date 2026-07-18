@@ -50,13 +50,11 @@ fun SetlistScreen(
         null
     }
 
-    // 2. Production Back Handling:
-    // This captures the system back button whenever the popup is active.
     BackHandler {
         if (isDetailScreen) {
             localNavController.popBackStack()
         } else {
-            onClose() // Closes the popup via the Navbar state
+            onClose()
         }
     }
 
@@ -91,7 +89,9 @@ fun SetlistScreen(
             )
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        Box(modifier = Modifier
+            .padding(innerPadding)
+            .fillMaxSize()) {
             NavHost(
                 navController = localNavController,
                 startDestination = SetlistListRoute,
@@ -113,8 +113,13 @@ fun SetlistScreen(
                 }
                 composable<SetlistDetailRoute> { backStackEntry ->
                     val route: SetlistDetailRoute = backStackEntry.toRoute()
-                    val setlistWithDetails by viewModel.getSetlist(route.setlistId)
-                        .collectAsStateWithLifecycle(initialValue = null)
+                    
+                    androidx.compose.runtime.LaunchedEffect(route.setlistId) {
+                        viewModel.selectSetlist(route.setlistId)
+                    }
+
+                    val setlistWithDetails by viewModel.selectedSetlist
+                        .collectAsStateWithLifecycle()
 
                     setlistWithDetails?.let {
                         SetlistDetail(setlistWithDetails = it)

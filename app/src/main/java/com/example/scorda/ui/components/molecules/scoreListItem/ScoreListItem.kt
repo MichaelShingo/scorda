@@ -1,4 +1,4 @@
-package com.example.scorda.ui.components.organisms.searchScores
+package com.example.scorda.ui.components.molecules.scoreListItem
 
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons

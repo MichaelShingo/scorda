@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.example.scorda.data.database.relations.SetlistWithDetails
-import com.example.scorda.ui.components.organisms.searchScores.ScoreListItem
+import com.example.scorda.ui.components.molecules.scoreListItem.ScoreListItem
 
 @Composable
 fun SetlistDetail(
