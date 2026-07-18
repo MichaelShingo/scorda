@@ -18,7 +18,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.example.scorda.data.SettingsRepository
 import com.example.scorda.ui.components.organisms.navbar.Navbar
-import com.example.scorda.ui.components.organisms.scoreView.ScoreView
 import com.example.scorda.ui.components.organisms.searchScores.SearchScores
 import com.example.scorda.ui.navigation.LocalNavController
 import com.example.scorda.ui.navigation.ScordaNavHost
@@ -77,7 +76,6 @@ class MainActivity : FragmentActivity() {
                                 navController = navController,
                                 modifier = Modifier.padding(innerPadding)
                             )
-                            ScoreView()
                         }
 
                         if (isSearchActive) {

@@ -1,11 +1,11 @@
 package com.example.scorda.ui.navigation
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.scorda.ui.components.organisms.scoreView.ScoreView
 
 @Composable
 fun ScordaNavHost(
@@ -19,7 +19,7 @@ fun ScordaNavHost(
     ) {
         composable<Route.ScoreViewer> {
             // Main app content: The PDF Score Viewer
-            Box(modifier = Modifier) 
+            ScoreView()
         }
 
         // We removed the SetlistGraph from here because it is a popup anchored to the Navbar,
