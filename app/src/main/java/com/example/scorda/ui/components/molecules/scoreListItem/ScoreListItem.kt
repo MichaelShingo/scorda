@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.example.scorda.R
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.ui.components.organisms.scoreDetailDialog.ScoreDetailDialog
+import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 
 @Composable
 fun ScoreListItem(
@@ -28,8 +29,12 @@ fun ScoreListItem(
 ) {
     val score = scoreWithDetails.score
     var isOpenScoreDetailDialog by remember { mutableStateOf<Boolean>(false) }
+    val scoreViewModel = LocalScoreViewModel.current
 
     ListItem(
+        modifier = modifier.clickable {
+            scoreViewModel.selectScore(scoreWithDetails.score.id)
+        },
         headlineContent = {
             Text(
                 text = score.title,
@@ -68,7 +73,6 @@ fun ScoreListItem(
             }
 
         },
-        modifier = modifier.clickable { }
     )
     if (isOpenScoreDetailDialog) {
         ScoreDetailDialog(

@@ -1,6 +1,7 @@
 package com.example.scorda.ui.viewmodel
 
 import android.net.Uri
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -16,12 +17,22 @@ import com.example.scorda.data.database.entities.Tag
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.data.repository.ScoreRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+data class ScoreUiState(
+    val scores: List<ScoreWithDetails> = emptyList(),
+    val selectedScore: ScoreWithDetails? = null
+)
 
 class ScoreViewModel(
     private val repository: ScoreRepository
@@ -33,6 +44,30 @@ class ScoreViewModel(
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = emptyList()
             )
+
+    private var _selectedScoreId = MutableStateFlow<Long?>(null)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val scoreUiState: StateFlow<ScoreUiState> = _selectedScoreId.flatMapLatest { id ->
+        // Get the reactive flow for the specific score
+        val selectedScoreFlow = if (id == null) flowOf(null) else repository.getScore(id)
+
+        // Combine the main list with the specific score's data
+        combine(repository.observeScores(), selectedScoreFlow) { scores, selected ->
+            ScoreUiState(
+                scores = scores,
+                selectedScore = selected
+            )
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = ScoreUiState()
+    )
+
+    fun selectScore(scoreId: Long) {
+        _selectedScoreId.value = scoreId
+    }
 
     fun onDocumentPicked(uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -133,4 +168,8 @@ class ScoreViewModel(
             }
         }
     }
+}
+
+val LocalScoreViewModel = staticCompositionLocalOf<ScoreViewModel> {
+    error("No ScoreViewModel provided")
 }

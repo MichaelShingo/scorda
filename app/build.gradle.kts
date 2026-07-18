@@ -15,7 +15,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.scorda"
-        minSdk = 24
+        minSdk = 28
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -72,10 +72,14 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.material.icons.extended)
-    implementation("androidx.datastore:datastore-preferences:1.2.1")
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.pdf.viewer)
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.pdf.viewer)
+    implementation(libs.androidx.pdf.viewer.fragment)
 }
