@@ -18,11 +18,7 @@ fun ScordaNavHost(
         modifier = modifier
     ) {
         composable<Route.ScoreViewer> {
-            // Main app content: The PDF Score Viewer
             ScoreView()
         }
-
-        // We removed the SetlistGraph from here because it is a popup anchored to the Navbar,
-        // not a full-screen or traditional dialog destination that replaces the host content.
     }
 }

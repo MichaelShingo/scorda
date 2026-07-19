@@ -3,12 +3,15 @@ package com.example.scorda.ui.components.organisms.scoreView
 import android.graphics.PointF
 import android.graphics.Rect
 import android.net.Uri
+import android.util.Log
 import android.util.SparseArray
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -32,6 +36,7 @@ import androidx.pdf.compose.PdfViewerState
 import androidx.pdf.content.PageMatchBounds
 import androidx.pdf.content.PageSelection
 import androidx.pdf.models.FormWidgetInfo
+import androidx.pdf.view.PdfView
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -61,7 +66,12 @@ fun ScoreView() {
         }
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = MaterialTheme.colorScheme.secondaryContainer),
+        contentAlignment = Alignment.Center
+    ) {
         val doc = pdfDocument
         if (selectedScore != null && doc != null) {
             // Key the entire viewer on the score ID to reset PagerState and caches when switching scores
@@ -75,7 +85,9 @@ fun ScoreView() {
 
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.inversePrimary),
                     beyondViewportPageCount = 1,
                     pageSpacing = 0.dp
                 ) { pageIndex ->
@@ -84,6 +96,10 @@ fun ScoreView() {
                             SinglePagePdfDocument(doc, pageIndex)
                         }
                         val pdfViewerState = remember { PdfViewerState() }
+                        Log.d(
+                            "pdf state",
+                            pdfViewerState.getVisiblePageOffset(pageIndex).toString()
+                        )
                         var isLoaded by remember { mutableStateOf(false) }
 
                         // Fetch page info to calculate the perfect "Fit" zoom
@@ -100,23 +116,32 @@ fun ScoreView() {
                             minOf(zoomW, zoomH)
                         }
 
-                        // Apply the "Fit" zoom when the page is selected and loaded
-                        val isSelected = pagerState.currentPage == pageIndex
-                        LaunchedEffect(isSelected, isLoaded, fitZoom) {
-                            if (isSelected && isLoaded && fitZoom > 0f) {
+                        // Apply the "Fit" zoom as soon as the page is loaded, even if it's in the background
+                        // This ensures that by the time the user swipes to it, it's already positioned.
+                        LaunchedEffect(isLoaded, fitZoom) {
+                            if (isLoaded && fitZoom > 0f) {
                                 pdfViewerState.zoomScroll {
                                     zoomTo(fitZoom)
                                 }
+                                // Force centering by scrolling to the single isolated page
+                                pdfViewerState.scrollToPage(0)
                             }
                         }
 
-                        PdfViewer(
-                            modifier = Modifier.fillMaxSize(),
+                        // Use alpha to hide the "snap" while the page is initializing
+                        val alpha = if (isLoaded) 1f else 0f
+
+                        PdfViewer( // takes up entire space and the PDF display itself gets offset vertically within this container
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(color = MaterialTheme.colorScheme.errorContainer)
+                                .graphicsLayer { this.alpha = alpha },
                             pdfDocument = singlePageDoc,
                             state = pdfViewerState,
                             // Clamping during init avoids the math glitch
                             minZoom = if (isLoaded) 0.1f else fitZoom,
                             maxZoom = if (isLoaded) 10.0f else fitZoom,
+                            verticalAlignment = PdfView.VERTICAL_ALIGNMENT_CENTER,
                             onFirstContentLoad = {
                                 isLoaded = true
                             }
