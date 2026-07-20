@@ -1,5 +1,12 @@
 package com.example.scorda.ui.components.organisms.navbar
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,12 +21,14 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -66,10 +75,16 @@ fun CustomAnchoredPopup(
     content: @Composable (() -> Unit) -> Unit,
 ) {
     var isPopupVisible by remember { mutableStateOf(false) }
+    val expandedState = remember { MutableTransitionState(false) }
+
+    LaunchedEffect(isPopupVisible) {
+        expandedState.targetState = isPopupVisible
+    }
+
     val density = LocalDensity.current
 
     // This state tracks the caret's horizontal position relative to the popup's left edge
-    var caretXOffset by remember { mutableStateOf(0.dp) }
+    var caretXOffset by remember { mutableStateOf(size.width / 2) }
     val caretWidth = 16.dp
 
     // We use a custom provider to calculate the exact position of the popup
@@ -122,7 +137,7 @@ fun CustomAnchoredPopup(
             )
         }
 
-        if (isPopupVisible) {
+        if (expandedState.currentState || expandedState.targetState) {
             Popup(
                 popupPositionProvider = popupPositionProvider,
                 onDismissRequest = { isPopupVisible = false },
@@ -133,23 +148,43 @@ fun CustomAnchoredPopup(
                     usePlatformDefaultWidth = false
                 )
             ) {
-                Column {
-                    Caret(
-                        modifier = Modifier
-                            .offset(x = caretXOffset - (caretWidth / 2))
-                            .size(width = caretWidth, height = 8.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainer,
+                AnimatedVisibility(
+                    visibleState = expandedState,
+                    enter = fadeIn(animationSpec = tween(200)) + scaleIn(
+                        initialScale = 0.8f,
+                        animationSpec = tween(200),
+                        transformOrigin = TransformOrigin(
+                            caretXOffset.value / size.width.value,
+                            0f
+                        )
+                    ),
+                    exit = fadeOut(animationSpec = tween(150)) + scaleOut(
+                        targetScale = 0.8f,
+                        animationSpec = tween(150),
+                        transformOrigin = TransformOrigin(
+                            caretXOffset.value / size.width.value,
+                            0f
+                        )
                     )
-                    Surface(
-                        modifier = Modifier
-                            .width(size.width)
-                            .heightIn(min = size.width, max = size.maxHeight),
-                        shape = MaterialTheme.shapes.extraLarge,
-                        tonalElevation = 6.dp,
-                        shadowElevation = 12.dp,
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                    ) {
-                        content { isPopupVisible = false }
+                ) {
+                    Column {
+                        Caret(
+                            modifier = Modifier
+                                .offset(x = caretXOffset - (caretWidth / 2))
+                                .size(width = caretWidth, height = 8.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                        )
+                        Surface(
+                            modifier = Modifier
+                                .width(size.width)
+                                .heightIn(min = size.width, max = size.maxHeight),
+                            shape = MaterialTheme.shapes.extraLarge,
+                            tonalElevation = 6.dp,
+                            shadowElevation = 12.dp,
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                        ) {
+                            content { isPopupVisible = false }
+                        }
                     }
                 }
             }

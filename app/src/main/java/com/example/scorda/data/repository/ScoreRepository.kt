@@ -34,6 +34,10 @@ class ScoreRepository(
     fun searchScores(query: String): Flow<List<ScoreWithDetails>> =
         scoreDao.searchScores(query)
 
+    fun getScore(id: Long): Flow<ScoreWithDetails?> {
+        return scoreDao.getScoreDetailsById(id)
+    }
+
     suspend fun insertScore(score: Score) = scoreDao.insert(score)
 
     suspend fun updateScore(score: Score) {

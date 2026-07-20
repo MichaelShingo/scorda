@@ -2,18 +2,22 @@ package com.example.scorda
 
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.example.scorda.data.SettingsRepository
@@ -24,13 +28,19 @@ import com.example.scorda.ui.navigation.ScordaNavHost
 import com.example.scorda.ui.theme.LocalThemeViewModel
 import com.example.scorda.ui.theme.ScordaTheme
 import com.example.scorda.ui.theme.ThemeViewModel
+import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.ui.viewmodel.LocalSearchViewModel
+import com.example.scorda.ui.viewmodel.ScoreViewModel
 import com.example.scorda.ui.viewmodel.SearchViewModel
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     private val searchViewModel: SearchViewModel by viewModels {
         SearchViewModel.Factory
+    }
+
+    private val scoreViewModel: ScoreViewModel by viewModels {
+        ScoreViewModel.Factory
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,7 +53,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val navController = rememberNavController()
             val isSearchActive by searchViewModel.isSearchActive.collectAsStateWithLifecycle()
-            
+
             LaunchedEffect(isSearchActive) {
                 Log.d("SearchDebug", "isSearchActive changed to: $isSearchActive")
             }
@@ -51,24 +61,31 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(
                 LocalThemeViewModel provides themeViewModel,
                 LocalSearchViewModel provides searchViewModel,
-                LocalNavController provides navController
+                LocalNavController provides navController,
+                LocalScoreViewModel provides scoreViewModel,
             ) {
                 val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
 
                 ScordaTheme(darkTheme = isDarkMode) {
+                    val scoreUiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
+
                     Box(modifier = Modifier.fillMaxSize()) {
-                        Scaffold(
-                            modifier = Modifier.fillMaxSize(),
-                            topBar = {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            AnimatedVisibility(
+                                visible = scoreUiState.isNavbarVisible,
+                                enter = slideInVertically { -it } + expandVertically(),
+                                exit = slideOutVertically { -it } + shrinkVertically()
+                            ) {
                                 Navbar(
                                     onSearchClick = { searchViewModel.onSearchActiveChange(true) }
                                 )
                             }
-                        ) { innerPadding ->
-                            ScordaNavHost(
-                                navController = navController,
-                                modifier = Modifier.padding(innerPadding)
-                            )
+
+                            Box(modifier = Modifier.weight(1f)) {
+                                ScordaNavHost(
+                                    navController = navController
+                                )
+                            }
                         }
 
                         if (isSearchActive) {
