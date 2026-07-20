@@ -1,15 +1,16 @@
 package com.example.scorda.ui.components.organisms.scoreView
 
-import android.graphics.PointF
-import android.graphics.Rect
 import android.net.Uri
 import android.util.Log
-import android.util.SparseArray
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.systemGestureExclusion
@@ -26,26 +27,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.pdf.PdfDocument
 import androidx.pdf.SandboxedPdfLoader
-import androidx.pdf.annotation.content.KeyedPdfAnnotation
 import androidx.pdf.compose.PdfViewer
 import androidx.pdf.compose.PdfViewerState
-import androidx.pdf.content.PageMatchBounds
-import androidx.pdf.content.PageSelection
-import androidx.pdf.models.FormWidgetInfo
 import androidx.pdf.view.PdfView
 import com.example.scorda.ui.components.molecules.scoreTabs.ScoreTabs
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.ui.viewmodel.LocalSearchViewModel
 import java.io.File
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executor
 
 @Composable
 fun ScoreView() {
@@ -121,7 +118,7 @@ fun ScoreView() {
                             .fillMaxSize()
                             .systemGestureExclusion()
                             .background(color = MaterialTheme.colorScheme.background),
-                        beyondViewportPageCount = 1,
+                        beyondViewportPageCount = 3,
                         pageSpacing = 0.dp
                     ) { pageIndex ->
                         key(pageIndex) {
@@ -134,9 +131,19 @@ fun ScoreView() {
                                 pdfViewerState.getVisiblePageOffset(pageIndex).toString()
                             )
                             var isLoaded by remember { mutableStateOf(false) }
+                            var isReadyToShow by remember { mutableStateOf(false) }
+
+                            val alpha by animateFloatAsState(
+                                targetValue = if (isLoaded) 1f else 0f,
+                                animationSpec = tween(durationMillis = 300),
+                                label = "PageFadeIn"
+                            )
 
                             // Fetch page info to calculate the perfect "Fit" zoom
-                            val pageInfo by produceState<PdfDocument.PageInfo?>(null, singlePageDoc) {
+                            val pageInfo by produceState<PdfDocument.PageInfo?>(
+                                null,
+                                singlePageDoc
+                            ) {
                                 value = singlePageDoc.getPageInfo(0)
                             }
 
@@ -158,27 +165,42 @@ fun ScoreView() {
                                     }
                                     // Force centering by scrolling to the single isolated page
                                     pdfViewerState.scrollToPage(0)
+                                    isReadyToShow = true
                                 }
                             }
 
-                            // Use alpha to hide the "snap" while the page is initializing
-                            val alpha = if (isLoaded) 1f else 0f
-
-                            PdfViewer( // takes up entire space and the PDF display itself gets offset vertically within this container
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(color = MaterialTheme.colorScheme.background)
-                                    .graphicsLayer { this.alpha = alpha },
-                                pdfDocument = singlePageDoc,
-                                state = pdfViewerState,
-                                // Clamping during init avoids the math glitch
-                                minZoom = if (isLoaded) 0.1f else fitZoom,
-                                maxZoom = if (isLoaded) 10.0f else fitZoom,
-                                verticalAlignment = PdfView.VERTICAL_ALIGNMENT_CENTER,
-                                onFirstContentLoad = {
-                                    isLoaded = true
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (!isLoaded) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .zIndex(1f),
+                                        strokeWidth = 4.dp,
+                                        strokeCap = StrokeCap.Round,
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                                    )
                                 }
-                            )
+
+                                PdfViewer( // takes up entire space and the PDF display itself gets offset vertically within this container
+                                    modifier = Modifier
+                                        .zIndex(0f)
+                                        .fillMaxSize()
+                                        .background(color = MaterialTheme.colorScheme.background)
+                                        .graphicsLayer { this.alpha = alpha },
+                                    pdfDocument = singlePageDoc,
+                                    state = pdfViewerState,
+                                    // Clamping during init avoids the math glitch
+                                    minZoom = if (isLoaded) 0.1f else fitZoom,
+                                    maxZoom = if (isLoaded) 10.0f else fitZoom,
+                                    verticalAlignment = PdfView.VERTICAL_ALIGNMENT_CENTER,
+                                    onFirstContentLoad = {
+                                        isLoaded = true
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -191,114 +213,3 @@ fun ScoreView() {
     }
 }
 
-/**
- * A proxy implementation of [PdfDocument] that isolates a single page.
- */
-private class SinglePagePdfDocument(
-    private val delegate: PdfDocument,
-    private val originalPageIndex: Int
-) : PdfDocument by delegate {
-
-    private val listenerMap =
-        ConcurrentHashMap<PdfDocument.OnPdfContentInvalidatedListener, PdfDocument.OnPdfContentInvalidatedListener>()
-
-    override val pageCount: Int = 1
-
-    override suspend fun getPageInfo(pageNumber: Int): PdfDocument.PageInfo {
-        if (pageNumber != 0) throw IllegalArgumentException("Index out of bounds")
-        val info = delegate.getPageInfo(originalPageIndex)
-        return PdfDocument.PageInfo(0, info.height, info.width, info.formWidgetInfos)
-    }
-
-    override suspend fun getPageInfo(pageNumber: Int, pageInfoFlags: Long): PdfDocument.PageInfo {
-        if (pageNumber != 0) throw IllegalArgumentException("Index out of bounds")
-        val info = delegate.getPageInfo(originalPageIndex, pageInfoFlags)
-        return PdfDocument.PageInfo(0, info.height, info.width, info.formWidgetInfos)
-    }
-
-    override suspend fun getPageInfos(pageRange: IntRange): List<PdfDocument.PageInfo> {
-        return if (pageRange.contains(0)) listOf(getPageInfo(0)) else emptyList()
-    }
-
-    override suspend fun getPageInfos(
-        pageRange: IntRange,
-        pageInfoFlags: Long
-    ): List<PdfDocument.PageInfo> {
-        return if (pageRange.contains(0)) listOf(getPageInfo(0, pageInfoFlags)) else emptyList()
-    }
-
-    override suspend fun searchDocument(
-        query: String,
-        pageRange: IntRange
-    ): SparseArray<List<PageMatchBounds>> {
-        val result = SparseArray<List<PageMatchBounds>>()
-        if (pageRange.contains(0)) {
-            val originalResult =
-                delegate.searchDocument(query, originalPageIndex..originalPageIndex)
-            originalResult.get(originalPageIndex)?.let { result.put(0, it) }
-        }
-        return result
-    }
-
-    override suspend fun getSelectionBounds(
-        pageNumber: Int,
-        start: PointF,
-        stop: PointF
-    ): PageSelection? {
-        if (pageNumber != 0) throw IllegalArgumentException("Index out of bounds")
-        return delegate.getSelectionBounds(originalPageIndex, start, stop)
-    }
-
-    override suspend fun getPageContent(pageNumber: Int): PdfDocument.PdfPageContent? {
-        if (pageNumber != 0) throw IllegalArgumentException("Index out of bounds")
-        return delegate.getPageContent(originalPageIndex)
-    }
-
-    override suspend fun getPageLinks(pageNumber: Int): PdfDocument.PdfPageLinks {
-        if (pageNumber != 0) throw IllegalArgumentException("Index out of bounds")
-        return delegate.getPageLinks(originalPageIndex)
-    }
-
-    override suspend fun getAnnotationsForPage(pageNum: Int): List<KeyedPdfAnnotation> {
-        if (pageNum != 0) throw IllegalArgumentException("Index out of bounds")
-        return delegate.getAnnotationsForPage(originalPageIndex)
-    }
-
-    override fun getPageBitmapSource(pageNumber: Int): PdfDocument.BitmapSource {
-        if (pageNumber != 0) throw IllegalArgumentException("Index out of bounds")
-        val originalSource = delegate.getPageBitmapSource(originalPageIndex)
-        return object : PdfDocument.BitmapSource by originalSource {
-            override val pageNumber: Int = 0
-        }
-    }
-
-    override suspend fun getFormWidgetInfos(pageNum: Int, types: Long): List<FormWidgetInfo> {
-        if (pageNum != 0) throw IllegalArgumentException("Index out of bounds")
-        return delegate.getFormWidgetInfos(originalPageIndex, types)
-    }
-
-    override fun addOnPdfContentInvalidatedListener(
-        executor: Executor,
-        listener: PdfDocument.OnPdfContentInvalidatedListener
-    ) {
-        val wrapper = object : PdfDocument.OnPdfContentInvalidatedListener {
-            override fun onPdfContentInvalidated(pageNumber: Int, dirtyAreas: List<Rect>) {
-                if (pageNumber == originalPageIndex) {
-                    listener.onPdfContentInvalidated(0, dirtyAreas)
-                }
-            }
-        }
-        listenerMap[listener] = wrapper
-        delegate.addOnPdfContentInvalidatedListener(executor, wrapper)
-    }
-
-    override fun removeOnPdfContentInvalidatedListener(listener: PdfDocument.OnPdfContentInvalidatedListener) {
-        listenerMap.remove(listener)?.let { wrapper ->
-            delegate.removeOnPdfContentInvalidatedListener(wrapper)
-        }
-    }
-
-    override fun close() {
-        // Shared delegate closure is managed by the parent
-    }
-}
