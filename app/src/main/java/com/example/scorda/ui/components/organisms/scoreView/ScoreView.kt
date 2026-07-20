@@ -2,8 +2,15 @@ package com.example.scorda.ui.components.organisms.scoreView
 
 import android.net.Uri
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -75,7 +82,11 @@ fun ScoreView() {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (uiState.openTabs.isNotEmpty() && uiState.isNavbarVisible) {
+        AnimatedVisibility(
+            visible = uiState.openTabs.isNotEmpty() && uiState.isNavbarVisible,
+            enter = slideInVertically { -it } + expandVertically() + fadeIn(),
+            exit = slideOutVertically { -it } + shrinkVertically() + fadeOut()
+        ) {
             ScoreTabs(
                 openTabs = uiState.openTabs,
                 selectedTabIndex = uiState.selectedTabIndex,

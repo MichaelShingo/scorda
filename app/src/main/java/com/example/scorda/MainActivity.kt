@@ -5,10 +5,14 @@ import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -66,20 +70,22 @@ class MainActivity : FragmentActivity() {
                     val scoreUiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
 
                     Box(modifier = Modifier.fillMaxSize()) {
-                        Scaffold(
-                            modifier = Modifier.fillMaxSize(),
-                            topBar = {
-                                if (scoreUiState.isNavbarVisible) {
-                                    Navbar(
-                                        onSearchClick = { searchViewModel.onSearchActiveChange(true) }
-                                    )
-                                }
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            AnimatedVisibility(
+                                visible = scoreUiState.isNavbarVisible,
+                                enter = slideInVertically { -it } + expandVertically(),
+                                exit = slideOutVertically { -it } + shrinkVertically()
+                            ) {
+                                Navbar(
+                                    onSearchClick = { searchViewModel.onSearchActiveChange(true) }
+                                )
                             }
-                        ) { innerPadding ->
-                            ScordaNavHost(
-                                navController = navController,
-                                modifier = Modifier.padding(innerPadding)
-                            )
+
+                            Box(modifier = Modifier.weight(1f)) {
+                                ScordaNavHost(
+                                    navController = navController
+                                )
+                            }
                         }
 
                         if (isSearchActive) {
