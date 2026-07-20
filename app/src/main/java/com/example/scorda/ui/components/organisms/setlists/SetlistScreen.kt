@@ -1,6 +1,13 @@
 package com.example.scorda.ui.components.organisms.setlists
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -87,22 +94,41 @@ fun SetlistScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(text = currentRoute?.setlistName ?: "Setlists")
+                    AnimatedContent(
+                        targetState = currentRoute?.setlistName ?: "Setlists",
+                        transitionSpec = {
+                            fadeIn(animationSpec = tween(220, delayMillis = 90)) togetherWith
+                                    fadeOut(animationSpec = tween(90))
+                        },
+                        label = "TopAppBarTitle"
+                    ) { targetTitle ->
+                        Text(text = targetTitle)
+                    }
                 },
                 navigationIcon = {
-                    if (isDetailScreen) {
-                        IconButton(onClick = { localNavController.navigateUp() }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back to Setlists"
-                            )
+                    AnimatedContent(
+                        targetState = isDetailScreen,
+                        label = "TopAppBarNavIcon"
+                    ) { targetIsDetail ->
+                        if (targetIsDetail) {
+                            IconButton(onClick = { localNavController.navigateUp() }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back to Setlists"
+                                )
+                            }
                         }
                     }
                 },
                 actions = {
-                    if (!isDetailScreen) {
-                        IconButton(onClick = { isAddingSetlist = true }) {
-                            Icon(Icons.Default.Add, contentDescription = "Add Setlist")
+                    AnimatedContent(
+                        targetState = !isDetailScreen,
+                        label = "TopAppBarActions"
+                    ) { showAdd ->
+                        if (showAdd) {
+                            IconButton(onClick = { isAddingSetlist = true }) {
+                                Icon(Icons.Default.Add, contentDescription = "Add Setlist")
+                            }
                         }
                     }
                 }
@@ -117,7 +143,11 @@ fun SetlistScreen(
             NavHost(
                 navController = localNavController,
                 startDestination = SetlistListRoute,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
+                exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) },
+                popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) },
+                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
             ) {
                 composable<SetlistListRoute> {
                     SetlistList(
