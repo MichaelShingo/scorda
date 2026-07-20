@@ -42,6 +42,7 @@ import androidx.pdf.view.PdfView
 import com.example.scorda.ui.components.molecules.scoreTabs.ScoreTabs
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.ui.viewmodel.LocalSearchViewModel
+import kotlinx.coroutines.delay
 import java.io.File
 
 @Composable
@@ -99,8 +100,9 @@ fun ScoreView() {
                         pageCount = { doc.pageCount }
                     )
 
-                    // Update setting when page changes
+                    // Update setting when page changes with a small debounce to avoid spamming
                     LaunchedEffect(pagerState.currentPage) {
+                        delay(300)
                         scoreViewModel.updateLastOpenPage(
                             selectedScore.score.id,
                             pagerState.currentPage

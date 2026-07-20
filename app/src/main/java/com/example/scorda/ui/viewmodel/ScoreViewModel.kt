@@ -82,15 +82,22 @@ class ScoreViewModel(
 
     fun selectScore(scoreId: Long, setlistId: Long? = null) {
         viewModelScope.launch {
-            val currentOpenScores = settingsRepository.openScores.first().toMutableList()
-            val existingIndex = currentOpenScores.indexOfFirst { it.scoreId == scoreId }
+            var newIndex = -1
+            settingsRepository.updateOpenScores { currentOpenScores ->
+                val mutable = currentOpenScores.toMutableList()
+                val existingIndex = mutable.indexOfFirst { it.scoreId == scoreId }
 
-            if (existingIndex != -1) {
-                settingsRepository.saveCurrentTabIndex(existingIndex)
-            } else {
-                currentOpenScores.add(OpenScore(scoreId, setlistId, 0))
-                settingsRepository.saveOpenScores(currentOpenScores)
-                settingsRepository.saveCurrentTabIndex(currentOpenScores.size - 1)
+                if (existingIndex != -1) {
+                    newIndex = existingIndex
+                    mutable
+                } else {
+                    mutable.add(OpenScore(scoreId, setlistId, 0))
+                    newIndex = mutable.size - 1
+                    mutable
+                }
+            }
+            if (newIndex != -1) {
+                settingsRepository.saveCurrentTabIndex(newIndex)
             }
         }
     }
@@ -103,26 +110,33 @@ class ScoreViewModel(
 
     fun closeTab(index: Int) {
         viewModelScope.launch {
-            val currentOpenScores = settingsRepository.openScores.first().toMutableList()
-            if (index in currentOpenScores.indices) {
-                currentOpenScores.removeAt(index)
-                settingsRepository.saveOpenScores(currentOpenScores)
-
-                val currentTabIndex = settingsRepository.currentTabIndex.first()
-                if (currentTabIndex >= currentOpenScores.size) {
-                    settingsRepository.saveCurrentTabIndex(maxOf(0, currentOpenScores.size - 1))
+            settingsRepository.updateOpenScores { currentOpenScores ->
+                val mutable = currentOpenScores.toMutableList()
+                if (index in mutable.indices) {
+                    mutable.removeAt(index)
                 }
+                mutable
+            }
+
+            val currentOpenScores = settingsRepository.openScores.first()
+            val currentTabIndex = settingsRepository.currentTabIndex.first()
+            if (currentTabIndex >= currentOpenScores.size) {
+                settingsRepository.saveCurrentTabIndex(maxOf(0, currentOpenScores.size - 1))
             }
         }
     }
 
     fun updateLastOpenPage(scoreId: Long, page: Int) {
         viewModelScope.launch {
-            val currentOpenScores = settingsRepository.openScores.first().toMutableList()
-            val index = currentOpenScores.indexOfFirst { it.scoreId == scoreId }
-            if (index != -1 && currentOpenScores[index].lastOpenPage != page) {
-                currentOpenScores[index] = currentOpenScores[index].copy(lastOpenPage = page)
-                settingsRepository.saveOpenScores(currentOpenScores)
+            settingsRepository.updateOpenScores { currentOpenScores ->
+                val index = currentOpenScores.indexOfFirst { it.scoreId == scoreId }
+                if (index != -1 && currentOpenScores[index].lastOpenPage != page) {
+                    val mutable = currentOpenScores.toMutableList()
+                    mutable[index] = mutable[index].copy(lastOpenPage = page)
+                    mutable
+                } else {
+                    currentOpenScores
+                }
             }
         }
     }
@@ -146,14 +160,14 @@ class ScoreViewModel(
         viewModelScope.launch {
             repository.deleteScore(score)
             // Clean up open scores in settings
-            val currentOpenScores = settingsRepository.openScores.first()
-            val updatedOpenScores = currentOpenScores.filter { it.scoreId != score.id }
-            if (updatedOpenScores.size != currentOpenScores.size) {
-                settingsRepository.saveOpenScores(updatedOpenScores)
-                val currentIndex = settingsRepository.currentTabIndex.first()
-                if (currentIndex >= updatedOpenScores.size) {
-                    settingsRepository.saveCurrentTabIndex(maxOf(0, updatedOpenScores.size - 1))
-                }
+            settingsRepository.updateOpenScores { currentOpenScores ->
+                currentOpenScores.filter { it.scoreId != score.id }
+            }
+            
+            val updatedOpenScores = settingsRepository.openScores.first()
+            val currentIndex = settingsRepository.currentTabIndex.first()
+            if (currentIndex >= updatedOpenScores.size) {
+                settingsRepository.saveCurrentTabIndex(maxOf(0, updatedOpenScores.size - 1))
             }
         }
     }

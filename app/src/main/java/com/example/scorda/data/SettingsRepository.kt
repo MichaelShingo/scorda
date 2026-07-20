@@ -85,9 +85,16 @@ class SettingsRepository(private val context: Context) {
             preferences[_currentTabIndex]?.toInt() ?: 0
         }
 
-    suspend fun saveOpenScores(scores: List<OpenScore>) {
+    suspend fun updateOpenScores(transform: (List<OpenScore>) -> List<OpenScore>) {
         context.dataStore.edit { preferences ->
-            preferences[_openScores] = Json.encodeToString(scores)
+            val json = preferences[_openScores] ?: "[]"
+            val currentScores = try {
+                Json.decodeFromString<List<OpenScore>>(json)
+            } catch (_: Exception) {
+                emptyList()
+            }
+            val updatedScores = transform(currentScores)
+            preferences[_openScores] = Json.encodeToString(updatedScores)
         }
     }
 
