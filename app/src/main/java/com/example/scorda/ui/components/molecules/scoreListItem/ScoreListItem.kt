@@ -3,10 +3,10 @@ package com.example.scorda.ui.components.molecules.scoreListItem
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,34 +15,39 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.scorda.R
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.ui.components.organisms.scoreDetailDialog.ScoreDetailDialog
-import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 
 @Composable
 fun ScoreListItem(
     scoreWithDetails: ScoreWithDetails,
-    modifier: Modifier,
-    setlistId: Long? = null,
+    modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
+    onClick: () -> Unit = {},
 ) {
     val score = scoreWithDetails.score
     var isOpenScoreDetailDialog by remember { mutableStateOf<Boolean>(false) }
-    val scoreViewModel = LocalScoreViewModel.current
 
     ListItem(
-        modifier = modifier.clickable {
-            scoreViewModel.selectScore(scoreWithDetails.score.id, setlistId)
-        },
+        modifier = modifier.clickable(onClick = onClick),
+        colors = ListItemDefaults.colors(
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.secondaryContainer
+            else
+                Color.Transparent
+        ),
         headlineContent = {
             Text(
                 text = score.title,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyLarge
-
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
             )
         },
         supportingContent = {
@@ -51,14 +56,10 @@ fun ScoreListItem(
             Text(
                 text = fullName,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
-        leadingContent = {
-            Icon(
-                imageVector = Icons.Rounded.MusicNote,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                color = if (isSelected)
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
         trailingContent = {

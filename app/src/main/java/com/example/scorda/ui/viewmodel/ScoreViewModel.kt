@@ -129,6 +129,25 @@ class ScoreViewModel(
         }
     }
 
+    fun openScoreInCurrentTab(scoreId: Long, setlistId: Long? = null) {
+        viewModelScope.launch {
+            val state = scoreUiState.value
+            settingsRepository.updateOpenScores { currentOpenScores ->
+                val mutable = currentOpenScores.toMutableList()
+                if (state.selectedTabIndex in mutable.indices) {
+                    mutable[state.selectedTabIndex] = OpenScore(
+                        scoreId = scoreId,
+                        setlistId = setlistId,
+                        lastOpenPage = 0
+                    )
+                } else if (mutable.isEmpty()) {
+                    mutable.add(OpenScore(scoreId, setlistId, 0))
+                }
+                mutable
+            }
+        }
+    }
+
     fun selectScore(scoreId: Long, setlistId: Long? = null) {
         viewModelScope.launch {
             var newIndex = -1

@@ -13,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.ui.components.organisms.navbar.musictools.MusicTools
 import com.example.scorda.ui.components.organisms.setlists.SetlistScreen
@@ -24,6 +26,8 @@ fun Navbar(
     onSearchClick: () -> Unit,
 ) {
     val viewModel: ScoreViewModel = viewModel(factory = ScoreViewModel.Factory)
+    val scoreUiState by viewModel.scoreUiState.collectAsStateWithLifecycle()
+    val currentSetlistId = scoreUiState.openTabs.getOrNull(scoreUiState.selectedTabIndex)?.setlistId
 
     TopAppBar(
         title = {
@@ -41,7 +45,8 @@ fun Navbar(
                 size = CustomAnchoredPopupSize.Large,
             ) { onDismiss ->
                 SetlistScreen(
-                    onClose = onDismiss
+                    onClose = onDismiss,
+                    initialSetlistId = currentSetlistId
                 )
             }
 

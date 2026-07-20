@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.scorda.R
 import com.example.scorda.ui.components.molecules.scoreListItem.ScoreListItem
+import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.ui.viewmodel.LocalSearchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,10 +32,14 @@ import com.example.scorda.ui.viewmodel.LocalSearchViewModel
 fun SearchScores(
 ) {
     val vm = LocalSearchViewModel.current
+    val scoreViewModel = LocalScoreViewModel.current
 
     val query by vm.searchQuery.collectAsStateWithLifecycle()
     val searchResults by vm.searchResults.collectAsStateWithLifecycle()
     val isActive by vm.isSearchActive.collectAsStateWithLifecycle()
+    val scoreUiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
+    val currentScoreId = scoreUiState.selectedScore?.score?.id
+
     val onQueryChange = vm::onQueryChange
     val onActiveChange = vm::onSearchActiveChange
 
@@ -76,6 +81,8 @@ fun SearchScores(
                 ScoreListItem(
                     scoreWithDetails = score,
                     modifier = Modifier,
+                    isSelected = score.score.id == currentScoreId,
+                    onClick = { scoreViewModel.selectScore(score.score.id) }
                 )
             }
         }

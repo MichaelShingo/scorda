@@ -14,6 +14,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +31,7 @@ import androidx.navigation.toRoute
 import com.example.scorda.data.database.entities.Setlist
 import com.example.scorda.ui.navigation.SetlistDetailRoute
 import com.example.scorda.ui.navigation.SetlistListRoute
+import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.ui.viewmodel.SetlistViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,8 +39,10 @@ import com.example.scorda.ui.viewmodel.SetlistViewModel
 fun SetlistScreen(
     modifier: Modifier = Modifier,
     onClose: () -> Unit = {},
+    initialSetlistId: Long? = null,
     viewModel: SetlistViewModel = viewModel(factory = SetlistViewModel.Factory),
 ) {
+    val scoreViewModel = LocalScoreViewModel.current
     // 1. Local NavController for internal navigation (List -> Detail)
     val localNavController = rememberNavController()
     val navBackStackEntry by localNavController.currentBackStackEntryAsState()
@@ -50,6 +54,23 @@ fun SetlistScreen(
         null
     }
 
+    val setlists by viewModel.setlists.collectAsStateWithLifecycle()
+    var hasNavigatedInitial by remember { mutableStateOf(false) }
+
+    LaunchedEffect(setlists, initialSetlistId) {
+        if (!hasNavigatedInitial && initialSetlistId != null && setlists.isNotEmpty()) {
+            setlists.find { it.id == initialSetlistId }?.let { setlist ->
+                localNavController.navigate(
+                    SetlistDetailRoute(
+                        setlistId = setlist.id,
+                        setlistName = setlist.name
+                    )
+                )
+                hasNavigatedInitial = true
+            }
+        }
+    }
+
     BackHandler {
         if (isDetailScreen) {
             localNavController.popBackStack()
@@ -58,7 +79,6 @@ fun SetlistScreen(
         }
     }
 
-    val setlists by viewModel.setlists.collectAsStateWithLifecycle()
     var isAddingSetlist by remember { mutableStateOf(false) }
     var editingSetlist by remember { mutableStateOf<Setlist?>(null) }
 
@@ -89,9 +109,11 @@ fun SetlistScreen(
             )
         }
     ) { innerPadding ->
-        Box(modifier = Modifier
-            .padding(innerPadding)
-            .fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
             NavHost(
                 navController = localNavController,
                 startDestination = SetlistListRoute,
@@ -113,16 +135,26 @@ fun SetlistScreen(
                 }
                 composable<SetlistDetailRoute> { backStackEntry ->
                     val route: SetlistDetailRoute = backStackEntry.toRoute()
-                    
+
                     androidx.compose.runtime.LaunchedEffect(route.setlistId) {
                         viewModel.selectSetlist(route.setlistId)
                     }
 
                     val setlistWithDetails by viewModel.selectedSetlist
                         .collectAsStateWithLifecycle()
+                    val scoreUiState by scoreViewModel.scoreUiState
+                        .collectAsStateWithLifecycle()
+                    val currentScoreId = scoreUiState.selectedScore?.score?.id
 
                     setlistWithDetails?.let {
-                        SetlistDetail(setlistWithDetails = it)
+                        SetlistDetail(
+                            setlistWithDetails = it,
+                            currentScoreId = currentScoreId,
+                            onScoreClick = { score ->
+                                scoreViewModel.openScoreInCurrentTab(score.score.id, it.setlist.id)
+                                onClose()
+                            }
+                        )
                     }
                 }
             }
