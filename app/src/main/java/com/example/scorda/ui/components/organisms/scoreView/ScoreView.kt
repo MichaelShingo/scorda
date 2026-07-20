@@ -24,6 +24,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,12 +44,14 @@ import com.example.scorda.ui.components.molecules.scoreTabs.ScoreTabs
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.ui.viewmodel.LocalSearchViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 
 @Composable
 fun ScoreView() {
     val scoreViewModel = LocalScoreViewModel.current
     val searchViewModel = LocalSearchViewModel.current
+    val scope = rememberCoroutineScope()
     val uiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
     val selectedScore = uiState.selectedScore
     val selectedTab = uiState.openTabs.getOrNull(uiState.selectedTabIndex)
@@ -72,7 +75,7 @@ fun ScoreView() {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (uiState.openTabs.isNotEmpty()) {
+        if (uiState.openTabs.isNotEmpty() && uiState.isNavbarVisible) {
             ScoreTabs(
                 openTabs = uiState.openTabs,
                 selectedTabIndex = uiState.selectedTabIndex,
@@ -114,96 +117,119 @@ fun ScoreView() {
                     val screenWidthPx = with(density) { maxWidth.toPx() }
                     val screenHeightPx = with(density) { maxHeight.toPx() }
 
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .systemGestureExclusion()
-                            .background(color = MaterialTheme.colorScheme.background),
-                        beyondViewportPageCount = 3,
-                        pageSpacing = 0.dp
-                    ) { pageIndex ->
-                        key(pageIndex) {
-                            val singlePageDoc = remember(doc, pageIndex) {
-                                SinglePagePdfDocument(doc, pageIndex)
-                            }
-                            val pdfViewerState = remember { PdfViewerState() }
-                            Log.d(
-                                "pdf state",
-                                pdfViewerState.getVisiblePageOffset(pageIndex).toString()
-                            )
-                            var isLoaded by remember { mutableStateOf(false) }
-                            var isReadyToShow by remember { mutableStateOf(false) }
-
-                            val alpha by animateFloatAsState(
-                                targetValue = if (isLoaded) 1f else 0f,
-                                animationSpec = tween(durationMillis = 300),
-                                label = "PageFadeIn"
-                            )
-
-                            // Fetch page info to calculate the perfect "Fit" zoom
-                            val pageInfo by produceState<PdfDocument.PageInfo?>(
-                                null,
-                                singlePageDoc
-                            ) {
-                                value = singlePageDoc.getPageInfo(0)
-                            }
-
-                            // Calculate zoom factor to fit the page to the screen width/height
-                            val fitZoom = remember(pageInfo, screenWidthPx, screenHeightPx) {
-                                val info = pageInfo ?: return@remember 1.0f
-                                val zoomW = screenWidthPx / info.width
-                                val zoomH = screenHeightPx / info.height
-                                // Use the smaller of the two to ensure the entire page fits on screen
-                                minOf(zoomW, zoomH)
-                            }
-
-                            // Apply the "Fit" zoom as soon as the page is loaded, even if it's in the background
-                            // This ensures that by the time the user swipes to it, it's already positioned.
-                            LaunchedEffect(isLoaded, fitZoom) {
-                                if (isLoaded && fitZoom > 0f) {
-                                    pdfViewerState.zoomScroll {
-                                        zoomTo(fitZoom)
-                                    }
-                                    // Force centering by scrolling to the single isolated page
-                                    pdfViewerState.scrollToPage(0)
-                                    isReadyToShow = true
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .systemGestureExclusion()
+                                .background(color = MaterialTheme.colorScheme.background),
+                            beyondViewportPageCount = 3,
+                            pageSpacing = 0.dp
+                        ) { pageIndex ->
+                            key(pageIndex) {
+                                val singlePageDoc = remember(doc, pageIndex) {
+                                    SinglePagePdfDocument(doc, pageIndex)
                                 }
-                            }
+                                val pdfViewerState = remember { PdfViewerState() }
+                                Log.d(
+                                    "pdf state",
+                                    pdfViewerState.getVisiblePageOffset(pageIndex).toString()
+                                )
+                                var isLoaded by remember { mutableStateOf(false) }
+                                var isReadyToShow by remember { mutableStateOf(false) }
 
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (!isLoaded) {
-                                    CircularProgressIndicator(
+                                val alpha by animateFloatAsState(
+                                    targetValue = if (isLoaded) 1f else 0f,
+                                    animationSpec = tween(durationMillis = 300),
+                                    label = "PageFadeIn"
+                                )
+
+                                // Fetch page info to calculate the perfect "Fit" zoom
+                                val pageInfo by produceState<PdfDocument.PageInfo?>(
+                                    null,
+                                    singlePageDoc
+                                ) {
+                                    value = singlePageDoc.getPageInfo(0)
+                                }
+
+                                // Calculate zoom factor to fit the page to the screen width/height
+                                val fitZoom = remember(pageInfo, screenWidthPx, screenHeightPx) {
+                                    val info = pageInfo ?: return@remember 1.0f
+                                    val zoomW = screenWidthPx / info.width
+                                    val zoomH = screenHeightPx / info.height
+                                    // Use the smaller of the two to ensure the entire page fits on screen
+                                    minOf(zoomW, zoomH)
+                                }
+
+                                // Apply the "Fit" zoom as soon as the page is loaded, even if it's in the background
+                                // This ensures that by the time the user swipes to it, it's already positioned.
+                                LaunchedEffect(isLoaded, fitZoom) {
+                                    if (isLoaded && fitZoom > 0f) {
+                                        pdfViewerState.zoomScroll {
+                                            zoomTo(fitZoom)
+                                        }
+                                        // Force centering by scrolling to the single isolated page
+                                        pdfViewerState.scrollToPage(0)
+                                        isReadyToShow = true
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (!isLoaded) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .zIndex(1f),
+                                            strokeWidth = 4.dp,
+                                            strokeCap = StrokeCap.Round,
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                                        )
+                                    }
+
+                                    PdfViewer( // takes up entire space and the PDF display itself gets offset vertically within this container
                                         modifier = Modifier
-                                            .size(48.dp)
-                                            .zIndex(1f),
-                                        strokeWidth = 4.dp,
-                                        strokeCap = StrokeCap.Round,
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                                            .zIndex(0f)
+                                            .fillMaxSize()
+                                            .background(color = MaterialTheme.colorScheme.background)
+                                            .graphicsLayer { this.alpha = alpha },
+                                        pdfDocument = singlePageDoc,
+                                        state = pdfViewerState,
+                                        // Clamping during init avoids the math glitch
+                                        minZoom = if (isLoaded) 0.1f else fitZoom,
+                                        maxZoom = if (isLoaded) 10.0f else fitZoom,
+                                        verticalAlignment = PdfView.VERTICAL_ALIGNMENT_CENTER,
+                                        onFirstContentLoad = {
+                                            isLoaded = true
+                                        }
                                     )
                                 }
-
-                                PdfViewer( // takes up entire space and the PDF display itself gets offset vertically within this container
-                                    modifier = Modifier
-                                        .zIndex(0f)
-                                        .fillMaxSize()
-                                        .background(color = MaterialTheme.colorScheme.background)
-                                        .graphicsLayer { this.alpha = alpha },
-                                    pdfDocument = singlePageDoc,
-                                    state = pdfViewerState,
-                                    // Clamping during init avoids the math glitch
-                                    minZoom = if (isLoaded) 0.1f else fitZoom,
-                                    maxZoom = if (isLoaded) 10.0f else fitZoom,
-                                    verticalAlignment = PdfView.VERTICAL_ALIGNMENT_CENTER,
-                                    onFirstContentLoad = {
-                                        isLoaded = true
-                                    }
-                                )
                             }
                         }
+
+                        ScoreInteractionOverlay(
+                            onToggleNavbar = { scoreViewModel.toggleNavbar() },
+                            onPreviousPage = {
+                                if (pagerState.currentPage > 0) {
+                                    val prev = pagerState.currentPage - 1
+                                    scope.launch {
+                                        pagerState.animateScrollToPage(prev)
+                                    }
+                                }
+                            },
+                            onNextPage = {
+                                if (pagerState.currentPage < doc.pageCount - 1) {
+                                    val next = pagerState.currentPage + 1
+                                    scope.launch {
+                                        pagerState.animateScrollToPage(next)
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
                 }
             } else if (selectedScore != null) {

@@ -63,13 +63,17 @@ class MainActivity : FragmentActivity() {
                 val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
 
                 ScordaTheme(darkTheme = isDarkMode) {
+                    val scoreUiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
+
                     Box(modifier = Modifier.fillMaxSize()) {
                         Scaffold(
                             modifier = Modifier.fillMaxSize(),
                             topBar = {
-                                Navbar(
-                                    onSearchClick = { searchViewModel.onSearchActiveChange(true) }
-                                )
+                                if (scoreUiState.isNavbarVisible) {
+                                    Navbar(
+                                        onSearchClick = { searchViewModel.onSearchActiveChange(true) }
+                                    )
+                                }
                             }
                         ) { innerPadding ->
                             ScordaNavHost(

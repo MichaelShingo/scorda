@@ -38,13 +38,16 @@ data class ScoreUiState(
     val scores: List<ScoreWithDetails> = emptyList(),
     val openTabs: List<OpenScoreTab> = emptyList(),
     val selectedTabIndex: Int = 0,
-    val selectedScore: ScoreWithDetails? = null
+    val selectedScore: ScoreWithDetails? = null,
+    val isNavbarVisible: Boolean = true
 )
 
 class ScoreViewModel(
     private val repository: ScoreRepository,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
+    private val _isNavbarVisible = kotlinx.coroutines.flow.MutableStateFlow(true)
+
     val scores: StateFlow<List<ScoreWithDetails>> =
         repository.observeScores()
             .stateIn(
@@ -56,8 +59,9 @@ class ScoreViewModel(
     val scoreUiState: StateFlow<ScoreUiState> = combine(
         repository.observeScores(),
         settingsRepository.openScores,
-        settingsRepository.currentTabIndex
-    ) { allScores, openScoreSettings, tabIndex ->
+        settingsRepository.currentTabIndex,
+        _isNavbarVisible
+    ) { allScores, openScoreSettings, tabIndex, isNavbarVisible ->
         val openTabs = openScoreSettings.mapNotNull { openSetting ->
             allScores.find { it.score.id == openSetting.scoreId }?.let { details ->
                 OpenScoreTab(
@@ -72,13 +76,18 @@ class ScoreViewModel(
             scores = allScores,
             openTabs = openTabs,
             selectedTabIndex = safeTabIndex,
-            selectedScore = openTabs.getOrNull(safeTabIndex)?.scoreDetails
+            selectedScore = openTabs.getOrNull(safeTabIndex)?.scoreDetails,
+            isNavbarVisible = isNavbarVisible
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = ScoreUiState()
     )
+
+    fun toggleNavbar() {
+        _isNavbarVisible.value = !_isNavbarVisible.value
+    }
 
     fun selectScore(scoreId: Long, setlistId: Long? = null) {
         viewModelScope.launch {
@@ -163,7 +172,7 @@ class ScoreViewModel(
             settingsRepository.updateOpenScores { currentOpenScores ->
                 currentOpenScores.filter { it.scoreId != score.id }
             }
-            
+
             val updatedOpenScores = settingsRepository.openScores.first()
             val currentIndex = settingsRepository.currentTabIndex.first()
             if (currentIndex >= updatedOpenScores.size) {
