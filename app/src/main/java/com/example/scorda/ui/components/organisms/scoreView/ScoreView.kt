@@ -218,6 +218,8 @@ fun ScoreView() {
                                     scope.launch {
                                         pagerState.animateScrollToPage(prev)
                                     }
+                                } else {
+                                    scoreViewModel.navigateToPreviousScoreInSetlist()
                                 }
                             },
                             onNextPage = {
@@ -226,6 +228,8 @@ fun ScoreView() {
                                     scope.launch {
                                         pagerState.animateScrollToPage(next)
                                     }
+                                } else {
+                                    scoreViewModel.navigateToNextScoreInSetlist()
                                 }
                             },
                             modifier = Modifier.fillMaxSize()

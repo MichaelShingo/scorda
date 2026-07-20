@@ -18,6 +18,7 @@ import com.example.scorda.data.database.entities.Score
 import com.example.scorda.data.database.entities.Tag
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.data.repository.ScoreRepository
+import com.example.scorda.data.repository.SetlistRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -44,7 +45,8 @@ data class ScoreUiState(
 
 class ScoreViewModel(
     private val repository: ScoreRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val setlistRepository: SetlistRepository
 ) : ViewModel() {
     private val _isNavbarVisible = kotlinx.coroutines.flow.MutableStateFlow(true)
 
@@ -87,6 +89,44 @@ class ScoreViewModel(
 
     fun toggleNavbar() {
         _isNavbarVisible.value = !_isNavbarVisible.value
+    }
+
+    fun navigateToNextScoreInSetlist() {
+        navigateToScoreInSetlist(1)
+    }
+
+    fun navigateToPreviousScoreInSetlist() {
+        navigateToScoreInSetlist(-1)
+    }
+
+    private fun navigateToScoreInSetlist(direction: Int) {
+        viewModelScope.launch {
+            val state = scoreUiState.value
+            val currentTab = state.openTabs.getOrNull(state.selectedTabIndex) ?: return@launch
+            val setlistId = currentTab.setlistId ?: return@launch
+
+            val setlistWithDetails = setlistRepository.observeSetlist(setlistId).first()
+            val scores = setlistWithDetails.scores
+            val currentIndex = scores.indexOfFirst { it.score.id == currentTab.scoreDetails.score.id }
+
+            if (currentIndex == -1) return@launch
+
+            val targetIndex = currentIndex + direction
+            if (targetIndex in scores.indices) {
+                val targetScore = scores[targetIndex]
+                settingsRepository.updateOpenScores { currentOpenScores ->
+                    val mutable = currentOpenScores.toMutableList()
+                    if (state.selectedTabIndex in mutable.indices) {
+                        mutable[state.selectedTabIndex] = OpenScore(
+                            scoreId = targetScore.score.id,
+                            setlistId = setlistId,
+                            lastOpenPage = 0
+                        )
+                    }
+                    mutable
+                }
+            }
+        }
     }
 
     fun selectScore(scoreId: Long, setlistId: Long? = null) {
@@ -256,7 +296,8 @@ class ScoreViewModel(
 
                 val scoreRepository = application.container.scoreRepository
                 val settingsRepository = application.container.settingsRepository
-                ScoreViewModel(scoreRepository, settingsRepository)
+                val setlistRepository = application.container.setlistRepository
+                ScoreViewModel(scoreRepository, settingsRepository, setlistRepository)
             }
         }
     }
