@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.scorda.ScordaApplication
+import com.example.scorda.data.OpenScore
+import com.example.scorda.data.SettingsRepository
 import com.example.scorda.data.database.entities.Composer
 import com.example.scorda.data.database.entities.Genre
 import com.example.scorda.data.database.entities.Instrument
@@ -17,25 +19,31 @@ import com.example.scorda.data.database.entities.Tag
 import com.example.scorda.data.database.relations.ScoreWithDetails
 import com.example.scorda.data.repository.ScoreRepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+data class OpenScoreTab(
+    val scoreDetails: ScoreWithDetails,
+    val setlistId: Long?,
+    val lastOpenPage: Int
+)
+
 data class ScoreUiState(
     val scores: List<ScoreWithDetails> = emptyList(),
+    val openTabs: List<OpenScoreTab> = emptyList(),
+    val selectedTabIndex: Int = 0,
     val selectedScore: ScoreWithDetails? = null
 )
 
 class ScoreViewModel(
-    private val repository: ScoreRepository
+    private val repository: ScoreRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
     val scores: StateFlow<List<ScoreWithDetails>> =
         repository.observeScores()
@@ -45,28 +53,78 @@ class ScoreViewModel(
                 initialValue = emptyList()
             )
 
-    private var _selectedScoreId = MutableStateFlow<Long?>(null)
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val scoreUiState: StateFlow<ScoreUiState> = _selectedScoreId.flatMapLatest { id ->
-        // Get the reactive flow for the specific score
-        val selectedScoreFlow = if (id == null) flowOf(null) else repository.getScore(id)
-
-        // Combine the main list with the specific score's data
-        combine(repository.observeScores(), selectedScoreFlow) { scores, selected ->
-            ScoreUiState(
-                scores = scores,
-                selectedScore = selected
-            )
+    val scoreUiState: StateFlow<ScoreUiState> = combine(
+        repository.observeScores(),
+        settingsRepository.openScores,
+        settingsRepository.currentTabIndex
+    ) { allScores, openScoreSettings, tabIndex ->
+        val openTabs = openScoreSettings.mapNotNull { openSetting ->
+            allScores.find { it.score.id == openSetting.scoreId }?.let { details ->
+                OpenScoreTab(
+                    scoreDetails = details,
+                    setlistId = openSetting.setlistId,
+                    lastOpenPage = openSetting.lastOpenPage
+                )
+            }
         }
+        val safeTabIndex = if (openTabs.isEmpty()) 0 else tabIndex.coerceIn(0, openTabs.size - 1)
+        ScoreUiState(
+            scores = allScores,
+            openTabs = openTabs,
+            selectedTabIndex = safeTabIndex,
+            selectedScore = openTabs.getOrNull(safeTabIndex)?.scoreDetails
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = ScoreUiState()
     )
 
-    fun selectScore(scoreId: Long) {
-        _selectedScoreId.value = scoreId
+    fun selectScore(scoreId: Long, setlistId: Long? = null) {
+        viewModelScope.launch {
+            val currentOpenScores = settingsRepository.openScores.first().toMutableList()
+            val existingIndex = currentOpenScores.indexOfFirst { it.scoreId == scoreId }
+
+            if (existingIndex != -1) {
+                settingsRepository.saveCurrentTabIndex(existingIndex)
+            } else {
+                currentOpenScores.add(OpenScore(scoreId, setlistId, 0))
+                settingsRepository.saveOpenScores(currentOpenScores)
+                settingsRepository.saveCurrentTabIndex(currentOpenScores.size - 1)
+            }
+        }
+    }
+
+    fun selectTab(index: Int) {
+        viewModelScope.launch {
+            settingsRepository.saveCurrentTabIndex(index)
+        }
+    }
+
+    fun closeTab(index: Int) {
+        viewModelScope.launch {
+            val currentOpenScores = settingsRepository.openScores.first().toMutableList()
+            if (index in currentOpenScores.indices) {
+                currentOpenScores.removeAt(index)
+                settingsRepository.saveOpenScores(currentOpenScores)
+
+                val currentTabIndex = settingsRepository.currentTabIndex.first()
+                if (currentTabIndex >= currentOpenScores.size) {
+                    settingsRepository.saveCurrentTabIndex(maxOf(0, currentOpenScores.size - 1))
+                }
+            }
+        }
+    }
+
+    fun updateLastOpenPage(scoreId: Long, page: Int) {
+        viewModelScope.launch {
+            val currentOpenScores = settingsRepository.openScores.first().toMutableList()
+            val index = currentOpenScores.indexOfFirst { it.scoreId == scoreId }
+            if (index != -1 && currentOpenScores[index].lastOpenPage != page) {
+                currentOpenScores[index] = currentOpenScores[index].copy(lastOpenPage = page)
+                settingsRepository.saveOpenScores(currentOpenScores)
+            }
+        }
     }
 
     fun onDocumentPicked(uri: Uri) {
@@ -87,6 +145,16 @@ class ScoreViewModel(
     fun deleteScore(score: Score) {
         viewModelScope.launch {
             repository.deleteScore(score)
+            // Clean up open scores in settings
+            val currentOpenScores = settingsRepository.openScores.first()
+            val updatedOpenScores = currentOpenScores.filter { it.scoreId != score.id }
+            if (updatedOpenScores.size != currentOpenScores.size) {
+                settingsRepository.saveOpenScores(updatedOpenScores)
+                val currentIndex = settingsRepository.currentTabIndex.first()
+                if (currentIndex >= updatedOpenScores.size) {
+                    settingsRepository.saveCurrentTabIndex(maxOf(0, updatedOpenScores.size - 1))
+                }
+            }
         }
     }
 
@@ -163,8 +231,9 @@ class ScoreViewModel(
             initializer {
                 val application = this[APPLICATION_KEY] as ScordaApplication
 
-                val repository = application.container.scoreRepository
-                ScoreViewModel(repository)
+                val scoreRepository = application.container.scoreRepository
+                val settingsRepository = application.container.settingsRepository
+                ScoreViewModel(scoreRepository, settingsRepository)
             }
         }
     }

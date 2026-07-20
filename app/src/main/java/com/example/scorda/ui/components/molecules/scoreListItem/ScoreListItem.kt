@@ -26,6 +26,7 @@ import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 fun ScoreListItem(
     scoreWithDetails: ScoreWithDetails,
     modifier: Modifier,
+    setlistId: Long? = null,
 ) {
     val score = scoreWithDetails.score
     var isOpenScoreDetailDialog by remember { mutableStateOf<Boolean>(false) }
@@ -33,7 +34,7 @@ fun ScoreListItem(
 
     ListItem(
         modifier = modifier.clickable {
-            scoreViewModel.selectScore(scoreWithDetails.score.id)
+            scoreViewModel.selectScore(scoreWithDetails.score.id, setlistId)
         },
         headlineContent = {
             Text(

@@ -19,7 +19,8 @@ fun SetlistDetail(
         items(setlistWithDetails.scores) { scoreWithDetails ->
             ScoreListItem(
                 scoreWithDetails = scoreWithDetails,
-                modifier = Modifier
+                modifier = Modifier,
+                setlistId = setlistWithDetails.setlist.id
             )
         }
     }
