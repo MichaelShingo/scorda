@@ -1,0 +1,49 @@
+package com.example.scorda.data.repository
+
+import com.example.scorda.data.database.AppDatabase
+import com.example.scorda.data.database.entities.AnnotationLayer
+import com.example.scorda.data.database.entities.LayerType
+import com.example.scorda.data.database.entities.Stroke
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+
+class AnnotationRepository(private val db: AppDatabase) {
+    private val annotationDao = db.annotationDao()
+
+    fun observeLayersForScore(scoreId: Long): Flow<List<AnnotationLayer>> =
+        annotationDao.getLayersForScore(scoreId)
+
+    fun observeVisibleStrokesForPage(scoreId: Long, pageIndex: Int): Flow<List<Stroke>> =
+        annotationDao.getVisibleStrokesForPage(scoreId, pageIndex)
+
+    suspend fun insertStroke(stroke: Stroke) = annotationDao.insertStroke(stroke)
+
+    suspend fun undoLastStroke(layerId: Long, pageIndex: Int) =
+        annotationDao.undoLastStroke(layerId, pageIndex)
+
+    suspend fun createLayer(scoreId: Long, name: String, type: LayerType, pageIndex: Int? = null) {
+        val layers = annotationDao.getLayersForScore(scoreId).first()
+        val nextZ = (layers.maxOfOrNull { it.zIndex } ?: -1) + 1
+        annotationDao.insertLayer(
+            AnnotationLayer(
+                scoreId = scoreId,
+                name = name,
+                type = type,
+                pageIndex = pageIndex,
+                zIndex = nextZ
+            )
+        )
+    }
+
+    suspend fun deleteLayer(layerId: Long) = annotationDao.deleteLayer(layerId)
+
+    suspend fun setLayerVisibility(layerId: Long, isVisible: Boolean) =
+        annotationDao.setLayerVisibility(layerId, isVisible)
+
+    suspend fun ensureDefaultLayer(scoreId: Long) {
+        val layers = annotationDao.getLayersForScore(scoreId).first()
+        if (layers.isEmpty()) {
+            createLayer(scoreId, "Layer 1", LayerType.SCORE)
+        }
+    }
+}

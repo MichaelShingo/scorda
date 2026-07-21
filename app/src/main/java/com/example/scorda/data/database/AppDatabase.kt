@@ -6,12 +6,14 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.example.scorda.data.database.dao.AnnotationDao
 import com.example.scorda.data.database.dao.ComposerDao
 import com.example.scorda.data.database.dao.GenreDao
 import com.example.scorda.data.database.dao.InstrumentDao
 import com.example.scorda.data.database.dao.ScoreDao
 import com.example.scorda.data.database.dao.SetlistDao
 import com.example.scorda.data.database.dao.TagDao
+import com.example.scorda.data.database.entities.AnnotationLayer
 import com.example.scorda.data.database.entities.Composer
 import com.example.scorda.data.database.entities.Genre
 import com.example.scorda.data.database.entities.Instrument
@@ -21,6 +23,7 @@ import com.example.scorda.data.database.entities.ScoreInstrumentCrossRef
 import com.example.scorda.data.database.entities.ScoreSetlistCrossRef
 import com.example.scorda.data.database.entities.ScoreTagCrossRef
 import com.example.scorda.data.database.entities.Setlist
+import com.example.scorda.data.database.entities.Stroke
 import com.example.scorda.data.database.entities.Tag
 
 @Database(
@@ -34,9 +37,11 @@ import com.example.scorda.data.database.entities.Tag
         Setlist::class,
         ScoreSetlistCrossRef::class,
         Tag::class,
-        ScoreTagCrossRef::class
+        ScoreTagCrossRef::class,
+        AnnotationLayer::class,
+        Stroke::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -47,6 +52,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun instrumentDao(): InstrumentDao
     abstract fun setlistDao(): SetlistDao
     abstract fun tagDao(): TagDao
+    abstract fun annotationDao(): AnnotationDao
 
     companion object {
         @Volatile

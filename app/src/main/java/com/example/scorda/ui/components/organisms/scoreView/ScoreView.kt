@@ -217,34 +217,45 @@ fun ScoreView() {
                                             isLoaded = true
                                         }
                                     )
+
+                                    DrawingCanvas(
+                                        pdfViewerState = pdfViewerState,
+                                        pageIndex = pageIndex,
+                                        isDrawingMode = uiState.isDrawingMode,
+                                        modifier = Modifier
+                                            .zIndex(1f)
+                                            .fillMaxSize()
+                                    )
                                 }
                             }
                         }
 
-                        ScoreInteractionOverlay(
-                            onToggleNavbar = { scoreViewModel.toggleNavbar() },
-                            onPreviousPage = {
-                                if (pagerState.currentPage > 0) {
-                                    val prev = pagerState.currentPage - 1
-                                    scope.launch {
-                                        pagerState.animateScrollToPage(prev)
+                        if (!uiState.isDrawingMode) {
+                            ScoreInteractionOverlay(
+                                onToggleNavbar = { scoreViewModel.toggleNavbar() },
+                                onPreviousPage = {
+                                    if (pagerState.currentPage > 0) {
+                                        val prev = pagerState.currentPage - 1
+                                        scope.launch {
+                                            pagerState.animateScrollToPage(prev)
+                                        }
+                                    } else {
+                                        scoreViewModel.navigateToPreviousScoreInSetlist()
                                     }
-                                } else {
-                                    scoreViewModel.navigateToPreviousScoreInSetlist()
-                                }
-                            },
-                            onNextPage = {
-                                if (pagerState.currentPage < doc.pageCount - 1) {
-                                    val next = pagerState.currentPage + 1
-                                    scope.launch {
-                                        pagerState.animateScrollToPage(next)
+                                },
+                                onNextPage = {
+                                    if (pagerState.currentPage < doc.pageCount - 1) {
+                                        val next = pagerState.currentPage + 1
+                                        scope.launch {
+                                            pagerState.animateScrollToPage(next)
+                                        }
+                                    } else {
+                                        scoreViewModel.navigateToNextScoreInSetlist()
                                     }
-                                } else {
-                                    scoreViewModel.navigateToNextScoreInSetlist()
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
                 }
             } else if (selectedScore != null) {
