@@ -29,5 +29,6 @@ data class AnnotationLayer(
     val pageIndex: Int? = null, // Only for PAGE type layers
     val isVisible: Boolean = true,
     val zIndex: Int = 0,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
 )

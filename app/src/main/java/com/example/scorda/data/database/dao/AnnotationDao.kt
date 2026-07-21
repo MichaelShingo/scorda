@@ -1,7 +1,6 @@
 package com.example.scorda.data.database.dao
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
@@ -21,8 +20,26 @@ interface AnnotationDao {
     @Query("DELETE FROM annotation_layers WHERE id = :layerId")
     suspend fun deleteLayer(layerId: Long)
 
-    @Query("UPDATE annotation_layers SET isVisible = :isVisible WHERE id = :layerId")
-    suspend fun setLayerVisibility(layerId: Long, isVisible: Boolean)
+    @Query("UPDATE annotation_layers SET isVisible = :isVisible, updatedAt = :updatedAt WHERE id = :layerId")
+    suspend fun setLayerVisibility(
+        layerId: Long,
+        isVisible: Boolean,
+        updatedAt: Long = System.currentTimeMillis()
+    )
+
+    @Query("UPDATE annotation_layers SET name = :name, updatedAt = :updatedAt WHERE id = :layerId")
+    suspend fun renameLayer(
+        layerId: Long,
+        name: String,
+        updatedAt: Long = System.currentTimeMillis()
+    )
+
+    @Query("UPDATE annotation_layers SET zIndex = :zIndex, updatedAt = :updatedAt WHERE id = :layerId")
+    suspend fun updateLayerZIndex(
+        layerId: Long,
+        zIndex: Int,
+        updatedAt: Long = System.currentTimeMillis()
+    )
 
     // Stroke Operations
     @Insert

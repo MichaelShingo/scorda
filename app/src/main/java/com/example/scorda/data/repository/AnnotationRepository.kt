@@ -38,7 +38,13 @@ class AnnotationRepository(private val db: AppDatabase) {
     suspend fun deleteLayer(layerId: Long) = annotationDao.deleteLayer(layerId)
 
     suspend fun setLayerVisibility(layerId: Long, isVisible: Boolean) =
-        annotationDao.setLayerVisibility(layerId, isVisible)
+        annotationDao.setLayerVisibility(layerId, isVisible, System.currentTimeMillis())
+
+    suspend fun renameLayer(layerId: Long, name: String) =
+        annotationDao.renameLayer(layerId, name, System.currentTimeMillis())
+
+    suspend fun updateLayerZIndex(layerId: Long, zIndex: Int) =
+        annotationDao.updateLayerZIndex(layerId, zIndex, System.currentTimeMillis())
 
     suspend fun ensureDefaultLayer(scoreId: Long) {
         val layers = annotationDao.getLayersForScore(scoreId).first()
