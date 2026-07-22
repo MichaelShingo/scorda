@@ -11,29 +11,22 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.scorda.ScordaApplication
 import com.example.scorda.data.OpenScore
 import com.example.scorda.data.SettingsRepository
-import com.example.scorda.data.database.entities.AnnotationLayer
 import com.example.scorda.data.database.entities.Composer
 import com.example.scorda.data.database.entities.Genre
 import com.example.scorda.data.database.entities.Instrument
 import com.example.scorda.data.database.entities.Score
-import com.example.scorda.data.database.entities.Stroke
 import com.example.scorda.data.database.entities.Tag
 import com.example.scorda.data.database.relations.ScoreWithDetails
-import com.example.scorda.data.repository.AnnotationRepository
 import com.example.scorda.data.repository.ScoreRepository
 import com.example.scorda.data.repository.SetlistRepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -48,19 +41,15 @@ data class ScoreUiState(
     val openTabs: List<OpenScoreTab> = emptyList(),
     val selectedTabIndex: Int = 0,
     val selectedScore: ScoreWithDetails? = null,
-    val isNavbarVisible: Boolean = true,
-    val isDrawingMode: Boolean = false
+    val isNavbarVisible: Boolean = true
 )
 
 class ScoreViewModel(
     private val repository: ScoreRepository,
     private val settingsRepository: SettingsRepository,
-    private val setlistRepository: SetlistRepository,
-    private val annotationRepository: AnnotationRepository
+    private val setlistRepository: SetlistRepository
 ) : ViewModel() {
     private val _isNavbarVisible = MutableStateFlow(true)
-    private val _isDrawingMode = MutableStateFlow(false)
-    private val _activeLayerId = MutableStateFlow<Long?>(null)
 
     val scores: StateFlow<List<ScoreWithDetails>> =
         repository.observeScores()
@@ -74,9 +63,8 @@ class ScoreViewModel(
         repository.observeScores(),
         settingsRepository.openScores,
         settingsRepository.currentTabIndex,
-        _isNavbarVisible,
-        _isDrawingMode
-    ) { allScores, openScoreSettings, tabIndex, isNavbarVisible, isDrawingMode ->
+        _isNavbarVisible
+    ) { allScores, openScoreSettings, tabIndex, isNavbarVisible ->
         val openTabs = openScoreSettings.mapNotNull { openSetting ->
             allScores.find { it.score.id == openSetting.scoreId }?.let { details ->
                 OpenScoreTab(
@@ -92,8 +80,7 @@ class ScoreViewModel(
             openTabs = openTabs,
             selectedTabIndex = safeTabIndex,
             selectedScore = openTabs.getOrNull(safeTabIndex)?.scoreDetails,
-            isNavbarVisible = isNavbarVisible,
-            isDrawingMode = isDrawingMode
+            isNavbarVisible = isNavbarVisible
         )
     }.stateIn(
         scope = viewModelScope,
@@ -101,65 +88,12 @@ class ScoreViewModel(
         initialValue = ScoreUiState()
     )
 
-    // Layers Flow
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val currentScoreLayers: StateFlow<List<AnnotationLayer>> = scoreUiState
-        .flatMapLatest { state ->
-            val scoreId = state.selectedScore?.score?.id
-            if (scoreId != null) {
-                annotationRepository.observeLayersForScore(scoreId)
-            } else {
-                flowOf(emptyList())
-            }
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyList()
-        )
-
     fun toggleNavbar() {
-        if (!_isDrawingMode.value) {
-            _isNavbarVisible.value = !_isNavbarVisible.value
-        }
+        _isNavbarVisible.value = !_isNavbarVisible.value
     }
 
-    fun toggleDrawingMode() {
-        _isDrawingMode.value = !_isDrawingMode.value
-        if (_isDrawingMode.value) {
-            _isNavbarVisible.value = true
-            viewModelScope.launch {
-                val scoreId = scoreUiState.value.selectedScore?.score?.id ?: return@launch
-                annotationRepository.ensureDefaultLayer(scoreId)
-                val layers = annotationRepository.observeLayersForScore(scoreId).first()
-                if (_activeLayerId.value == null || layers.none { it.id == _activeLayerId.value }) {
-                    _activeLayerId.value = layers.firstOrNull()?.id
-                }
-            }
-        }
-    }
-
-    fun addStroke(stroke: Stroke) {
-        viewModelScope.launch {
-            annotationRepository.insertStroke(stroke)
-        }
-    }
-
-    fun undoLastStroke(pageIndex: Int) {
-        val layerId = _activeLayerId.value ?: return
-        viewModelScope.launch {
-            annotationRepository.undoLastStroke(layerId, pageIndex)
-        }
-    }
-
-    fun getVisibleStrokesForPage(pageIndex: Int): Flow<List<Stroke>> {
-        val scoreId = scoreUiState.value.selectedScore?.score?.id ?: return flowOf(emptyList())
-        return annotationRepository.observeVisibleStrokesForPage(scoreId, pageIndex)
-    }
-
-    fun getActiveLayerId(): StateFlow<Long?> = _activeLayerId
-
-    fun selectLayer(layerId: Long) {
-        _activeLayerId.value = layerId
+    fun setNavbarVisible(isVisible: Boolean) {
+        _isNavbarVisible.value = isVisible
     }
 
     fun navigateToNextScoreInSetlist() {
@@ -387,8 +321,7 @@ class ScoreViewModel(
                 val scoreRepository = application.container.scoreRepository
                 val settingsRepository = application.container.settingsRepository
                 val setlistRepository = application.container.setlistRepository
-                val annotationRepository = application.container.annotationRepository
-                ScoreViewModel(scoreRepository, settingsRepository, setlistRepository, annotationRepository)
+                ScoreViewModel(scoreRepository, settingsRepository, setlistRepository)
             }
         }
     }

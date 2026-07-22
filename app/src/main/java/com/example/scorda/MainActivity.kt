@@ -28,6 +28,8 @@ import com.example.scorda.ui.navigation.ScordaNavHost
 import com.example.scorda.ui.theme.LocalThemeViewModel
 import com.example.scorda.ui.theme.ScordaTheme
 import com.example.scorda.ui.theme.ThemeViewModel
+import com.example.scorda.ui.viewmodel.AnnotationViewModel
+import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.ui.viewmodel.LocalSearchViewModel
 import com.example.scorda.ui.viewmodel.ScoreViewModel
@@ -41,6 +43,10 @@ class MainActivity : FragmentActivity() {
 
     private val scoreViewModel: ScoreViewModel by viewModels {
         ScoreViewModel.Factory
+    }
+
+    private val annotationViewModel: AnnotationViewModel by viewModels {
+        AnnotationViewModel.provideFactory(scoreViewModel)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,6 +69,7 @@ class MainActivity : FragmentActivity() {
                 LocalSearchViewModel provides searchViewModel,
                 LocalNavController provides navController,
                 LocalScoreViewModel provides scoreViewModel,
+                LocalAnnotationViewModel provides annotationViewModel,
             ) {
                 val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
 

@@ -1,20 +1,19 @@
 package com.example.scorda.ui.components.organisms.navbar
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Undo
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.FormatListNumbered
 import androidx.compose.material.icons.rounded.Gesture
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -23,18 +22,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.scorda.ui.components.organisms.drawing.DrawingPanel
 import com.example.scorda.ui.components.organisms.navbar.musictools.MusicTools
 import com.example.scorda.ui.components.organisms.setlists.SetlistScreen
-import com.example.scorda.ui.viewmodel.ScoreViewModel
+import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
+import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Navbar(
     onSearchClick: () -> Unit,
 ) {
-    val viewModel: ScoreViewModel = viewModel(factory = ScoreViewModel.Factory)
-    val scoreUiState by viewModel.scoreUiState.collectAsStateWithLifecycle()
+    val scoreViewModel = LocalScoreViewModel.current
+    val annotationViewModel = LocalAnnotationViewModel.current
+    val scoreUiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
+    val annotationUiState by annotationViewModel.uiState.collectAsStateWithLifecycle()
     val currentSetlistId = scoreUiState.openTabs.getOrNull(scoreUiState.selectedTabIndex)?.setlistId
 
     TopAppBar(
@@ -46,38 +48,36 @@ fun Navbar(
         ),
         actions = {
             AnimatedContent(
-                targetState = scoreUiState.isDrawingMode,
+                targetState = annotationUiState.isDrawingMode,
                 transitionSpec = {
-                    fadeIn() togetherWith fadeOut()
+                    if (targetState) {
+                        (slideInHorizontally { it } + fadeIn())
+                            .togetherWith(slideOutHorizontally { -it } + fadeOut())
+                    } else {
+                        (slideInHorizontally { -it } + fadeIn())
+                            .togetherWith(slideOutHorizontally { it } + fadeOut())
+                    }.using(
+                        SizeTransform(clip = false)
+                    )
                 },
-                label = "NavbarActions"
-            ) { isDrawing ->
-                if (isDrawing) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = {
-                            val currentPage = scoreUiState.openTabs.getOrNull(scoreUiState.selectedTabIndex)?.lastOpenPage ?: 0
-                            viewModel.undoLastStroke(currentPage)
-                        }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Rounded.Undo,
-                                contentDescription = "Undo"
-                            )
-                        }
-                        IconButton(onClick = { viewModel.toggleDrawingMode() }) {
-                            Icon(
-                                imageVector = Icons.Rounded.Check,
-                                contentDescription = "Done"
-                            )
-                        }
-                    }
+                label = "NavbarActionsAnimation"
+            ) { isDrawingMode ->
+                if (isDrawingMode) {
+                    DrawingPanel()
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        AddScoreButton(viewModel = viewModel)
+                        AddScoreButton(viewModel = scoreViewModel)
 
-                        CustomAnchoredPopup(
-                            icon = Icons.Rounded.FormatListNumbered,
-                            contentDescription = "Setlists",
+                        AnchoredPopup(
                             size = CustomAnchoredPopupSize.Large,
+                            anchor = { onOpen, isExpanded ->
+                                NavbarButton(
+                                    imageVector = Icons.Rounded.FormatListNumbered,
+                                    contentDescription = "Setlists",
+                                    onClick = onOpen,
+                                    isSelected = isExpanded
+                                )
+                            }
                         ) { onDismiss ->
                             SetlistScreen(
                                 onClose = onDismiss,
@@ -85,25 +85,30 @@ fun Navbar(
                             )
                         }
 
-                        IconButton(onClick = { viewModel.toggleDrawingMode() }) {
-                            Icon(
-                                imageVector = Icons.Rounded.Gesture,
-                                contentDescription = "Annotate"
-                            )
-                        }
-                        CustomAnchoredPopup(
-                            icon = Icons.Rounded.GraphicEq,
-                            contentDescription = "Metronome, Tuner, Drone",
+                        NavbarButton(
+                            imageVector = Icons.Rounded.Gesture,
+                            contentDescription = "Annotate",
+                            onClick = { annotationViewModel.toggleDrawingMode() }
+                        )
+
+                        AnchoredPopup(
+                            anchor = { onOpen, isExpanded ->
+                                NavbarButton(
+                                    imageVector = Icons.Rounded.GraphicEq,
+                                    contentDescription = "Music Tools",
+                                    onClick = onOpen,
+                                    isSelected = isExpanded
+                                )
+                            }
                         ) {
                             MusicTools()
                         }
 
-                        IconButton(onClick = onSearchClick) {
-                            Icon(
-                                imageVector = Icons.Rounded.Search,
-                                contentDescription = "Search Scores"
-                            )
-                        }
+                        NavbarButton(
+                            imageVector = Icons.Rounded.Search,
+                            contentDescription = "Search Scores",
+                            onClick = onSearchClick
+                        )
 
                         MoreDropdownMenu()
                     }

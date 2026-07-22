@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +49,7 @@ import androidx.pdf.compose.PdfViewer
 import androidx.pdf.compose.PdfViewerState
 import androidx.pdf.view.PdfView
 import com.example.scorda.ui.components.molecules.scoreTabs.ScoreTabs
+import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.ui.viewmodel.LocalSearchViewModel
 import kotlinx.coroutines.delay
@@ -58,8 +60,10 @@ import java.io.File
 fun ScoreView() {
     val scoreViewModel = LocalScoreViewModel.current
     val searchViewModel = LocalSearchViewModel.current
+    val annotationViewModel = LocalAnnotationViewModel.current
     val scope = rememberCoroutineScope()
     val uiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
+    val annotationUiState by annotationViewModel.uiState.collectAsState()
     val selectedScore = uiState.selectedScore
     val selectedTab = uiState.openTabs.getOrNull(uiState.selectedTabIndex)
 
@@ -221,7 +225,7 @@ fun ScoreView() {
                                     DrawingCanvas(
                                         pdfViewerState = pdfViewerState,
                                         pageIndex = pageIndex,
-                                        isDrawingMode = uiState.isDrawingMode,
+                                        isDrawingMode = annotationUiState.isDrawingMode,
                                         modifier = Modifier
                                             .zIndex(1f)
                                             .fillMaxSize()
@@ -230,7 +234,7 @@ fun ScoreView() {
                             }
                         }
 
-                        if (!uiState.isDrawingMode) {
+                        if (!annotationUiState.isDrawingMode) {
                             ScoreInteractionOverlay(
                                 onToggleNavbar = { scoreViewModel.toggleNavbar() },
                                 onPreviousPage = {

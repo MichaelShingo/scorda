@@ -14,11 +14,12 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.pdf.PdfPoint
 import androidx.pdf.compose.PdfViewerState
 import com.example.scorda.data.database.entities.AnnotationPoint
 import com.example.scorda.data.database.entities.Stroke
-import com.example.scorda.ui.viewmodel.LocalScoreViewModel
+import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
 import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
 
 @Composable
@@ -28,18 +29,21 @@ fun DrawingCanvas(
     isDrawingMode: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val viewModel = LocalScoreViewModel.current
-    val strokes by viewModel.getVisibleStrokesForPage(pageIndex)
+    val annotationViewModel = LocalAnnotationViewModel.current
+    val strokes by annotationViewModel.getVisibleStrokesForPage(pageIndex)
         .collectAsState(initial = emptyList())
-    val activeLayerId by viewModel.getActiveLayerId().collectAsState()
+    val annotationUiState by annotationViewModel.uiState.collectAsStateWithLifecycle()
+
+    val activeLayerId = annotationUiState.activeLayerId
+    val selectedBrush = annotationUiState.selectedBrush
 
     val currentStrokePoints = remember { mutableStateListOf<AnnotationPoint>() }
 
     Canvas(
         modifier = modifier
             .fillMaxSize()
-            .pointerInput(isDrawingMode, activeLayerId) {
-                if (!isDrawingMode || activeLayerId == null) return@pointerInput
+            .pointerInput(isDrawingMode, activeLayerId, selectedBrush) {
+                if (!isDrawingMode || activeLayerId == null || selectedBrush == null) return@pointerInput
 
                 detectDragGestures(
                     onDragStart = { offset ->
@@ -56,13 +60,13 @@ fun DrawingCanvas(
                     },
                     onDragEnd = {
                         if (currentStrokePoints.isNotEmpty()) {
-                            viewModel.addStroke(
+                            annotationViewModel.addStroke(
                                 Stroke(
-                                    layerId = activeLayerId!!,
+                                    layerId = activeLayerId,
                                     pageIndex = pageIndex,
                                     points = currentStrokePoints.toList(),
-                                    color = Color.Black.hashCode(),
-                                    thickness = 5f
+                                    color = selectedBrush.color,
+                                    thickness = selectedBrush.thickness
                                 )
                             )
                             currentStrokePoints.clear()
@@ -97,7 +101,7 @@ fun DrawingCanvas(
         }
 
         // Draw current stroke (optimistic UI)
-        if (currentStrokePoints.isNotEmpty()) {
+        if (currentStrokePoints.isNotEmpty() && selectedBrush != null) {
             val path = Path()
             currentStrokePoints.forEachIndexed { index, point ->
                 val screenOffset =
@@ -109,9 +113,9 @@ fun DrawingCanvas(
             }
             drawPath(
                 path = path,
-                color = Color.Black,
+                color = Color(selectedBrush.color),
                 style = DrawStroke(
-                    width = 5f * pdfViewerState.zoom,
+                    width = selectedBrush.thickness * pdfViewerState.zoom,
                     cap = StrokeCap.Round,
                     join = StrokeJoin.Round
                 )

@@ -2,6 +2,7 @@ package com.example.scorda.data.repository
 
 import com.example.scorda.data.database.AppDatabase
 import com.example.scorda.data.database.entities.AnnotationLayer
+import com.example.scorda.data.database.entities.Brush
 import com.example.scorda.data.database.entities.LayerType
 import com.example.scorda.data.database.entities.Stroke
 import kotlinx.coroutines.flow.Flow
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.first
 
 class AnnotationRepository(private val db: AppDatabase) {
     private val annotationDao = db.annotationDao()
+    private val brushDao = db.brushDao()
 
     fun observeLayersForScore(scoreId: Long): Flow<List<AnnotationLayer>> =
         annotationDao.getLayersForScore(scoreId)
@@ -52,4 +54,15 @@ class AnnotationRepository(private val db: AppDatabase) {
             createLayer(scoreId, "Layer 1", LayerType.SCORE)
         }
     }
+
+    // Brush Operations
+    fun observeBrushes(): Flow<List<Brush>> = brushDao.observeBrushes()
+
+    suspend fun insertBrush(brush: Brush) = brushDao.insertBrush(brush)
+
+    suspend fun updateBrush(brush: Brush) = brushDao.updateBrush(brush)
+
+    suspend fun deleteBrush(brush: Brush) = brushDao.deleteBrush(brush)
+
+    suspend fun getNextBrushOrder(): Int = (brushDao.getMaxOrder() ?: -1) + 1
 }
