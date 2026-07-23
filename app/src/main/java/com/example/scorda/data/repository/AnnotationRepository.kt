@@ -20,6 +20,8 @@ class AnnotationRepository(private val db: AppDatabase) {
 
     suspend fun insertStroke(stroke: Stroke) = annotationDao.insertStroke(stroke)
 
+    suspend fun deleteStrokes(strokeIds: List<Long>) = annotationDao.deleteStrokes(strokeIds)
+
     suspend fun undoLastStroke(layerId: Long, pageIndex: Int) =
         annotationDao.undoLastStroke(layerId, pageIndex)
 

@@ -57,4 +57,7 @@ interface AnnotationDao {
     @Transaction
     @Query("SELECT * FROM strokes WHERE layerId IN (SELECT id FROM annotation_layers WHERE scoreId = :scoreId AND isVisible = 1) AND pageIndex = :pageIndex ORDER BY createdAt ASC")
     fun getVisibleStrokesForPage(scoreId: Long, pageIndex: Int): Flow<List<Stroke>>
+
+    @Query("DELETE FROM strokes WHERE id IN (:strokeIds)")
+    suspend fun deleteStrokes(strokeIds: List<Long>)
 }

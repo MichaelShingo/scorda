@@ -28,8 +28,10 @@ import kotlinx.coroutines.launch
 
 data class AnnotationUiState(
     val brushes: List<Brush> = emptyList(),
+    val eraserThickness: Float = 20f,
     val selectedBrushId: Long? = null,
     val isDrawingMode: Boolean = false,
+    val isEraserMode: Boolean = false,
     val activeLayerId: Long? = null,
     val layers: List<AnnotationLayer> = emptyList()
 ) {
@@ -38,18 +40,22 @@ data class AnnotationUiState(
 
 class AnnotationViewModel(
     private val annotationRepository: AnnotationRepository,
+    private val settingsRepository: com.example.scorda.data.SettingsRepository,
     private val scoreViewModel: ScoreViewModel
 ) : ViewModel() {
 
     private val _selectedBrushId = MutableStateFlow<Long?>(null)
     private val _isDrawingMode = MutableStateFlow(false)
+    private val _isEraserMode = MutableStateFlow(false)
     private val _activeLayerId = MutableStateFlow<Long?>(null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<AnnotationUiState> = combine(
         annotationRepository.observeBrushes(),
+        settingsRepository.eraserThickness,
         _selectedBrushId,
         _isDrawingMode,
+        _isEraserMode,
         _activeLayerId,
         scoreViewModel.scoreUiState.flatMapLatest { state ->
             val scoreId = state.selectedScore?.score?.id
@@ -59,13 +65,15 @@ class AnnotationViewModel(
                 flowOf(emptyList())
             }
         }
-    ) { brushes, selectedId, isDrawingMode, activeLayerId, layers ->
+    ) { arr ->
         AnnotationUiState(
-            brushes = brushes,
-            selectedBrushId = selectedId,
-            isDrawingMode = isDrawingMode,
-            activeLayerId = activeLayerId,
-            layers = layers
+            brushes = arr[0] as List<Brush>,
+            eraserThickness = arr[1] as Float,
+            selectedBrushId = arr[2] as Long?,
+            isDrawingMode = arr[3] as Boolean,
+            isEraserMode = arr[4] as Boolean,
+            activeLayerId = arr[5] as Long?,
+            layers = arr[6] as List<AnnotationLayer>
         )
     }.stateIn(
         scope = viewModelScope,
@@ -75,6 +83,9 @@ class AnnotationViewModel(
 
     fun toggleDrawingMode() {
         _isDrawingMode.value = !_isDrawingMode.value
+        if (!_isDrawingMode.value) {
+            _isEraserMode.value = false
+        }
         if (_isDrawingMode.value) {
             viewModelScope.launch {
                 val scoreId = scoreViewModel.scoreUiState.value.selectedScore?.score?.id ?: return@launch
@@ -89,6 +100,17 @@ class AnnotationViewModel(
 
     fun selectBrush(brushId: Long) {
         _selectedBrushId.value = brushId
+        _isEraserMode.value = false
+    }
+
+    fun toggleEraserMode() {
+        _isEraserMode.value = !_isEraserMode.value
+    }
+
+    fun updateEraserThickness(thickness: Float) {
+        viewModelScope.launch {
+            settingsRepository.saveEraserThickness(thickness)
+        }
     }
 
     fun addBrush() {
@@ -140,6 +162,13 @@ class AnnotationViewModel(
         }
     }
 
+    fun deleteStrokes(strokeIds: List<Long>) {
+        if (strokeIds.isEmpty()) return
+        viewModelScope.launch {
+            annotationRepository.deleteStrokes(strokeIds)
+        }
+    }
+
     fun undoLastStroke(pageIndex: Int) {
         val layerId = _activeLayerId.value ?: return
         viewModelScope.launch {
@@ -161,7 +190,8 @@ class AnnotationViewModel(
             initializer {
                 val application = this[APPLICATION_KEY] as ScordaApplication
                 val annotationRepository = application.container.annotationRepository
-                AnnotationViewModel(annotationRepository, scoreViewModel)
+                val settingsRepository = application.container.settingsRepository
+                AnnotationViewModel(annotationRepository, settingsRepository, scoreViewModel)
             }
         }
     }
