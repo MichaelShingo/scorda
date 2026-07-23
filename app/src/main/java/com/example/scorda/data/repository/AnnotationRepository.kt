@@ -39,7 +39,14 @@ class AnnotationRepository(private val db: AppDatabase) {
         )
     }
 
+    suspend fun clearLayer(layerId: Long) = annotationDao.clearLayer(layerId)
+
     suspend fun deleteLayer(layerId: Long) = annotationDao.deleteLayer(layerId)
+
+    suspend fun duplicateLayer(layerId: Long) {
+        // Implementation for duplication could be complex (copying strokes)
+        // For now, let's keep it as a placeholder or implement if needed
+    }
 
     suspend fun setLayerVisibility(layerId: Long, isVisible: Boolean) =
         annotationDao.setLayerVisibility(layerId, isVisible, System.currentTimeMillis())

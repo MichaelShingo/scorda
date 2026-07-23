@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AutoFixNormal
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -87,6 +88,22 @@ fun DrawingPanel(
             Icon(
                 imageVector = Icons.Rounded.Check,
                 contentDescription = "Done"
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        IconButton(
+            onClick = { annotationViewModel.toggleLayersPanel() },
+            modifier = Modifier.background(
+                color = if (annotationUiState.isLayersPanelOpen) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                shape = CircleShape
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Layers,
+                contentDescription = "Layers",
+                tint = if (annotationUiState.isLayersPanelOpen) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
             )
         }
     }

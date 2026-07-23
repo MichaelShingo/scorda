@@ -12,6 +12,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.scorda.ScordaApplication
 import com.example.scorda.data.database.entities.AnnotationLayer
 import com.example.scorda.data.database.entities.Brush
+import com.example.scorda.data.database.entities.LayerType
 import com.example.scorda.data.database.entities.Stroke
 import com.example.scorda.data.repository.AnnotationRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,6 +33,7 @@ data class AnnotationUiState(
     val selectedBrushId: Long? = null,
     val isDrawingMode: Boolean = false,
     val isEraserMode: Boolean = false,
+    val isLayersPanelOpen: Boolean = false,
     val activeLayerId: Long? = null,
     val layers: List<AnnotationLayer> = emptyList()
 ) {
@@ -47,6 +49,7 @@ class AnnotationViewModel(
     private val _selectedBrushId = MutableStateFlow<Long?>(null)
     private val _isDrawingMode = MutableStateFlow(false)
     private val _isEraserMode = MutableStateFlow(false)
+    private val _isLayersPanelOpen = MutableStateFlow(false)
     private val _activeLayerId = MutableStateFlow<Long?>(null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -56,6 +59,7 @@ class AnnotationViewModel(
         _selectedBrushId,
         _isDrawingMode,
         _isEraserMode,
+        _isLayersPanelOpen,
         _activeLayerId,
         scoreViewModel.scoreUiState.flatMapLatest { state ->
             val scoreId = state.selectedScore?.score?.id
@@ -72,8 +76,9 @@ class AnnotationViewModel(
             selectedBrushId = arr[2] as Long?,
             isDrawingMode = arr[3] as Boolean,
             isEraserMode = arr[4] as Boolean,
-            activeLayerId = arr[5] as Long?,
-            layers = arr[6] as List<AnnotationLayer>
+            isLayersPanelOpen = arr[5] as Boolean,
+            activeLayerId = arr[6] as Long?,
+            layers = arr[7] as List<AnnotationLayer>
         )
     }.stateIn(
         scope = viewModelScope,
@@ -85,10 +90,12 @@ class AnnotationViewModel(
         _isDrawingMode.value = !_isDrawingMode.value
         if (!_isDrawingMode.value) {
             _isEraserMode.value = false
+            _isLayersPanelOpen.value = false
         }
         if (_isDrawingMode.value) {
             viewModelScope.launch {
-                val scoreId = scoreViewModel.scoreUiState.value.selectedScore?.score?.id ?: return@launch
+                val scoreId =
+                    scoreViewModel.scoreUiState.value.selectedScore?.score?.id ?: return@launch
                 annotationRepository.ensureDefaultLayer(scoreId)
                 val layers = annotationRepository.observeLayersForScore(scoreId).first()
                 if (_activeLayerId.value == null || layers.none { it.id == _activeLayerId.value }) {
@@ -105,6 +112,49 @@ class AnnotationViewModel(
 
     fun toggleEraserMode() {
         _isEraserMode.value = !_isEraserMode.value
+    }
+
+    fun toggleLayersPanel() {
+        _isLayersPanelOpen.value = !_isLayersPanelOpen.value
+    }
+
+    fun setLayerVisibility(layerId: Long, isVisible: Boolean) {
+        viewModelScope.launch {
+            annotationRepository.setLayerVisibility(layerId, isVisible)
+        }
+    }
+
+    fun renameLayer(layerId: Long, newName: String) {
+        viewModelScope.launch {
+            annotationRepository.renameLayer(layerId, newName)
+        }
+    }
+
+    fun deleteLayer(layerId: Long) {
+        viewModelScope.launch {
+            annotationRepository.deleteLayer(layerId)
+            if (_activeLayerId.value == layerId) {
+                val scoreId =
+                    scoreViewModel.scoreUiState.value.selectedScore?.score?.id ?: return@launch
+                val layers = annotationRepository.observeLayersForScore(scoreId).first()
+                _activeLayerId.value = layers.firstOrNull()?.id
+            }
+        }
+    }
+
+    fun clearLayer(layerId: Long) {
+        viewModelScope.launch {
+            annotationRepository.clearLayer(layerId)
+        }
+    }
+
+    fun addLayer(type: LayerType, pageIndex: Int? = null) {
+        viewModelScope.launch {
+            val scoreId =
+                scoreViewModel.scoreUiState.value.selectedScore?.score?.id ?: return@launch
+            val name = if (type == LayerType.SCORE) "New Score Layer" else "New Page Layer"
+            annotationRepository.createLayer(scoreId, name, type, pageIndex)
+        }
     }
 
     fun updateEraserThickness(thickness: Float) {
@@ -177,7 +227,8 @@ class AnnotationViewModel(
     }
 
     fun getVisibleStrokesForPage(pageIndex: Int): Flow<List<Stroke>> {
-        val scoreId = scoreViewModel.scoreUiState.value.selectedScore?.score?.id ?: return flowOf(emptyList())
+        val scoreId =
+            scoreViewModel.scoreUiState.value.selectedScore?.score?.id ?: return flowOf(emptyList())
         return annotationRepository.observeVisibleStrokesForPage(scoreId, pageIndex)
     }
 
@@ -186,14 +237,15 @@ class AnnotationViewModel(
     }
 
     companion object {
-        fun provideFactory(scoreViewModel: ScoreViewModel): ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val application = this[APPLICATION_KEY] as ScordaApplication
-                val annotationRepository = application.container.annotationRepository
-                val settingsRepository = application.container.settingsRepository
-                AnnotationViewModel(annotationRepository, settingsRepository, scoreViewModel)
+        fun provideFactory(scoreViewModel: ScoreViewModel): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer {
+                    val application = this[APPLICATION_KEY] as ScordaApplication
+                    val annotationRepository = application.container.annotationRepository
+                    val settingsRepository = application.container.settingsRepository
+                    AnnotationViewModel(annotationRepository, settingsRepository, scoreViewModel)
+                }
             }
-        }
     }
 }
 

@@ -1,7 +1,6 @@
 package com.example.scorda.ui.components.organisms.scoreView
 
 import android.net.Uri
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -9,7 +8,9 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -49,6 +50,7 @@ import androidx.pdf.compose.PdfViewer
 import androidx.pdf.compose.PdfViewerState
 import androidx.pdf.view.PdfView
 import com.example.scorda.ui.components.molecules.scoreTabs.ScoreTabs
+import com.example.scorda.ui.components.organisms.drawing.LayersPanel
 import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.ui.viewmodel.LocalSearchViewModel
@@ -147,12 +149,7 @@ fun ScoreView() {
                                     SinglePagePdfDocument(doc, pageIndex)
                                 }
                                 val pdfViewerState = remember { PdfViewerState() }
-                                Log.d(
-                                    "pdf state",
-                                    pdfViewerState.getVisiblePageOffset(pageIndex).toString()
-                                )
                                 var isLoaded by remember { mutableStateOf(false) }
-                                var isReadyToShow by remember { mutableStateOf(false) }
 
                                 val alpha by animateFloatAsState(
                                     targetValue = if (isLoaded) 1f else 0f,
@@ -186,7 +183,6 @@ fun ScoreView() {
                                         }
                                         // Force centering by scrolling to the single isolated page
                                         pdfViewerState.scrollToPage(0)
-                                        isReadyToShow = true
                                     }
                                 }
 
@@ -232,6 +228,21 @@ fun ScoreView() {
                                     )
                                 }
                             }
+                        }
+
+                        // Layers Panel Overlay
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = annotationUiState.isLayersPanelOpen,
+                            enter = slideInHorizontally { it } + fadeIn(),
+                            exit = slideOutHorizontally { it } + fadeOut(),
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .zIndex(2f)
+                        ) {
+                            LayersPanel(
+                                pageIndex = pagerState.currentPage,
+                                onClose = { annotationViewModel.toggleLayersPanel() }
+                            )
                         }
 
                         if (!annotationUiState.isDrawingMode) {
