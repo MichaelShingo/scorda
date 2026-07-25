@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -31,6 +32,7 @@ class SettingsRepository(private val context: Context) {
     private val _currentSetlistId = longPreferencesKey("current_setlist_id")
     private val _currentTabIndex = longPreferencesKey("current_tab_index")
     private val _openScores = stringPreferencesKey("open_scores")
+    private val _eraserThickness = floatPreferencesKey("eraser_thickness")
 
     val openScores: Flow<List<OpenScore>> = context.dataStore.data
         .catch { exception ->
@@ -85,6 +87,18 @@ class SettingsRepository(private val context: Context) {
             preferences[_currentTabIndex]?.toInt() ?: 0
         }
 
+    val eraserThickness: Flow<Float> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            preferences[_eraserThickness] ?: 20f
+        }
+
     suspend fun updateOpenScores(transform: (List<OpenScore>) -> List<OpenScore>) {
         context.dataStore.edit { preferences ->
             val json = preferences[_openScores] ?: "[]"
@@ -117,6 +131,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun saveDarkMode(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[_isDarkMode] = enabled
+        }
+    }
+
+    suspend fun saveEraserThickness(thickness: Float) {
+        context.dataStore.edit { preferences ->
+            preferences[_eraserThickness] = thickness
         }
     }
 }

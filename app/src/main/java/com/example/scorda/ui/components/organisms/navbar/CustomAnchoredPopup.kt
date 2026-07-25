@@ -15,9 +15,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.GenericShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -29,7 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -67,12 +63,11 @@ sealed interface CustomAnchoredPopupSize {
 }
 
 @Composable
-fun CustomAnchoredPopup(
-    icon: ImageVector,
-    contentDescription: String,
+fun AnchoredPopup(
     modifier: Modifier = Modifier,
     size: CustomAnchoredPopupSize = CustomAnchoredPopupSize.Medium,
-    content: @Composable (() -> Unit) -> Unit,
+    anchor: @Composable (onOpen: () -> Unit, isExpanded: Boolean) -> Unit,
+    content: @Composable (onDismiss: () -> Unit) -> Unit,
 ) {
     var isPopupVisible by remember { mutableStateOf(false) }
     val expandedState = remember { MutableTransitionState(false) }
@@ -82,13 +77,9 @@ fun CustomAnchoredPopup(
     }
 
     val density = LocalDensity.current
-
-    // This state tracks the caret's horizontal position relative to the popup's left edge
     var caretXOffset by remember { mutableStateOf(size.width / 2) }
     val caretWidth = 16.dp
 
-    // We use a custom provider to calculate the exact position of the popup
-    // and where the caret needs to be to point at the button.
     val popupPositionProvider = remember(density, size.width) {
         object : PopupPositionProvider {
             override fun calculatePosition(
@@ -97,45 +88,21 @@ fun CustomAnchoredPopup(
                 layoutDirection: LayoutDirection,
                 popupContentSize: IntSize
             ): IntOffset {
-                // 1. Calculate ideal X (centered under button)
                 val idealX = anchorBounds.left + (anchorBounds.width - popupContentSize.width) / 2
-
-                // 2. Clamp X to screen edges (handling the "too close to edge" issue)
                 val x = idealX.coerceIn(0, windowSize.width - popupContentSize.width)
-
-                // 3. Position Y (approx 56dp below anchor top)
                 val y = anchorBounds.top + with(density) { 56.dp.roundToPx() }
-
-                // 4. Calculate where the caret should be relative to the popup's X
                 val anchorCenterX = anchorBounds.left + anchorBounds.width / 2
-
-                // Ensure caret tip stays within the surface boundaries
                 val minCaretX = with(density) { (caretWidth / 2 + 12.dp).roundToPx() }
                 val maxCaretX = with(density) { (size.width - caretWidth / 2 - 12.dp).roundToPx() }
-
                 val relativeCaretX = (anchorCenterX - x).coerceIn(minCaretX, maxCaretX)
-
-                // Update the caret offset state
                 caretXOffset = with(density) { relativeCaretX.toDp() }
-
                 return IntOffset(x, y)
             }
         }
     }
 
     Box(modifier = modifier) {
-        IconButton(
-            onClick = { isPopupVisible = !isPopupVisible },
-            colors = IconButtonDefaults.iconButtonColors(
-                contentColor = if (isPopupVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                containerColor = if (isPopupVisible) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
-            )
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-            )
-        }
+        anchor({ isPopupVisible = true }, isPopupVisible)
 
         if (expandedState.currentState || expandedState.targetState) {
             Popup(

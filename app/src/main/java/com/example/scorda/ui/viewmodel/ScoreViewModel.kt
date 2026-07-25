@@ -22,6 +22,7 @@ import com.example.scorda.data.repository.SetlistRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -48,7 +49,7 @@ class ScoreViewModel(
     private val settingsRepository: SettingsRepository,
     private val setlistRepository: SetlistRepository
 ) : ViewModel() {
-    private val _isNavbarVisible = kotlinx.coroutines.flow.MutableStateFlow(true)
+    private val _isNavbarVisible = MutableStateFlow(true)
 
     val scores: StateFlow<List<ScoreWithDetails>> =
         repository.observeScores()
@@ -89,6 +90,10 @@ class ScoreViewModel(
 
     fun toggleNavbar() {
         _isNavbarVisible.value = !_isNavbarVisible.value
+    }
+
+    fun setNavbarVisible(isVisible: Boolean) {
+        _isNavbarVisible.value = isVisible
     }
 
     fun navigateToNextScoreInSetlist() {

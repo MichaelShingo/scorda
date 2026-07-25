@@ -3,6 +3,7 @@ package com.example.scorda.data
 import android.content.Context
 import com.example.scorda.data.database.AppDatabase
 import com.example.scorda.data.database.DatabaseSeeder
+import com.example.scorda.data.repository.AnnotationRepository
 import com.example.scorda.data.repository.ComposerRepository
 import com.example.scorda.data.repository.GenreRepository
 import com.example.scorda.data.repository.InstrumentRepository
@@ -22,7 +23,7 @@ interface AppContainer {
     val instrumentRepository: InstrumentRepository
     val tagRepository: TagRepository
     val settingsRepository: SettingsRepository
-
+    val annotationRepository: AnnotationRepository
 }
 
 class DefaultAppContainer(private val context: Context) : AppContainer {
@@ -63,5 +64,7 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
         SettingsRepository(context)
     }
 
-
+    override val annotationRepository: AnnotationRepository by lazy {
+        AnnotationRepository(database)
+    }
 }
