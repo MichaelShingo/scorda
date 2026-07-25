@@ -69,8 +69,8 @@ fun AddScoreToSetlistScreen(
                             onScoreClick = { _ ->
                                 // Optional: Open score?
                             },
-                            onRemoveScoreClick = { score ->
-                                setlistViewModel.removeScoreFromSetlist(score.score.id, setlistId)
+                            onRemoveScoreClick = { entry ->
+                                setlistViewModel.removeScoreFromSetlist(entry.crossRef.id)
                             }
                         )
                     }
@@ -81,16 +81,12 @@ fun AddScoreToSetlistScreen(
                 // Right half: Search and add
                 Box(modifier = Modifier.weight(1f)) {
                     val addedScoreIds =
-                        setlistWithDetails?.scores?.map { it.score.id }?.toSet() ?: emptySet()
+                        setlistWithDetails?.entries?.map { it.crossRef.scoreId }?.toSet() ?: emptySet()
                     SearchScores(
                         context = SearchScoresContext.Setlist,
                         addedScoreIds = addedScoreIds,
                         onScoreClick = { scoreId ->
-                            if (addedScoreIds.contains(scoreId)) {
-                                setlistViewModel.removeScoreFromSetlist(scoreId, setlistId)
-                            } else {
-                                setlistViewModel.addScoreToSetlist(scoreId, setlistId)
-                            }
+                            setlistViewModel.addScoreToSetlist(scoreId, setlistId)
                         }
                     )
                 }

@@ -72,9 +72,9 @@ class SetlistViewModel(
         }
     }
 
-    fun removeScoreFromSetlist(scoreId: Long, setlistId: Long) {
+    fun removeScoreFromSetlist(entryId: Long) {
         viewModelScope.launch {
-            repository.removeScoreFromSetlist(scoreId, setlistId)
+            repository.removeScoreFromSetlist(entryId)
         }
     }
 

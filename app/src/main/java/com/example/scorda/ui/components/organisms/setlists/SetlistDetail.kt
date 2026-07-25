@@ -11,8 +11,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.example.scorda.data.database.relations.ScoreWithDetails
+import com.example.scorda.data.database.relations.SetlistEntry
 import com.example.scorda.data.database.relations.SetlistWithDetails
 import com.example.scorda.ui.components.molecules.scoreListItem.ScoreListItem
 
@@ -22,12 +24,16 @@ fun SetlistDetail(
     onScoreClick: (ScoreWithDetails) -> Unit,
     modifier: Modifier = Modifier,
     currentScoreId: Long? = null,
-    onRemoveScoreClick: ((ScoreWithDetails) -> Unit)? = null,
+    onRemoveScoreClick: ((SetlistEntry) -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
 
-    LaunchedEffect(currentScoreId, setlistWithDetails.scores) {
-        val index = setlistWithDetails.scores.indexOfFirst { it.score.id == currentScoreId }
+    val sortedEntries = remember(setlistWithDetails.entries) {
+        setlistWithDetails.entries.sortedBy { it.crossRef.position }
+    }
+
+    LaunchedEffect(currentScoreId, sortedEntries) {
+        val index = sortedEntries.indexOfFirst { it.scoreWithDetails.score.id == currentScoreId }
         if (index != -1) {
             val viewportHeight = listState.layoutInfo.viewportSize.height
             if (viewportHeight > 0) {
@@ -43,15 +49,18 @@ fun SetlistDetail(
         state = listState,
         modifier = modifier.fillMaxSize()
     ) {
-        items(setlistWithDetails.scores) { scoreWithDetails ->
+        items(
+            items = sortedEntries,
+            key = { entry: SetlistEntry -> entry.crossRef.id }
+        ) { entry ->
             ScoreListItem(
-                scoreWithDetails = scoreWithDetails,
+                scoreWithDetails = entry.scoreWithDetails,
                 modifier = Modifier,
-                isSelected = scoreWithDetails.score.id == currentScoreId,
-                leadingContent = onRemoveScoreClick?.let {
+                isSelected = entry.scoreWithDetails.score.id == currentScoreId,
+                leadingContent = onRemoveScoreClick?.let { onRemove ->
                     {
                         IconButton(
-                            onClick = { it(scoreWithDetails) }
+                            onClick = { onRemove(entry) }
                         ) {
                             Icon(
                                 imageVector = Icons.Default.RemoveCircleOutline,
@@ -61,7 +70,7 @@ fun SetlistDetail(
                         }
                     }
                 },
-                onClick = { onScoreClick(scoreWithDetails) }
+                onClick = { onScoreClick(entry.scoreWithDetails) }
             )
         }
     }

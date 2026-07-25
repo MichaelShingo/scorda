@@ -27,10 +27,17 @@ class SetlistRepository(
     suspend fun deleteSetlist(setlist: Setlist) = setlistDao.delete(setlist)
 
     suspend fun addScoreToSetlist(scoreId: Long, setlistId: Long) {
-        setlistDao.insertScoreSetlistCrossRef(ScoreSetlistCrossRef(scoreId, setlistId))
+        val nextPosition = (setlistDao.getMaxPosition(setlistId) ?: -1) + 1
+        setlistDao.insertScoreSetlistCrossRef(
+            ScoreSetlistCrossRef(
+                scoreId = scoreId,
+                setlistId = setlistId,
+                position = nextPosition
+            )
+        )
     }
 
-    suspend fun removeScoreFromSetlist(scoreId: Long, setlistId: Long) {
-        setlistDao.deleteScoreSetlistCrossRef(ScoreSetlistCrossRef(scoreId, setlistId))
+    suspend fun removeScoreFromSetlist(entryId: Long) {
+        setlistDao.deleteScoreSetlistEntry(entryId)
     }
 }

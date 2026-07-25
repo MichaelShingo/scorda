@@ -34,9 +34,12 @@ interface SetlistDao {
     @Delete
     suspend fun delete(setlist: Setlist)
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertScoreSetlistCrossRef(crossRef: ScoreSetlistCrossRef)
 
-    @Delete
-    suspend fun deleteScoreSetlistCrossRef(crossRef: ScoreSetlistCrossRef)
+    @Query("DELETE FROM score_setlist_cross_ref WHERE id = :id")
+    suspend fun deleteScoreSetlistEntry(id: Long)
+
+    @Query("SELECT MAX(position) FROM score_setlist_cross_ref WHERE setlistId = :setlistId")
+    suspend fun getMaxPosition(setlistId: Long): Int?
 }
