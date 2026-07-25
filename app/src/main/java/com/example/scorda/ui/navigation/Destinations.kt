@@ -36,8 +36,3 @@ data class SetlistDetailRoute(
     val setlistId: Long, 
     val setlistName: String
 )
-
-@Serializable
-data class AddScoreToSetlistRoute(
-    val setlistId: Long
-)

@@ -30,6 +30,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -39,7 +41,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.scorda.data.database.entities.Setlist
-import com.example.scorda.ui.navigation.AddScoreToSetlistRoute
 import com.example.scorda.ui.navigation.SetlistDetailRoute
 import com.example.scorda.ui.navigation.SetlistListRoute
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
@@ -92,6 +93,8 @@ fun SetlistScreen(
 
     var isAddingSetlist by remember { mutableStateOf(false) }
     var editingSetlist by remember { mutableStateOf<Setlist?>(null) }
+    var isAddingScoreToSetlist by remember { mutableStateOf(false) }
+    var setlistIdForAddingScore by remember { mutableStateOf<Long?>(null) }
 
     Scaffold(
         modifier = modifier,
@@ -194,7 +197,8 @@ fun SetlistScreen(
 
                         IconButton(
                             onClick = {
-                                localNavController.navigate(AddScoreToSetlistRoute(route.setlistId))
+                                setlistIdForAddingScore = route.setlistId
+                                isAddingScoreToSetlist = true
                             },
                             modifier = Modifier
                                 .align(androidx.compose.ui.Alignment.BottomEnd)
@@ -208,20 +212,20 @@ fun SetlistScreen(
                         }
                     }
                 }
-                composable<AddScoreToSetlistRoute> { backStackEntry ->
-                    val route: AddScoreToSetlistRoute = backStackEntry.toRoute()
-                    
-                    androidx.compose.runtime.LaunchedEffect(route.setlistId) {
-                        viewModel.selectSetlist(route.setlistId)
-                    }
-
-                    AddScoreToSetlistScreen(
-                        setlistId = route.setlistId,
-                        onClose = { localNavController.popBackStack() },
-                        setlistViewModel = viewModel
-                    )
-                }
             }
+        }
+    }
+
+    if (isAddingScoreToSetlist && setlistIdForAddingScore != null) {
+        Dialog(
+            onDismissRequest = { isAddingScoreToSetlist = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            AddScoreToSetlistScreen(
+                setlistId = setlistIdForAddingScore!!,
+                onClose = { isAddingScoreToSetlist = false },
+                setlistViewModel = viewModel
+            )
         }
     }
 
