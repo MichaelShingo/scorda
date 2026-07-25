@@ -25,10 +25,17 @@ import com.example.scorda.ui.components.molecules.scoreListItem.ScoreListItem
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.ui.viewmodel.LocalSearchViewModel
 
+enum class SearchScoresContext {
+    Search,
+    Setlist
+}
+
 @Composable
 fun SearchScores(
     modifier: Modifier = Modifier,
-    onScoreClick: (Long) -> Unit = {}
+    context: SearchScoresContext = SearchScoresContext.Search,
+    addedScoreIds: Set<Long> = emptySet(),
+    onScoreClick: (Long) -> Unit = {},
 ) {
     val vm = LocalSearchViewModel.current
     val scoreViewModel = LocalScoreViewModel.current
@@ -65,11 +72,18 @@ fun SearchScores(
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             items(searchResults, key = { it.score.id }) { score ->
+                val isSelected = when (context) {
+                    SearchScoresContext.Search -> score.score.id == currentScoreId
+                    SearchScoresContext.Setlist -> addedScoreIds.contains(score.score.id)
+                }
+
                 ScoreListItem(
                     scoreWithDetails = score,
-                    isSelected = score.score.id == currentScoreId,
+                    isSelected = isSelected,
                     onClick = {
-                        scoreViewModel.selectScore(score.score.id)
+                        if (context == SearchScoresContext.Search) {
+                            scoreViewModel.selectScore(score.score.id)
+                        }
                         onScoreClick(score.score.id)
                     }
                 )

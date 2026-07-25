@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -27,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -36,6 +39,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.scorda.data.database.entities.Setlist
+import com.example.scorda.ui.navigation.AddScoreToSetlistRoute
 import com.example.scorda.ui.navigation.SetlistDetailRoute
 import com.example.scorda.ui.navigation.SetlistListRoute
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
@@ -176,16 +180,46 @@ fun SetlistScreen(
                         .collectAsStateWithLifecycle()
                     val currentScoreId = scoreUiState.selectedScore?.score?.id
 
-                    setlistWithDetails?.let {
-                        SetlistDetail(
-                            setlistWithDetails = it,
-                            currentScoreId = currentScoreId,
-                            onScoreClick = { score ->
-                                scoreViewModel.openScoreInCurrentTab(score.score.id, it.setlist.id)
-                                onClose()
-                            }
-                        )
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        setlistWithDetails?.let {
+                            SetlistDetail(
+                                setlistWithDetails = it,
+                                currentScoreId = currentScoreId,
+                                onScoreClick = { score ->
+                                    scoreViewModel.openScoreInCurrentTab(score.score.id, it.setlist.id)
+                                    onClose()
+                                }
+                            )
+                        }
+
+                        IconButton(
+                            onClick = {
+                                localNavController.navigate(AddScoreToSetlistRoute(route.setlistId))
+                            },
+                            modifier = Modifier
+                                .align(androidx.compose.ui.Alignment.BottomEnd)
+                                .padding(16.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                    MaterialTheme.shapes.medium
+                                )
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add Score to Setlist")
+                        }
                     }
+                }
+                composable<AddScoreToSetlistRoute> { backStackEntry ->
+                    val route: AddScoreToSetlistRoute = backStackEntry.toRoute()
+                    
+                    androidx.compose.runtime.LaunchedEffect(route.setlistId) {
+                        viewModel.selectSetlist(route.setlistId)
+                    }
+
+                    AddScoreToSetlistScreen(
+                        setlistId = route.setlistId,
+                        onClose = { localNavController.popBackStack() },
+                        setlistViewModel = viewModel
+                    )
                 }
             }
         }
