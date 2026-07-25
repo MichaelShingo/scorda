@@ -63,12 +63,14 @@ fun AddScoreToSetlistScreen(
             Row(modifier = Modifier.weight(1f)) {
                 // Left half: Current scores in setlist
                 Box(modifier = Modifier.weight(1f)) {
-                    setlistWithDetails?.let {
+                    setlistWithDetails?.let { details ->
                         SetlistDetail(
-                            setlistWithDetails = it,
+                            setlistWithDetails = details,
                             onScoreClick = { _ ->
-                                // Optional: Remove score if clicked here?
-                                // For now just show them
+                                // Optional: Open score?
+                            },
+                            onRemoveScoreClick = { score ->
+                                setlistViewModel.removeScoreFromSetlist(score.score.id, setlistId)
                             }
                         )
                     }

@@ -4,6 +4,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.RemoveCircleOutline
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
@@ -17,6 +22,7 @@ fun SetlistDetail(
     onScoreClick: (ScoreWithDetails) -> Unit,
     modifier: Modifier = Modifier,
     currentScoreId: Long? = null,
+    onRemoveScoreClick: ((ScoreWithDetails) -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
 
@@ -42,6 +48,19 @@ fun SetlistDetail(
                 scoreWithDetails = scoreWithDetails,
                 modifier = Modifier,
                 isSelected = scoreWithDetails.score.id == currentScoreId,
+                leadingContent = onRemoveScoreClick?.let {
+                    {
+                        IconButton(
+                            onClick = { it(scoreWithDetails) }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.RemoveCircleOutline,
+                                contentDescription = "Remove from setlist",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                },
                 onClick = { onScoreClick(scoreWithDetails) }
             )
         }

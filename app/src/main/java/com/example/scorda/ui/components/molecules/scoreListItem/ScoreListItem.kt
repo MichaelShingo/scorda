@@ -28,6 +28,7 @@ fun ScoreListItem(
     scoreWithDetails: ScoreWithDetails,
     modifier: Modifier = Modifier,
     isSelected: Boolean = false,
+    leadingContent: (@Composable () -> Unit)? = null,
     onClick: () -> Unit = {},
 ) {
     val score = scoreWithDetails.score
@@ -41,6 +42,7 @@ fun ScoreListItem(
             else
                 Color.Transparent
         ),
+        leadingContent = leadingContent,
         headlineContent = {
             Text(
                 text = score.title,
