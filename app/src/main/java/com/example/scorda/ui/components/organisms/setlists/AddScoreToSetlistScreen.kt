@@ -32,7 +32,8 @@ fun AddScoreToSetlistScreen(
     setlistViewModel: SetlistViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val setlistWithDetails by setlistViewModel.selectedSetlist.collectAsStateWithLifecycle()
+    val uiState by setlistViewModel.uiState.collectAsStateWithLifecycle()
+    val setlistWithDetails = uiState.selectedSetlist
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -63,17 +64,9 @@ fun AddScoreToSetlistScreen(
             Row(modifier = Modifier.weight(1f)) {
                 // Left half: Current scores in setlist
                 Box(modifier = Modifier.weight(1f)) {
-                    setlistWithDetails?.let { details ->
-                        SetlistDetail(
-                            setlistWithDetails = details,
-                            onScoreClick = { _ ->
-                                // Optional: Open score?
-                            },
-                            onRemoveScoreClick = { entry ->
-                                setlistViewModel.removeScoreFromSetlist(entry.crossRef.id)
-                            }
-                        )
-                    }
+                    SetlistDetail(
+                        viewModel = setlistViewModel,
+                    )
                 }
 
                 VerticalDivider()
@@ -81,7 +74,8 @@ fun AddScoreToSetlistScreen(
                 // Right half: Search and add
                 Box(modifier = Modifier.weight(1f)) {
                     val addedScoreIds =
-                        setlistWithDetails?.entries?.map { it.crossRef.scoreId }?.toSet() ?: emptySet()
+                        setlistWithDetails?.entries?.map { it.crossRef.scoreId }?.toSet()
+                            ?: emptySet()
                     SearchScores(
                         context = SearchScoresContext.Setlist,
                         addedScoreIds = addedScoreIds,

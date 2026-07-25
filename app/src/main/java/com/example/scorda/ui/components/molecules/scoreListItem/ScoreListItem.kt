@@ -29,6 +29,7 @@ fun ScoreListItem(
     modifier: Modifier = Modifier,
     isSelected: Boolean = false,
     leadingContent: (@Composable () -> Unit)? = null,
+    trailingContent: (@Composable () -> Unit)? = null,
     onClick: () -> Unit = {},
 ) {
     val score = scoreWithDetails.score
@@ -64,7 +65,7 @@ fun ScoreListItem(
                     MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
-        trailingContent = {
+        trailingContent = trailingContent ?: {
             IconButton(
                 onClick = { isOpenScoreDetailDialog = true }
 

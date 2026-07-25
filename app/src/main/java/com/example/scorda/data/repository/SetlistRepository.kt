@@ -40,4 +40,8 @@ class SetlistRepository(
     suspend fun removeScoreFromSetlist(entryId: Long) {
         setlistDao.deleteScoreSetlistEntry(entryId)
     }
+
+    suspend fun updatePositions(entries: List<ScoreSetlistCrossRef>) {
+        setlistDao.updatePositions(entries)
+    }
 }

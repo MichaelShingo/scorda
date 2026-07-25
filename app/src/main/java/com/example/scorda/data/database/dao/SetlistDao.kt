@@ -40,6 +40,14 @@ interface SetlistDao {
     @Query("DELETE FROM score_setlist_cross_ref WHERE id = :id")
     suspend fun deleteScoreSetlistEntry(id: Long)
 
+    @Update
+    suspend fun updateScoreSetlistCrossRef(crossRef: ScoreSetlistCrossRef)
+
+    @Transaction
+    suspend fun updatePositions(entries: List<ScoreSetlistCrossRef>) {
+        entries.forEach { updateScoreSetlistCrossRef(it) }
+    }
+
     @Query("SELECT MAX(position) FROM score_setlist_cross_ref WHERE setlistId = :setlistId")
     suspend fun getMaxPosition(setlistId: Long): Int?
 }

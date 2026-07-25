@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -28,7 +27,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -65,7 +63,8 @@ fun SetlistScreen(
         null
     }
 
-    val setlists by viewModel.setlists.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val setlists = uiState.setlists
     var hasNavigatedInitial by remember { mutableStateOf(false) }
 
     LaunchedEffect(setlists, initialSetlistId) {
@@ -185,23 +184,22 @@ fun SetlistScreen(
                         viewModel.selectSetlist(route.setlistId)
                     }
 
-                    val setlistWithDetails by viewModel.selectedSetlist
-                        .collectAsStateWithLifecycle()
                     val scoreUiState by scoreViewModel.scoreUiState
                         .collectAsStateWithLifecycle()
                     val currentScoreId = scoreUiState.selectedScore?.score?.id
 
                     Box(modifier = Modifier.fillMaxSize()) {
-                        setlistWithDetails?.let {
-                            SetlistDetail(
-                                setlistWithDetails = it,
-                                currentScoreId = currentScoreId,
-                                onScoreClick = { score ->
-                                    scoreViewModel.openScoreInCurrentTab(score.score.id, it.setlist.id)
-                                    onClose()
-                                }
-                            )
-                        }
+                        SetlistDetail(
+                            viewModel = viewModel,
+                            currentScoreId = currentScoreId,
+                            onScoreClick = { score ->
+                                scoreViewModel.openScoreInCurrentTab(
+                                    score.score.id,
+                                    route.setlistId
+                                )
+                                onClose()
+                            }
+                        )
                     }
                 }
             }
