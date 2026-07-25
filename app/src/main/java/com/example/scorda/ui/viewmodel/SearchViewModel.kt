@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -31,10 +30,10 @@ class SearchViewModel(
 
     val searchResults: StateFlow<List<ScoreWithDetails>> = _searchQuery
         .flatMapLatest { query ->
-            if (query.length < 2) {
-                flowOf(emptyList<ScoreWithDetails>()) // Don't search for single characters for performance
-            } else {
-                scoreRepository.searchScores(query)
+            when {
+                query.isEmpty() -> scoreRepository.observeScores()
+                query.length == 1 -> scoreRepository.searchScoresStartingWith(query)
+                else -> scoreRepository.searchScores(query)
             }
         }
         .stateIn(
