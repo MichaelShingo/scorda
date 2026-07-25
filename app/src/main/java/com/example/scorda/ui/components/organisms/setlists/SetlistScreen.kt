@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -129,10 +128,19 @@ fun SetlistScreen(
                 },
                 actions = {
                     AnimatedContent(
-                        targetState = !isDetailScreen,
+                        targetState = isDetailScreen,
                         label = "TopAppBarActions"
-                    ) { showAdd ->
-                        if (showAdd) {
+                    ) { targetIsDetail ->
+                        if (targetIsDetail) {
+                            IconButton(
+                                onClick = {
+                                    setlistIdForAddingScore = currentRoute?.setlistId
+                                    isAddingScoreToSetlist = true
+                                }
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Add Score to Setlist")
+                            }
+                        } else {
                             IconButton(onClick = { isAddingSetlist = true }) {
                                 Icon(Icons.Default.Add, contentDescription = "Add Setlist")
                             }
@@ -193,22 +201,6 @@ fun SetlistScreen(
                                     onClose()
                                 }
                             )
-                        }
-
-                        IconButton(
-                            onClick = {
-                                setlistIdForAddingScore = route.setlistId
-                                isAddingScoreToSetlist = true
-                            },
-                            modifier = Modifier
-                                .align(androidx.compose.ui.Alignment.BottomEnd)
-                                .padding(16.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.primaryContainer,
-                                    MaterialTheme.shapes.medium
-                                )
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Add Score to Setlist")
                         }
                     }
                 }
