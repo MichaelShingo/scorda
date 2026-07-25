@@ -1,20 +1,18 @@
 package com.example.scorda.ui.components.organisms.searchScores
 
-import android.util.Log
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SearchBar
-import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,66 +25,55 @@ import com.example.scorda.ui.components.molecules.scoreListItem.ScoreListItem
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.ui.viewmodel.LocalSearchViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScores(
+    modifier: Modifier = Modifier,
+    onScoreClick: (Long) -> Unit = {}
 ) {
     val vm = LocalSearchViewModel.current
     val scoreViewModel = LocalScoreViewModel.current
 
     val query by vm.searchQuery.collectAsStateWithLifecycle()
     val searchResults by vm.searchResults.collectAsStateWithLifecycle()
-    val isActive by vm.isSearchActive.collectAsStateWithLifecycle()
     val scoreUiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
     val currentScoreId = scoreUiState.selectedScore?.score?.id
 
-    val onQueryChange = vm::onQueryChange
-    val onActiveChange = vm::onSearchActiveChange
-
-
-    Log.d("my search results", searchResults.toString())
-    Log.d("my query", query)
-
-    SearchBar(
-        inputField = {
-            SearchBarDefaults.InputField(
-                query = query,
-                onQueryChange = onQueryChange,
-                onSearch = {},
-                expanded = isActive,
-                onExpandedChange = onActiveChange,
-                placeholder = { Text(stringResource(R.string.search_scores_placeholder)) },
-                leadingIcon = {
-                    Icon(Icons.Rounded.Search, contentDescription = null)
-                },
-                trailingIcon = {
-                    if (isActive) {
-                        IconButton(onClick = {
-                            if (query.isNotEmpty()) onQueryChange("") else onActiveChange(false)
-                        }) {
-                            Icon(Icons.Default.Close, contentDescription = null)
-                        }
+    Column(modifier = modifier) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = vm::onQueryChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            placeholder = { Text(stringResource(R.string.search_scores_placeholder)) },
+            leadingIcon = {
+                Icon(Icons.Rounded.Search, contentDescription = null)
+            },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { vm.onQueryChange("") }) {
+                        Icon(Icons.Default.Close, contentDescription = null)
                     }
                 }
-            )
-        },
-        expanded = true,
-        onExpandedChange = onActiveChange,
-        modifier = Modifier
-            .padding(start = 32.dp, end = 32.dp, top = 64.dp, bottom = 32.dp)
-            .background(color = MaterialTheme.colorScheme.errorContainer)
-    ) {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(searchResults) { score ->
+            },
+            singleLine = true,
+            shape = MaterialTheme.shapes.medium
+        )
+
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(bottom = 16.dp)
+        ) {
+            items(searchResults, key = { it.score.id }) { score ->
                 ScoreListItem(
                     scoreWithDetails = score,
-                    modifier = Modifier,
                     isSelected = score.score.id == currentScoreId,
-                    onClick = { scoreViewModel.selectScore(score.score.id) }
+                    onClick = {
+                        scoreViewModel.selectScore(score.score.id)
+                        onScoreClick(score.score.id)
+                    }
                 )
             }
         }
-
     }
-
 }
