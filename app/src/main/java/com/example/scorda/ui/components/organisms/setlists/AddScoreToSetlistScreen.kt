@@ -66,6 +66,7 @@ fun AddScoreToSetlistScreen(
                 Box(modifier = Modifier.weight(1f)) {
                     SetlistDetail(
                         viewModel = setlistViewModel,
+                        showLeadingRemoveButton = true
                     )
                 }
 

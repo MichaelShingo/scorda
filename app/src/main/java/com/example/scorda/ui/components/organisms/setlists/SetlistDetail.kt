@@ -33,6 +33,7 @@ fun SetlistDetail(
     viewModel: SetlistViewModel,
     onScoreClick: ((ScoreWithDetails) -> Unit)? = null,
     currentScoreId: Long? = null,
+    showLeadingRemoveButton: Boolean = false,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -42,6 +43,7 @@ fun SetlistDetail(
             onScoreClick = onScoreClick,
             modifier = modifier,
             currentScoreId = currentScoreId,
+            showLeadingRemoveButton = showLeadingRemoveButton,
             onRemoveScoreClick = { entry ->
                 viewModel.removeScoreFromSetlist(entry.crossRef.id)
             },
@@ -61,6 +63,7 @@ fun SetlistDetailContent(
     modifier: Modifier = Modifier,
     onScoreClick: ((ScoreWithDetails) -> Unit)? = null,
     currentScoreId: Long? = null,
+    showLeadingRemoveButton: Boolean = false,
     onRemoveScoreClick: ((SetlistEntry) -> Unit)? = null,
     onMoveScore: ((from: Int, to: Int) -> Unit)? = null,
 ) {
@@ -105,19 +108,24 @@ fun SetlistDetailContent(
                     scoreWithDetails = entry.scoreWithDetails,
                     modifier = Modifier.animateItem(),
                     isSelected = entry.scoreWithDetails.score.id == currentScoreId,
-                    leadingContent = onRemoveScoreClick?.let { onRemove ->
-                        {
-                            IconButton(
-                                onClick = { onRemove(entry) }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.RemoveCircleOutline,
-                                    contentDescription = "Remove from setlist",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
+                    onRemove = if (!showLeadingRemoveButton) {
+                        onRemoveScoreClick?.let { onRemove -> { onRemove(entry) } }
+                    } else null,
+                    leadingContent = if (showLeadingRemoveButton) {
+                        onRemoveScoreClick?.let { onRemove ->
+                            {
+                                IconButton(
+                                    onClick = { onRemove(entry) }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.RemoveCircleOutline,
+                                        contentDescription = "Remove from setlist",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
                             }
                         }
-                    },
+                    } else null,
                     trailingContent = onMoveScore?.let { moveCallback ->
                         {
                             Icon(
