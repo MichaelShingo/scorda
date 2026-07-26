@@ -111,14 +111,14 @@ class ScoreViewModel(
             val setlistId = currentTab.setlistId ?: return@launch
 
             val setlistWithDetails = setlistRepository.observeSetlist(setlistId).first()
-            val scores = setlistWithDetails.scores
-            val currentIndex = scores.indexOfFirst { it.score.id == currentTab.scoreDetails.score.id }
+            val entries = setlistWithDetails.entries.sortedBy { it.crossRef.position }
+            val currentIndex = entries.indexOfFirst { it.scoreWithDetails.score.id == currentTab.scoreDetails.score.id }
 
             if (currentIndex == -1) return@launch
 
             val targetIndex = currentIndex + direction
-            if (targetIndex in scores.indices) {
-                val targetScore = scores[targetIndex]
+            if (targetIndex in entries.indices) {
+                val targetScore = entries[targetIndex].scoreWithDetails
                 settingsRepository.updateOpenScores { currentOpenScores ->
                     val mutable = currentOpenScores.toMutableList()
                     if (state.selectedTabIndex in mutable.indices) {

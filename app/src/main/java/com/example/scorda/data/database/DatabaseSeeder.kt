@@ -87,8 +87,14 @@ class DatabaseSeeder(
             }
 
             // Link setlists
-            seed.setlists.mapNotNull { setlistIds[it] }.forEach { setlistId ->
-                db.scoreDao().insertScoreSetlistCrossRef(ScoreSetlistCrossRef(scoreId, setlistId))
+            seed.setlists.mapNotNull { setlistIds[it] }.forEachIndexed { index, setlistId ->
+                db.scoreDao().insertScoreSetlistCrossRef(
+                    ScoreSetlistCrossRef(
+                        scoreId = scoreId,
+                        setlistId = setlistId,
+                        position = index
+                    )
+                )
             }
         } else {
             Log.w("DatabaseSeeder", "Could not copy asset: ${seed.assetName}. Score not inserted.")

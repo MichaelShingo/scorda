@@ -49,7 +49,7 @@ import kotlinx.coroutines.launch
         Stroke::class,
         Brush::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

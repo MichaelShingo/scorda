@@ -27,6 +27,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -61,7 +63,8 @@ fun SetlistScreen(
         null
     }
 
-    val setlists by viewModel.setlists.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val setlists = uiState.setlists
     var hasNavigatedInitial by remember { mutableStateOf(false) }
 
     LaunchedEffect(setlists, initialSetlistId) {
@@ -88,6 +91,8 @@ fun SetlistScreen(
 
     var isAddingSetlist by remember { mutableStateOf(false) }
     var editingSetlist by remember { mutableStateOf<Setlist?>(null) }
+    var isAddingScoreToSetlist by remember { mutableStateOf(false) }
+    var setlistIdForAddingScore by remember { mutableStateOf<Long?>(null) }
 
     Scaffold(
         modifier = modifier,
@@ -122,10 +127,19 @@ fun SetlistScreen(
                 },
                 actions = {
                     AnimatedContent(
-                        targetState = !isDetailScreen,
+                        targetState = isDetailScreen,
                         label = "TopAppBarActions"
-                    ) { showAdd ->
-                        if (showAdd) {
+                    ) { targetIsDetail ->
+                        if (targetIsDetail) {
+                            IconButton(
+                                onClick = {
+                                    setlistIdForAddingScore = currentRoute?.setlistId
+                                    isAddingScoreToSetlist = true
+                                }
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Add Score to Setlist")
+                            }
+                        } else {
                             IconButton(onClick = { isAddingSetlist = true }) {
                                 Icon(Icons.Default.Add, contentDescription = "Add Setlist")
                             }
@@ -170,24 +184,38 @@ fun SetlistScreen(
                         viewModel.selectSetlist(route.setlistId)
                     }
 
-                    val setlistWithDetails by viewModel.selectedSetlist
-                        .collectAsStateWithLifecycle()
                     val scoreUiState by scoreViewModel.scoreUiState
                         .collectAsStateWithLifecycle()
                     val currentScoreId = scoreUiState.selectedScore?.score?.id
 
-                    setlistWithDetails?.let {
+                    Box(modifier = Modifier.fillMaxSize()) {
                         SetlistDetail(
-                            setlistWithDetails = it,
+                            viewModel = viewModel,
                             currentScoreId = currentScoreId,
                             onScoreClick = { score ->
-                                scoreViewModel.openScoreInCurrentTab(score.score.id, it.setlist.id)
+                                scoreViewModel.openScoreInCurrentTab(
+                                    score.score.id,
+                                    route.setlistId
+                                )
                                 onClose()
                             }
                         )
                     }
                 }
             }
+        }
+    }
+
+    if (isAddingScoreToSetlist && setlistIdForAddingScore != null) {
+        Dialog(
+            onDismissRequest = { isAddingScoreToSetlist = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            AddScoreToSetlistScreen(
+                setlistId = setlistIdForAddingScore!!,
+                onClose = { isAddingScoreToSetlist = false },
+                setlistViewModel = viewModel
+            )
         }
     }
 

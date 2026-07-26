@@ -1,7 +1,6 @@
 package com.example.scorda
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.fragment.app.FragmentActivity
@@ -22,7 +20,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.example.scorda.data.SettingsRepository
 import com.example.scorda.ui.components.organisms.navbar.Navbar
-import com.example.scorda.ui.components.organisms.searchScores.SearchScores
 import com.example.scorda.ui.navigation.LocalNavController
 import com.example.scorda.ui.navigation.ScordaNavHost
 import com.example.scorda.ui.theme.LocalThemeViewModel
@@ -58,11 +55,6 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             val navController = rememberNavController()
-            val isSearchActive by searchViewModel.isSearchActive.collectAsStateWithLifecycle()
-
-            LaunchedEffect(isSearchActive) {
-                Log.d("SearchDebug", "isSearchActive changed to: $isSearchActive")
-            }
 
             CompositionLocalProvider(
                 LocalThemeViewModel provides themeViewModel,
@@ -83,9 +75,7 @@ class MainActivity : FragmentActivity() {
                                 enter = slideInVertically { -it } + expandVertically(),
                                 exit = slideOutVertically { -it } + shrinkVertically()
                             ) {
-                                Navbar(
-                                    onSearchClick = { searchViewModel.onSearchActiveChange(true) }
-                                )
+                                Navbar()
                             }
 
                             Box(modifier = Modifier.weight(1f)) {
@@ -93,10 +83,6 @@ class MainActivity : FragmentActivity() {
                                     navController = navController
                                 )
                             }
-                        }
-
-                        if (isSearchActive) {
-                            SearchScores()
                         }
                     }
                 }

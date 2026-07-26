@@ -18,6 +18,7 @@ android-pdf-viewer = "io.github.grizzi91:android-pdf-viewer:3.2.0-beta.1"
 pdfbox = "2.0.27.0"
 androidx-pdf = "1.0.0-alpha19"
 fragment = "1.8.5"
+reorderable = "3.1.0"
 
 
 [libraries]
@@ -49,6 +50,7 @@ androidx-pdf-compose = { group = "androidx.pdf", name = "pdf-compose", version.r
 androidx-pdf-core = { group = "androidx.pdf", name = "pdf-core", version.ref = "androidx-pdf" }
 androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragment" }
 androidx-pdf-viewer-fragment = { module = "androidx.pdf:pdf-viewer-fragment", version.ref = "androidx-pdf" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

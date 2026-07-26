@@ -32,8 +32,26 @@ interface ScoreDao {
     fun getScoresWithDetails(): Flow<List<ScoreWithDetails>>
 
     @Transaction
-    @Query("SELECT * FROM scores WHERE title LIKE '%' || :query || '%' ORDER BY title ASC")
+    @Query("""
+        SELECT DISTINCT scores.* FROM scores 
+        LEFT JOIN composers ON scores.composerId = composers.id
+        WHERE scores.title LIKE '%' || :query || '%' 
+           OR composers.firstName LIKE '%' || :query || '%' 
+           OR composers.lastName LIKE '%' || :query || '%'
+        ORDER BY scores.title ASC
+    """)
     fun searchScores(query: String): Flow<List<ScoreWithDetails>>
+
+    @Transaction
+    @Query("""
+        SELECT DISTINCT scores.* FROM scores 
+        LEFT JOIN composers ON scores.composerId = composers.id
+        WHERE scores.title LIKE :query || '%' 
+           OR composers.firstName LIKE :query || '%' 
+           OR composers.lastName LIKE :query || '%'
+        ORDER BY scores.title ASC
+    """)
+    fun searchScoresStartingWith(query: String): Flow<List<ScoreWithDetails>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(score: Score): Long

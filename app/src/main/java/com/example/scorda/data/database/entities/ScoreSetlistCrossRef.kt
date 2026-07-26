@@ -3,10 +3,10 @@ package com.example.scorda.data.database.entities
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "score_setlist_cross_ref",
-    primaryKeys = ["scoreId", "setlistId"],
     foreignKeys = [
         ForeignKey(
             entity = Score::class,
@@ -21,10 +21,11 @@ import androidx.room.Index
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("setlistId")]
+    indices = [Index("setlistId"), Index("scoreId")]
 )
-
 data class ScoreSetlistCrossRef(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val scoreId: Long,
     val setlistId: Long,
+    val position: Int = 0,
 )

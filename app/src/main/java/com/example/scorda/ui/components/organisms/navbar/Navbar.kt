@@ -24,15 +24,14 @@ import androidx.compose.ui.Alignment
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.scorda.ui.components.organisms.drawing.DrawingPanel
 import com.example.scorda.ui.components.organisms.navbar.musictools.MusicTools
+import com.example.scorda.ui.components.organisms.searchScores.SearchScores
 import com.example.scorda.ui.components.organisms.setlists.SetlistScreen
 import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Navbar(
-    onSearchClick: () -> Unit,
-) {
+fun Navbar() {
     val scoreViewModel = LocalScoreViewModel.current
     val annotationViewModel = LocalAnnotationViewModel.current
     val scoreUiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
@@ -104,11 +103,21 @@ fun Navbar(
                             MusicTools()
                         }
 
-                        NavbarButton(
-                            imageVector = Icons.Rounded.Search,
-                            contentDescription = "Search Scores",
-                            onClick = onSearchClick
-                        )
+                        AnchoredPopup(
+                            size = CustomAnchoredPopupSize.Large,
+                            anchor = { onOpen, isExpanded ->
+                                NavbarButton(
+                                    imageVector = Icons.Rounded.Search,
+                                    contentDescription = "Search Scores",
+                                    onClick = onOpen,
+                                    isSelected = isExpanded
+                                )
+                            }
+                        ) { onDismiss ->
+                            SearchScores(
+                                onScoreClick = { onDismiss() }
+                            )
+                        }
 
                         MoreDropdownMenu()
                     }
