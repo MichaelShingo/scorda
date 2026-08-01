@@ -82,5 +82,6 @@ dependencies {
     implementation(libs.androidx.pdf.viewer.fragment)
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.reorderable)
-    implementation("androidx.compose.foundation:foundation:1.7.0")
+    implementation(libs.androidx.compose.foundation)
+    implementation(files("libs/mwengine-release.aar"))
 }

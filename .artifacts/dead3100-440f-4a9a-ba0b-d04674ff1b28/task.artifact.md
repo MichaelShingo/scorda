@@ -1,0 +1,3 @@
+- `[x]` Add `androidx-compose-foundation` to `libs.versions.toml`
+- `[x]` Update `app/build.gradle.kts` to use `libs.androidx.compose.foundation`
+- `[x]` Sync and build the project to verify the change
