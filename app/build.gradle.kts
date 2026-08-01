@@ -51,6 +51,7 @@ android {
 
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui)
@@ -61,7 +62,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     testImplementation(libs.junit)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
@@ -74,7 +74,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.datastore.preferences)
-
+    implementation(libs.lifecycle.common)
     // PDF Viewer
     implementation(libs.androidx.pdf.viewer)
     implementation(libs.androidx.pdf.compose)
@@ -84,4 +84,5 @@ dependencies {
     implementation(libs.reorderable)
     implementation(libs.androidx.compose.foundation)
     implementation(files("libs/mwengine-release.aar"))
+
 }
