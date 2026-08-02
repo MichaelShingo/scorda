@@ -13,25 +13,26 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.scorda.audio.LocalAudioViewModel
 import com.example.scorda.ui.components.atoms.VerticalNumberSelector
 import com.example.scorda.ui.components.molecules.drone.PitchWheel
-import com.example.scorda.ui.viewmodel.DroneViewModel
 
 @Composable
 fun Drone(
     viewModel: DroneViewModel = viewModel(factory = DroneViewModel.Factory)
 ) {
+    val audioViewModel = LocalAudioViewModel.current
     val uiState by viewModel.uiState.collectAsState()
-    
+
     DroneContent(
         uiState = uiState,
         onOctaveChange = viewModel::setOctave,
         onTuningChange = viewModel::setTuning,
         onPitchSelected = viewModel::setPitch,
-        onTogglePlay = viewModel::togglePlay
+        onTogglePlay = audioViewModel::playTone,
     )
 }
 
@@ -41,8 +42,9 @@ fun DroneContent(
     onOctaveChange: (Int) -> Unit,
     onTuningChange: (Int) -> Unit,
     onPitchSelected: (com.example.scorda.domain.model.drone.Pitch) -> Unit,
-    onTogglePlay: () -> Unit
+    onTogglePlay: () -> Unit,
 ) {
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -80,7 +82,7 @@ fun DroneContent(
             onTogglePlay = onTogglePlay,
             modifier = Modifier.weight(1f)
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
     }
 }

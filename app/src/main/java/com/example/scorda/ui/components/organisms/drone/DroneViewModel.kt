@@ -1,4 +1,4 @@
-package com.example.scorda.ui.viewmodel
+package com.example.scorda.ui.components.organisms.drone
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -58,7 +58,8 @@ class DroneViewModel(
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as ScordaApplication)
+                val application =
+                    (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as ScordaApplication)
                 DroneViewModel(application.container.audioEngine)
             }
         }

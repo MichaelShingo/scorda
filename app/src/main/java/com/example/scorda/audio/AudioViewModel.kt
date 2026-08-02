@@ -2,11 +2,14 @@ package com.example.scorda.audio
 
 import android.app.Activity
 import android.app.Application
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import nl.igorski.mwengine.MWEngine
 import nl.igorski.mwengine.core.Drivers
+import nl.igorski.mwengine.core.SynthEvent
+import nl.igorski.mwengine.core.SynthInstrument
 
 class AudioViewModel(application: Application) : AndroidViewModel(application),
     DefaultLifecycleObserver {
@@ -14,6 +17,12 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
     // The main engine instance is of type MWEngine
     private var mwEngine: MWEngine? = null
     private var isInitialized = false
+
+
+    // DRONE
+    private var synthInstrument: SynthInstrument? = null
+    private var adsr: nl.igorski.mwengine.core.ADSR? = null
+    private var liveToneEvent: SynthEvent? = null
 
     companion object {
         init {
@@ -59,8 +68,17 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
 
         mwEngine?.createOutput(sampleRate, bufferSize, outputChannels, inputChannels, audioDriver)
 
+        // Initialize drone
+        synthInstrument = SynthInstrument()
+        adsr = nl.igorski.mwengine.core.ADSR(0f, 0f, 1f, 0f)
+        synthInstrument?.setAdsr(adsr)
+        
+        synthInstrument?.getOscillatorProperties(0)?.waveform = 0 // 0 = sine
+        liveToneEvent = SynthEvent(440.0f, synthInstrument)
 
         isInitialized = true
+
+
     }
 
     override fun onResume(owner: LifecycleOwner) {
@@ -76,8 +94,34 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
+        // cleanup drone
+        liveToneEvent?.delete()
+        liveToneEvent = null
+        
+        adsr?.delete()
+        adsr = null
+        
+        synthInstrument?.delete()
+        synthInstrument = null
+
         // Clean up the C++ memory!
         mwEngine?.dispose()
         mwEngine = null
     }
+
+    // DRONE
+
+    fun playTone() {
+        liveToneEvent?.play()
+    }
+
+    fun stopTone() {
+        liveToneEvent?.stop()
+    }
+
+
+}
+
+val LocalAudioViewModel = staticCompositionLocalOf<AudioViewModel> {
+    error("No AnnotationViewModel provided")
 }

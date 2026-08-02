@@ -1,0 +1,4 @@
+- `[x]` Fix `AudioViewModel` to prevent `SynthInstrument` garbage collection
+- `[x]` Initialize `ADSR` in `AudioViewModel`
+- `[x]` Remove `playTone()` call from `Drone` composable body
+- `[x]` Verify build and crash fix
