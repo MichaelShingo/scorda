@@ -21,10 +21,11 @@ import com.example.scorda.ui.components.atoms.VerticalNumberSelector
 import com.example.scorda.ui.components.molecules.drone.PitchWheel
 
 @Composable
-fun Drone(
-    viewModel: DroneViewModel = viewModel(factory = DroneViewModel.Factory)
-) {
+fun Drone() {
     val audioViewModel = LocalAudioViewModel.current
+    val viewModel: DroneViewModel = viewModel(
+        factory = DroneViewModel.provideFactory(audioViewModel)
+    )
     val uiState by viewModel.uiState.collectAsState()
 
     DroneContent(
@@ -32,7 +33,7 @@ fun Drone(
         onOctaveChange = viewModel::setOctave,
         onTuningChange = viewModel::setTuning,
         onPitchSelected = viewModel::setPitch,
-        onTogglePlay = audioViewModel::playTone,
+        onTogglePlay = viewModel::togglePlay,
     )
 }
 

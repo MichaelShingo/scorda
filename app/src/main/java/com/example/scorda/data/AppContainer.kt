@@ -1,8 +1,6 @@
 package com.example.scorda.data
 
 import android.content.Context
-import com.example.scorda.audio.AudioEngine
-import com.example.scorda.audio.AudioTrackEngine
 import com.example.scorda.data.database.AppDatabase
 import com.example.scorda.data.database.DatabaseSeeder
 import com.example.scorda.data.repository.AnnotationRepository
@@ -26,7 +24,6 @@ interface AppContainer {
     val tagRepository: TagRepository
     val settingsRepository: SettingsRepository
     val annotationRepository: AnnotationRepository
-    val audioEngine: AudioEngine
 }
 
 class DefaultAppContainer(private val context: Context) : AppContainer {
@@ -69,9 +66,5 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val annotationRepository: AnnotationRepository by lazy {
         AnnotationRepository(database)
-    }
-
-    override val audioEngine: AudioEngine by lazy {
-        AudioTrackEngine()
     }
 }

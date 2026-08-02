@@ -6,10 +6,20 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import nl.igorski.mwengine.MWEngine
 import nl.igorski.mwengine.core.Drivers
 import nl.igorski.mwengine.core.SynthEvent
 import nl.igorski.mwengine.core.SynthInstrument
+
+data class AudioViewModelUiState(
+    val isDronePlaying: Boolean = false
+)
 
 class AudioViewModel(application: Application) : AndroidViewModel(application),
     DefaultLifecycleObserver {
@@ -23,6 +33,20 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
     private var synthInstrument: SynthInstrument? = null
     private var adsr: nl.igorski.mwengine.core.ADSR? = null
     private var liveToneEvent: SynthEvent? = null
+
+    private val _isDronePlaying = MutableStateFlow(false)
+
+    val uiState: StateFlow<AudioViewModelUiState> = combine(
+        _isDronePlaying
+    ) { arr ->
+        AudioViewModelUiState(
+            isDronePlaying = arr[0]
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = AudioViewModelUiState()
+    )
 
     companion object {
         init {
@@ -72,7 +96,7 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
         synthInstrument = SynthInstrument()
         adsr = nl.igorski.mwengine.core.ADSR(0f, 0f, 1f, 0f)
         synthInstrument?.setAdsr(adsr)
-        
+
         synthInstrument?.getOscillatorProperties(0)?.waveform = 0 // 0 = sine
         liveToneEvent = SynthEvent(440.0f, synthInstrument)
 
@@ -97,10 +121,10 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
         // cleanup drone
         liveToneEvent?.delete()
         liveToneEvent = null
-        
+
         adsr?.delete()
         adsr = null
-        
+
         synthInstrument?.delete()
         synthInstrument = null
 
@@ -111,17 +135,31 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
 
     // DRONE
 
-    fun playTone() {
-        liveToneEvent?.play()
+    fun startDrone() {
+        if (liveToneEvent != null) {
+            liveToneEvent?.play()
+            _isDronePlaying.value = true
+        }
     }
 
-    fun stopTone() {
-        liveToneEvent?.stop()
+    fun stopDrone() {
+        if (liveToneEvent != null) {
+            liveToneEvent?.stop()
+            _isDronePlaying.value = false
+        }
+    }
+
+    fun pitchClassAndOctaveToHertz(pitchClass: Int, octave: Int) {
+
+    }
+
+    fun updateDroneFrequency(frequency: Double) {
+        liveToneEvent?.frequency = frequency.toFloat()
     }
 
 
 }
 
 val LocalAudioViewModel = staticCompositionLocalOf<AudioViewModel> {
-    error("No AnnotationViewModel provided")
+    error("No AudioViewModel provided")
 }
