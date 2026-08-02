@@ -8,7 +8,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.scorda.ScordaApplication
 import com.example.scorda.audio.AudioViewModel
-import com.example.scorda.domain.model.drone.DroneState
 import com.example.scorda.domain.model.drone.Pitch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
