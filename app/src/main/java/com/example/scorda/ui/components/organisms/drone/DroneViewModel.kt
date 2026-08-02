@@ -16,12 +16,20 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 
+data class DroneUiState(
+    val pitch: Pitch = Pitch.A,
+    val octave: Int = 4,
+    val tuningHz: Int = 440,
+    val isPlaying: Boolean = false,
+    val frequency: Double = 440.0
+)
+
 class DroneViewModel(
     private val audioViewModel: AudioViewModel
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(DroneState())
-    val uiState: StateFlow<DroneState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(DroneUiState())
+    val uiState: StateFlow<DroneUiState> = _uiState.asStateFlow()
 
     init {
         // Sync playback state from AudioViewModel

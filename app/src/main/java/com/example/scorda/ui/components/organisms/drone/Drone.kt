@@ -39,7 +39,7 @@ fun Drone() {
 
 @Composable
 fun DroneContent(
-    uiState: com.example.scorda.domain.model.drone.DroneState,
+    uiState: DroneUiState,
     onOctaveChange: (Int) -> Unit,
     onTuningChange: (Int) -> Unit,
     onPitchSelected: (com.example.scorda.domain.model.drone.Pitch) -> Unit,
@@ -92,7 +92,7 @@ fun DroneContent(
 @Composable
 fun DronePreview() {
     DroneContent(
-        uiState = com.example.scorda.domain.model.drone.DroneState(
+        uiState = DroneUiState(
             pitch = com.example.scorda.domain.model.drone.Pitch.A,
             octave = 4,
             tuningHz = 440,
