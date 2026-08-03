@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.audio.LocalAudioViewModel
+import com.example.scorda.domain.model.drone.DroneState
 import com.example.scorda.ui.components.atoms.VerticalNumberSelector
 import com.example.scorda.ui.components.molecules.drone.PitchWheel
 
@@ -39,7 +40,7 @@ fun Drone() {
 
 @Composable
 fun DroneContent(
-    uiState: DroneUiState,
+    uiState: DroneState,
     onOctaveChange: (Int) -> Unit,
     onTuningChange: (Int) -> Unit,
     onPitchSelected: (com.example.scorda.domain.model.drone.Pitch) -> Unit,
@@ -92,7 +93,7 @@ fun DroneContent(
 @Composable
 fun DronePreview() {
     DroneContent(
-        uiState = DroneUiState(
+        uiState = DroneState(
             pitch = com.example.scorda.domain.model.drone.Pitch.A,
             octave = 4,
             tuningHz = 440,
