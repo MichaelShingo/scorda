@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.log2
-import kotlin.math.pow
 
 class TunerViewModel : ViewModel() {
 
@@ -28,14 +27,16 @@ class TunerViewModel : ViewModel() {
     private val pitchDetector = AubioPitchDetector()
     private var analysisJob: Job? = null
 
-    private val sampleRate = 44100
-    private val bufferSize = 4096 // Increased for better low-freq detection
+    // Most modern Android devices are natively 48kHz. 
+    // Using 44.1kHz often triggers a resampler that introduces pitch error.
+    private val sampleRate = 48000
+    private val bufferSize = 4096
     private val hopSize = 2048
 
     init {
         pitchDetector.initialize(sampleRate, bufferSize, hopSize)
-        pitchDetector.setSilence(-70.0f) // Allow quieter signals
-        pitchDetector.setTolerance(0.15f) // Standard YIN tolerance
+        pitchDetector.setSilence(-70.0f)
+        pitchDetector.setTolerance(0.15f)
     }
 
     fun setPermissionGranted(granted: Boolean) {
@@ -56,7 +57,6 @@ class TunerViewModel : ViewModel() {
         if (analysisJob != null) return
 
         analysisJob = viewModelScope.launch(Dispatchers.IO) {
-            // Using PCM_16BIT for better hardware compatibility and stability
             val audioEncoding = AudioFormat.ENCODING_PCM_16BIT
             val minBufferSize = AudioRecord.getMinBufferSize(
                 sampleRate,
@@ -65,11 +65,11 @@ class TunerViewModel : ViewModel() {
             )
 
             val audioRecord = AudioRecord(
-                MediaRecorder.AudioSource.VOICE_RECOGNITION, // Cleaner audio source
+                MediaRecorder.AudioSource.VOICE_RECOGNITION,
                 sampleRate,
                 AudioFormat.CHANNEL_IN_MONO,
                 audioEncoding,
-                minBufferSize.coerceAtLeast(hopSize * 2)
+                minBufferSize.coerceAtLeast(bufferSize * 2)
             )
 
             if (audioRecord.state != AudioRecord.STATE_INITIALIZED) {
@@ -85,32 +85,34 @@ class TunerViewModel : ViewModel() {
 
             try {
                 while (isActive) {
-                    val read = audioRecord.read(shortBuffer, 0, hopSize)
-                    if (read > 0) {
-                        // Convert Short to Float (-1.0 to 1.0)
-                        for (i in 0 until read) {
+                    var totalRead = 0
+                    // Ensure we read exactly hopSize samples for the detector
+                    while (totalRead < hopSize && isActive) {
+                        val read = audioRecord.read(shortBuffer, totalRead, hopSize - totalRead)
+                        if (read < 0) break
+                        totalRead += read
+                    }
+
+                    if (totalRead == hopSize) {
+                        for (i in 0 until hopSize) {
                             floatBuffer[i] = shortBuffer[i] / 32768.0f
                         }
 
                         val result = pitchDetector.process(floatBuffer)
                         if (result != null) {
-                            val midi = result[0]
+                            val detectedHz = result[0]
                             val confidence = result[1]
 
-                            // Threshold confidence to filter out noise
-                            if (confidence > 0.6f && midi > 0) {
-                                // Convert Aubio MIDI (reference 440Hz) to Frequency
-                                val freq = 440.0 * 2.0.pow((midi - 69.0) / 12.0)
-                                // Convert Frequency to Adjusted MIDI (reference tuningHz)
-                                val adjustedMidi =
-                                    (69.0 + 12.0 * log2(freq / _uiState.value.tuningHz)).toFloat()
-
-                                val tunerResult = TunerResult.fromMidi(adjustedMidi, confidence)
+                            if (confidence > 0.6f && detectedHz > 20f) {
+                                // Calculate high-precision MIDI value from detected frequency
+                                // 69 is MIDI for A4. 
+                                val midi = (69.0 + 12.0 * log2(detectedHz.toDouble() / _uiState.value.tuningHz)).toFloat()
+                                
+                                val tunerResult = TunerResult.fromMidi(midi, confidence)
                                 _uiState.update { it.copy(tunerResult = tunerResult) }
                             }
                         }
-                    } else if (read < 0) {
-                        Log.e("TunerViewModel", "AudioRecord read error: $read")
+                    } else if (totalRead < 0) {
                         break
                     }
                 }

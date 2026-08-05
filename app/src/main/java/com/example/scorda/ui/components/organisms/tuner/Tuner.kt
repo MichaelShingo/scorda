@@ -29,15 +29,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.ui.components.atoms.VerticalNumberSelector
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -87,11 +89,19 @@ fun TunerContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
+
+        Text(
+            text = tunerResult.hertz.toString(),
+        )
+        Text(
+            text = tunerResult.midi.toString(),
+        )
         // Pitch Display
         Row(
             verticalAlignment = Alignment.Bottom,
             modifier = Modifier.padding(top = 32.dp)
         ) {
+
             Text(
                 text = tunerResult.pitch.displayName,
                 style = MaterialTheme.typography.displayLarge.copy(
@@ -158,45 +168,22 @@ fun TunerMeter(
     }
 
     val primaryColor = MaterialTheme.colorScheme.primary
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurfaceVariant
-    val greenColor = Color(0xFF4CAF50)
+    val centsSign = if (cents > 0) "+" else ""
+
+    Text(
+        text = "${centsSign}${cents}",
+        modifier = Modifier.fillMaxWidth(),
+        textAlign = TextAlign.Center,
+    )
+
+    val colorPrimary = MaterialTheme.colorScheme.primary
+    val colorSecondary = MaterialTheme.colorScheme.tertiary
 
     Canvas(modifier = modifier) {
         val centerX = size.width / 2f
         val centerY = size.height
         val radius = size.width / 2f
 
-        // Draw scale
-        for (i in -5..5) {
-            val tickAngle = i * 18f // 18 degrees per 10 cents
-            val rad = (tickAngle - 90f) * PI.toFloat() / 180f
-            val startRadius = radius * 0.9f
-            val endRadius = radius
-
-            val start = Offset(
-                centerX + cos(rad) * startRadius,
-                centerY + sin(rad) * startRadius
-            )
-            val end = Offset(
-                centerX + cos(rad) * endRadius,
-                centerY + sin(rad) * endRadius
-            )
-
-            drawCircle(
-                color = if (i == 0) greenColor else onSurfaceColor.copy(alpha = 0.5f),
-                radius = 2.dp.toPx(),
-                center = end
-            )
-        }
-
-        // Draw Arc background
-        drawArc(
-            color = onSurfaceColor.copy(alpha = 0.1f),
-            startAngle = 180f,
-            sweepAngle = 180f,
-            useCenter = false,
-            style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round)
-        )
 
         // Draw Needle
         val needleRad = (angle.value - 90f) * PI.toFloat() / 180f
@@ -207,7 +194,7 @@ fun TunerMeter(
         )
 
         drawLine(
-            color = if (Math.abs(cents) < 5) greenColor else primaryColor,
+            color = if (abs(cents) < 5) colorPrimary else colorSecondary,
             start = Offset(centerX, centerY),
             end = needleEnd,
             strokeWidth = 4.dp.toPx(),
@@ -221,4 +208,16 @@ fun TunerMeter(
             center = Offset(centerX, centerY)
         )
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TunerMeterPreview() {
+    TunerMeter(
+        cents = 25,
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(2f)
+            .padding(16.dp)
+    )
 }

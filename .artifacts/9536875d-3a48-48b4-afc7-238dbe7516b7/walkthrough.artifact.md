@@ -39,3 +39,10 @@ I've updated the Tuner to solve start-up delays and range issues:
 - **Accuracy**: Switched to the `yin` pitch detection algorithm and increased the window size to 4096 samples, enabling accurate detection of low frequencies (B0-C2).
 - **Signal Quality**: Used the `VOICE_RECOGNITION` audio source to get raw, unfiltered audio data, avoiding system-level processing that can distort musical pitches.
 - **Sensitivity**: Lowered the silence threshold to -70dB and tuned the detection tolerance.
+
+## Accuracy & Calibration Fix (Aug 3)
+
+I've fixed the centering issue (systematic flat/sharp offset) in the Tuner:
+- **Sample Rate Alignment**: Switched to a **48,000 Hz** sample rate. Most modern Android hardware is 48kHz native; recording at 44.1kHz often triggers a system resampler that can introduce a slight but consistent pitch shift (often ~25-30 cents).
+- **Raw Frequency Processing**: Modified the JNI bridge to return raw **Hz** instead of MIDI. This ensures the Kotlin layer has full control over the mathematical conversion to cents based on the user's specific `tuningHz` setting, eliminating library-internal reference errors.
+- **Buffer Stabilization**: Re-implemented the `AudioRecord` read loop to ensure the detector always processes a perfectly aligned, full window of audio samples.

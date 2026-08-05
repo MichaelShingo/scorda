@@ -17,8 +17,12 @@
 - `[x]` **Verification**
     - `[x]` Verify pitch detection logic with tests
     - `[x]` Manual UI verification
-- `[ ]` **Optimization & Debugging**
+- `[x]` **Optimization & Debugging**
     - `[x]` Switch to `PCM_16BIT` for stability
     - `[x]` Switch to `yin` algorithm
     - `[x]` Increase window size to 4096
     - `[x]` Switch to `VOICE_RECOGNITION` source
+- `[x]` **Accuracy & Sample Rate Fix**
+    - `[x]` Update `aubio_jni.cpp` to output Hz
+    - `[x]` Update `TunerViewModel.kt` to 48kHz and stabilize read loop
+    - `[x]` Refine frequency-to-cents calculation

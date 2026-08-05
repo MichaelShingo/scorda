@@ -16,7 +16,8 @@ JNIEXPORT jlong JNICALL Java_com_example_scorda_audio_tuner_AubioPitchDetector_n
     // Using "yin" for better stability on musical notes
     ctx->pitch_obj = new_aubio_pitch("yin", (uint_t)buf_size, (uint_t)hop_size, (uint_t)samplerate);
     // Explicitly set silence threshold and units
-    aubio_pitch_set_unit(ctx->pitch_obj, "midi");
+    // Switched to "Hz" to allow high-precision calculation in Kotlin
+    aubio_pitch_set_unit(ctx->pitch_obj, "Hz");
     aubio_pitch_set_silence(ctx->pitch_obj, -70.0f);
 
     ctx->in_vec = new_fvec((uint_t)hop_size);
