@@ -1,28 +1,7 @@
-# Tuner Implementation Task List
+# Tuner Calibration Fix Task List
 
-- `[x]` **Preparation**
-    - `[x]` Add `RECORD_AUDIO` permission to `AndroidManifest.xml`
-- `[x]` **JNI Layer**
-    - `[x]` Implement `aubio_jni.cpp` wrapper functions
-- `[x]` **Domain & Audio Layer**
-    - `[x]` Create `TunerState.kt` and `TunerResult.kt`
-    - `[x]` Create `AubioPitchDetector.kt` (JNI wrapper)
-    - `[x]` Implement pitch analysis logic (frequency/MIDI to note/cents)
-- `[x]` **ViewModel**
-    - `[x]` Create `TunerViewModel.kt` with `AudioRecord` integration
-- `[x]` **UI Layer**
-    - `[x]` Implement `TunerScreen` in `Tuner.kt`
-    - `[x]` Create `TunerMeter` (Canvas-based speedometer)
-    - `[x]` Integrate `VerticalNumberSelector` for tuning Hz
-- `[x]` **Verification**
-    - `[x]` Verify pitch detection logic with tests
-    - `[x]` Manual UI verification
-- `[x]` **Optimization & Debugging**
-    - `[x]` Switch to `PCM_16BIT` for stability
-    - `[x]` Switch to `yin` algorithm
-    - `[x]` Increase window size to 4096
-    - `[x]` Switch to `VOICE_RECOGNITION` source
-- `[x]` **Accuracy & Sample Rate Fix**
-    - `[x]` Update `aubio_jni.cpp` to output Hz
-    - `[x]` Update `TunerViewModel.kt` to 48kHz and stabilize read loop
-    - `[x]` Refine frequency-to-cents calculation
+- `[/]` **Calibration Fix**
+    - `[x]` Update `TunerViewModel` to use `MWEngine.getRecommendedSampleRate`
+    - `[x]` Refine `AudioRecord` processing loop for better stability
+    - `[x]` Add debug logging for detected Hz and MIDI
+    - `[ ]` Verify needle centering with tone generator

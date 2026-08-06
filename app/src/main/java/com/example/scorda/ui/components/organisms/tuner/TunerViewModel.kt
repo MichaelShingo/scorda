@@ -1,46 +1,88 @@
 package com.example.scorda.ui.components.organisms.tuner
 
 import android.annotation.SuppressLint
+import android.app.Application
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.scorda.audio.tuner.AubioPitchDetector
+import com.example.scorda.domain.model.drone.Pitch
 import com.example.scorda.domain.model.tuner.TunerResult
-import com.example.scorda.domain.model.tuner.TunerState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import nl.igorski.mwengine.MWEngine
 import kotlin.math.log2
+import kotlin.math.roundToInt
 
-class TunerViewModel : ViewModel() {
+val tunerResultInitialValue: TunerResult = TunerResult(
+    pitch = Pitch.A,
+    hertz = 0f,
+    octave = 4,
+    cents = 0,
+    midi = 0f,
+    confidence = 0f
+)
 
-    private val _uiState = MutableStateFlow(TunerState())
-    val uiState = _uiState.asStateFlow()
+data class TunerUiState(
+    val tuningHz: Int = 440,
+    val hasPermission: Boolean = false,
+    val isListening: Boolean = false,
+    val tunerResult: TunerResult = tunerResultInitialValue
+)
 
+class TunerViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val _tuningHz = MutableStateFlow<Int>(440)
+    private val _hasPermission = MutableStateFlow<Boolean>(false)
+    private val _isListening = MutableStateFlow<Boolean>(false)
+    private val _tunerResult = MutableStateFlow<TunerResult>(tunerResultInitialValue)
     private val pitchDetector = AubioPitchDetector()
     private var analysisJob: Job? = null
 
-    // Most modern Android devices are natively 48kHz. 
-    // Using 44.1kHz often triggers a resampler that introduces pitch error.
-    private val sampleRate = 48000
+    private val sampleRate: Int
     private val bufferSize = 4096
     private val hopSize = 2048
 
+    val uiState: StateFlow<TunerUiState> = combine(
+        _tuningHz,
+        _hasPermission,
+        _isListening,
+        _tunerResult
+    ) { tuningHz, hasPermission, isListening, tunerResult ->
+        TunerUiState(
+            tuningHz = tuningHz,
+            hasPermission = hasPermission,
+            isListening = isListening,
+            tunerResult = tunerResult
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = TunerUiState()
+    )
+
     init {
+        val context = application.applicationContext
+        sampleRate = MWEngine.getRecommendedSampleRate(context)
+        Log.d("TunerViewModel", "Using recommended sample rate: $sampleRate")
+
         pitchDetector.initialize(sampleRate, bufferSize, hopSize)
         pitchDetector.setSilence(-70.0f)
         pitchDetector.setTolerance(0.15f)
     }
 
     fun setPermissionGranted(granted: Boolean) {
-        _uiState.update { it.copy(hasPermission = granted) }
+        _hasPermission.value = granted
         if (granted) {
             startTuning()
         } else {
@@ -49,7 +91,7 @@ class TunerViewModel : ViewModel() {
     }
 
     fun setTuningHz(hz: Int) {
-        _uiState.update { it.copy(tuningHz = hz) }
+        _tuningHz.value = hz
     }
 
     @SuppressLint("MissingPermission")
@@ -78,7 +120,7 @@ class TunerViewModel : ViewModel() {
             }
 
             audioRecord.startRecording()
-            _uiState.update { it.copy(isListening = true) }
+            _isListening.value = true
 
             val shortBuffer = ShortArray(hopSize)
             val floatBuffer = FloatArray(hopSize)
@@ -104,12 +146,36 @@ class TunerViewModel : ViewModel() {
                             val confidence = result[1]
 
                             if (confidence > 0.6f && detectedHz > 20f) {
-                                // Calculate high-precision MIDI value from detected frequency
-                                // 69 is MIDI for A4. 
-                                val midi = (69.0 + 12.0 * log2(detectedHz.toDouble() / _uiState.value.tuningHz)).toFloat()
-                                
-                                val tunerResult = TunerResult.fromMidi(midi, confidence)
-                                _uiState.update { it.copy(tunerResult = tunerResult) }
+                                val detectedHzDouble = detectedHz.toDouble()
+                                val tuningHzDouble = uiState.value.tuningHz.toDouble()
+
+                                // 1. Calculate MIDI (floating point) where 69.0 is A4
+                                val midi = 69.0 + 12.0 * log2(detectedHzDouble / tuningHzDouble)
+
+                                // 2. Find nearest semitone
+                                val roundedMidi = midi.roundToInt()
+
+                                // 3. Extract Pitch and Octave
+                                val pitch = Pitch.fromSemitones(roundedMidi % 12)
+                                val octave = (roundedMidi / 12) - 1
+
+                                // 4. Calculate Cents offset
+                                val cents = ((midi - roundedMidi) * 100).roundToInt()
+
+                                Log.d(
+                                    "TunerViewModel",
+                                    "Hz: $detectedHz, MIDI: $midi, Cents: $cents, Conf: $confidence"
+                                )
+
+                                val tunerResult = TunerResult(
+                                    pitch = pitch,
+                                    hertz = detectedHz,
+                                    octave = octave,
+                                    cents = cents,
+                                    midi = midi.toFloat(),
+                                    confidence = confidence
+                                )
+                                _tunerResult.value = tunerResult
                             }
                         }
                     } else if (totalRead < 0) {
@@ -123,7 +189,7 @@ class TunerViewModel : ViewModel() {
                     Log.e("TunerViewModel", "Error stopping AudioRecord", e)
                 }
                 audioRecord.release()
-                _uiState.update { it.copy(isListening = false) }
+                _isListening.value = false
             }
         }
     }

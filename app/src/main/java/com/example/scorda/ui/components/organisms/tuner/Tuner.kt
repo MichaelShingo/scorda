@@ -21,13 +21,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.ui.components.atoms.VerticalNumberSelector
 import kotlin.math.PI
@@ -46,7 +45,7 @@ import kotlin.math.sin
 @Composable
 fun Tuner() {
     val viewModel: TunerViewModel = viewModel()
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -85,56 +84,39 @@ fun TunerContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-
-        Text(
-            text = tunerResult.hertz.toString(),
-        )
-        Text(
-            text = tunerResult.midi.toString(),
-        )
         // Pitch Display
         Row(
             verticalAlignment = Alignment.Bottom,
-            modifier = Modifier.padding(top = 32.dp)
+            modifier = Modifier.padding(top = 8.dp)
         ) {
-
             Text(
                 text = tunerResult.pitch.displayName,
                 style = MaterialTheme.typography.displayLarge.copy(
                     fontWeight = FontWeight.Bold,
-                    fontSize = 80.sp
+                    fontSize = 64.sp
                 ),
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
                 text = tunerResult.octave.toString(),
                 style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.padding(bottom = 12.dp),
+                modifier = Modifier.padding(bottom = 8.dp),
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
             )
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Meter
         TunerMeter(
             cents = tunerResult.cents,
             modifier = Modifier
-                .fillMaxWidth(0.8f)
+                .fillMaxWidth(0.7f)
                 .aspectRatio(2f)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Cents Indicator
-        Text(
-            text = if (tunerResult.cents >= 0) "+${tunerResult.cents}" else tunerResult.cents.toString(),
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Medium),
-            color = if (Math.abs(tunerResult.cents) < 5) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.weight(1f))
