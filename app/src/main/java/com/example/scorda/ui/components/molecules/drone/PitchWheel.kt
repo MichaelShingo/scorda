@@ -52,10 +52,10 @@ fun PitchWheel(
 ) {
     val pitches = Pitch.entries
     val angleStep = 360f / pitches.size
-    
+
     val rotation = remember { Animatable(selectedPitch.semitonesFromC * -angleStep) }
     val scope = rememberCoroutineScope()
-    
+
     LaunchedEffect(selectedPitch) {
         val targetRotation = selectedPitch.semitonesFromC * -angleStep
         var diff = targetRotation - (rotation.value % 360f)
@@ -63,7 +63,10 @@ fun PitchWheel(
         while (diff < -180f) diff += 360f
         rotation.animateTo(
             targetValue = rotation.value + diff,
-            animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow)
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioLowBouncy,
+                stiffness = Spring.StiffnessLow
+            )
         )
     }
 
@@ -91,21 +94,26 @@ fun PitchWheel(
                                 val center = Offset(size.width / 2f, size.height / 2f)
                                 val pos = change.position
                                 val prevPos = pos - dragAmount
-                                
-                                val angle = atan2(pos.y - center.y, pos.x - center.x) * (180 / PI).toFloat()
-                                val prevAngle = atan2(prevPos.y - center.y, prevPos.x - center.x) * (180 / PI).toFloat()
-                                
+
+                                val angle =
+                                    atan2(pos.y - center.y, pos.x - center.x) * (180 / PI).toFloat()
+                                val prevAngle = atan2(
+                                    prevPos.y - center.y,
+                                    prevPos.x - center.x
+                                ) * (180 / PI).toFloat()
+
                                 var delta = angle - prevAngle
                                 if (delta > 180) delta -= 360
                                 if (delta < -180) delta += 360
-                                
+
                                 scope.launch {
                                     rotation.snapTo(rotation.value + delta)
                                 }
                             },
                             onDragEnd = {
                                 val finalRotation = rotation.value
-                                val snappedSemitone = ((-finalRotation / angleStep).roundToInt() % 12 + 12) % 12
+                                val snappedSemitone =
+                                    ((-finalRotation / angleStep).roundToInt() % 12 + 12) % 12
                                 onPitchSelected(Pitch.fromSemitones(snappedSemitone))
                             }
                         )
@@ -117,14 +125,17 @@ fun PitchWheel(
                     modifier = Modifier.fillMaxSize(),
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    border = BorderStroke(
+                        2.dp,
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
                 ) {}
 
                 // Pitch Labels
                 pitches.forEachIndexed { index, pitch ->
                     val pitchAngle = index * angleStep
                     val currentRotation = rotation.value
-                    
+
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -134,7 +145,7 @@ fun PitchWheel(
                         contentAlignment = Alignment.TopCenter
                     ) {
                         Text(
-                            text = pitch.displayName,
+                            text = pitch.displayNameDrone,
                             modifier = Modifier
                                 .padding(top = 16.dp)
                                 .graphicsLayer {

@@ -94,7 +94,7 @@ fun TunerContent(
             modifier = Modifier.padding(top = 8.dp)
         ) {
             Text(
-                text = tunerResult.pitch.displayName,
+                text = if (tunerResult.hasSignal) tunerResult.pitch.displayNameSharps else "--",
                 style = MaterialTheme.typography.displayLarge.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 64.sp
@@ -102,7 +102,7 @@ fun TunerContent(
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = tunerResult.octave.toString(),
+                text = if (tunerResult.hasSignal) tunerResult.octave.toString() else "",
                 style = MaterialTheme.typography.headlineLarge,
                 modifier = Modifier.padding(bottom = 8.dp),
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
@@ -114,6 +114,7 @@ fun TunerContent(
         // Meter
         TunerMeter(
             cents = tunerResult.cents,
+            hasSignal = tunerResult.hasSignal,
             modifier = Modifier
                 .fillMaxWidth(0.7f)
                 .aspectRatio(2f)
@@ -134,10 +135,11 @@ fun TunerContent(
 @Composable
 fun TunerMeter(
     cents: Int,
+    hasSignal: Boolean,
     modifier: Modifier = Modifier
 ) {
     val angle = remember { Animatable(0f) }
-    val targetAngle = (cents.coerceIn(-50, 50) * 1.8f) // -90 to 90
+    val targetAngle = if (hasSignal) (cents.coerceIn(-50, 50) * 1.8f) else 0f
 
     LaunchedEffect(targetAngle) {
         angle.animateTo(
@@ -153,7 +155,7 @@ fun TunerMeter(
     val centsSign = if (cents > 0) "+" else ""
 
     Text(
-        text = "${centsSign}${cents}",
+        text = if (hasSignal) "${centsSign}${cents}" else "",
         modifier = Modifier.fillMaxWidth(),
         textAlign = TextAlign.Center,
     )
@@ -197,6 +199,7 @@ fun TunerMeter(
 fun TunerMeterPreview() {
     TunerMeter(
         cents = 25,
+        hasSignal = true,
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(2f)

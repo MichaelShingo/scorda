@@ -46,3 +46,11 @@ I've fixed the centering issue (systematic flat/sharp offset) in the Tuner:
 - **Sample Rate Alignment**: Switched to a **48,000 Hz** sample rate. Most modern Android hardware is 48kHz native; recording at 44.1kHz often triggers a system resampler that can introduce a slight but consistent pitch shift (often ~25-30 cents).
 - **Raw Frequency Processing**: Modified the JNI bridge to return raw **Hz** instead of MIDI. This ensures the Kotlin layer has full control over the mathematical conversion to cents based on the user's specific `tuningHz` setting, eliminating library-internal reference errors.
 - **Buffer Stabilization**: Re-implemented the `AudioRecord` read loop to ensure the detector always processes a perfectly aligned, full window of audio samples.
+
+## Noise Mitigation & Signal Conditioning (Aug 6)
+
+I've added signal processing to prevent the tuner from locking onto background hum and to improve responsiveness:
+- **High-Pass Filter**: Implemented an 80Hz high-pass filter in the ViewModel. This removes electrical hum (50/60Hz) and low-frequency rumble before analysis, while keeping musical notes (E2 and up) intact.
+- **RMS Volume Gate**: Added a -45dB energy gate. The tuner now ignores any audio buffers where the average volume is below this threshold, effectively filtering out quiet room noise.
+- **Auto-Reset Logic**: Added a "release" mechanism. If the room is silent for more than 500ms, the UI automatically resets to its initial state, preventing it from "sticking" on the last detected note.
+- **Improved Sensitivity**: Fine-tuned the silence threshold in both JNI and Kotlin layers to balance noise rejection with detection accuracy.

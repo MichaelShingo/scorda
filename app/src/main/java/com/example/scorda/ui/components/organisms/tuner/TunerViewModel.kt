@@ -30,7 +30,8 @@ val tunerResultInitialValue: TunerResult = TunerResult(
     octave = 4,
     cents = 0,
     midi = 0f,
-    confidence = 0f
+    confidence = 0f,
+    hasSignal = false
 )
 
 data class TunerUiState(
@@ -77,7 +78,7 @@ class TunerViewModel(application: Application) : AndroidViewModel(application) {
         Log.d("TunerViewModel", "Using recommended sample rate: $sampleRate")
 
         pitchDetector.initialize(sampleRate, bufferSize, hopSize)
-        pitchDetector.setSilence(-70.0f)
+        pitchDetector.setSilence(-60.0f) // Loosened from -45
         pitchDetector.setTolerance(0.15f)
     }
 
@@ -107,7 +108,7 @@ class TunerViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             val audioRecord = AudioRecord(
-                MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                MediaRecorder.AudioSource.MIC, // Changed from VOICE_RECOGNITION
                 sampleRate,
                 AudioFormat.CHANNEL_IN_MONO,
                 audioEncoding,
@@ -125,10 +126,11 @@ class TunerViewModel(application: Application) : AndroidViewModel(application) {
             val shortBuffer = ShortArray(hopSize)
             val floatBuffer = FloatArray(hopSize)
 
+            var silenceCounter = 0
+
             try {
                 while (isActive) {
                     var totalRead = 0
-                    // Ensure we read exactly hopSize samples for the detector
                     while (totalRead < hopSize && isActive) {
                         val read = audioRecord.read(shortBuffer, totalRead, hopSize - totalRead)
                         if (read < 0) break
@@ -140,46 +142,54 @@ class TunerViewModel(application: Application) : AndroidViewModel(application) {
                             floatBuffer[i] = shortBuffer[i] / 32768.0f
                         }
 
-                        val result = pitchDetector.process(floatBuffer)
-                        if (result != null) {
-                            val detectedHz = result[0]
-                            val confidence = result[1]
+                        // 1. Calculate RMS / Volume Gate BEFORE filtering
+                        val rms = calculateRms(floatBuffer)
+                        val db = 20 * Math.log10(rms.coerceAtLeast(1e-10))
 
-                            if (confidence > 0.6f && detectedHz > 20f) {
-                                val detectedHzDouble = detectedHz.toDouble()
-                                val tuningHzDouble = uiState.value.tuningHz.toDouble()
+                        // 2. High Pass Filter (80Hz cutoff approx)
+                        applyHighPassFilter(floatBuffer)
 
-                                // 1. Calculate MIDI (floating point) where 69.0 is A4
-                                val midi = 69.0 + 12.0 * log2(detectedHzDouble / tuningHzDouble)
+                        if (db > -80.0) { // Much more permissive gate
+                            val result = pitchDetector.process(floatBuffer)
+                            if (result != null) {
+                                val detectedHz = result[0]
+                                val confidence = result[1]
 
-                                // 2. Find nearest semitone
-                                val roundedMidi = midi.roundToInt()
+                                if (detectedHz > 20f && confidence > 0.1f) { // Very permissive confidence
+                                    silenceCounter = 0
+                                    val detectedHzDouble = detectedHz.toDouble()
+                                    val tuningHzDouble = uiState.value.tuningHz.toDouble()
 
-                                // 3. Extract Pitch and Octave
-                                val pitch = Pitch.fromSemitones(roundedMidi % 12)
-                                val octave = (roundedMidi / 12) - 1
+                                    val midi = 69.0 + 12.0 * log2(detectedHzDouble / tuningHzDouble)
+                                    val roundedMidi = midi.roundToInt()
+                                    val pitch = Pitch.fromSemitones(roundedMidi % 12)
+                                    val octave = (roundedMidi / 12) - 1
+                                    val cents = ((midi - roundedMidi) * 100).roundToInt()
 
-                                // 4. Calculate Cents offset
-                                val cents = ((midi - roundedMidi) * 100).roundToInt()
-
-                                Log.d(
-                                    "TunerViewModel",
-                                    "Hz: $detectedHz, MIDI: $midi, Cents: $cents, Conf: $confidence"
-                                )
-
-                                val tunerResult = TunerResult(
-                                    pitch = pitch,
-                                    hertz = detectedHz,
-                                    octave = octave,
-                                    cents = cents,
-                                    midi = midi.toFloat(),
-                                    confidence = confidence
-                                )
-                                _tunerResult.value = tunerResult
+                                    val tunerResult = TunerResult(
+                                        pitch = pitch,
+                                        hertz = detectedHz,
+                                        octave = octave,
+                                        cents = cents,
+                                        midi = midi.toFloat(),
+                                        confidence = confidence,
+                                        hasSignal = true
+                                    )
+                                    _tunerResult.value = tunerResult
+                                } else {
+                                    silenceCounter++
+                                }
+                            } else {
+                                silenceCounter++
                             }
+                        } else {
+                            silenceCounter++
                         }
-                    } else if (totalRead < 0) {
-                        break
+
+                        // If silent/uncertain for ~2 seconds (approx 50 buffers at hop 2048/48k), reset
+                        if (silenceCounter > 50) {
+                            _tunerResult.value = tunerResultInitialValue
+                        }
                     }
                 }
             } finally {
@@ -197,6 +207,29 @@ class TunerViewModel(application: Application) : AndroidViewModel(application) {
     private fun stopTuning() {
         analysisJob?.cancel()
         analysisJob = null
+    }
+
+    private var hpPrevInput = 0f
+    private var hpPrevOutput = 0f
+
+    private fun applyHighPassFilter(buffer: FloatArray) {
+        // Simple one-pole high pass filter (cutoff ~80Hz at 48kHz)
+        val alpha = 0.99f
+        for (i in buffer.indices) {
+            val input = buffer[i]
+            val output = alpha * (hpPrevOutput + input - hpPrevInput)
+            hpPrevInput = input
+            hpPrevOutput = output
+            buffer[i] = output
+        }
+    }
+
+    private fun calculateRms(buffer: FloatArray): Double {
+        var sum = 0.0
+        for (sample in buffer) {
+            sum += sample * sample
+        }
+        return Math.sqrt(sum / buffer.size)
     }
 
     override fun onCleared() {
