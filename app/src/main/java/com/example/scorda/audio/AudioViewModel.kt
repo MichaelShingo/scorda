@@ -2,45 +2,94 @@ package com.example.scorda.audio
 
 import android.app.Activity
 import android.app.Application
+import android.util.Log
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewModelScope
+import com.example.scorda.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import nl.igorski.mwengine.MWEngine
+import nl.igorski.mwengine.core.ADSR
+import nl.igorski.mwengine.core.ChannelGroup
 import nl.igorski.mwengine.core.Drivers
+import nl.igorski.mwengine.core.JavaUtilities
+import nl.igorski.mwengine.core.Notifications
+import nl.igorski.mwengine.core.SampleEvent
+import nl.igorski.mwengine.core.SampleManager
+import nl.igorski.mwengine.core.SampledInstrument
+import nl.igorski.mwengine.core.SequencerController
 import nl.igorski.mwengine.core.SynthEvent
 import nl.igorski.mwengine.core.SynthInstrument
+import java.io.File
+import java.io.FileOutputStream
 
 data class AudioViewModelUiState(
-    val isDronePlaying: Boolean = false
+    val isDronePlaying: Boolean = false,
+    val isMetronomePlaying: Boolean = false,
+    val metronomeBpm: Int = 120,
+    val metronomeBeatsPerMeasure: Int = 4,
+    val currentMetronomeBeat: Int = 0
 )
+
 
 class AudioViewModel(application: Application) : AndroidViewModel(application),
     DefaultLifecycleObserver {
 
-    // The main engine instance is of type MWEngine
+    enum class MetronomeSample(val key: String, val resId: Int) {
+        STRONG("metronome_strong", R.raw.metronome_1_strong),
+        WEAK("metronome_weak", R.raw.metronome_1_weak);
+
+        companion object {
+            // Optional: helper to find by key if needed
+            fun fromKey(key: String) = entries.find { it.key == key }
+        }
+    }
+
+    private val LOG_TAG = "AudioViewModel"
+    private val PULSES_PER_BEAT = 24
+
     private var mwEngine: MWEngine? = null
     private var isInitialized = false
 
 
     // DRONE
-    private var synthInstrument: SynthInstrument? = null
-    private var adsr: nl.igorski.mwengine.core.ADSR? = null
-    private var liveToneEvent: SynthEvent? = null
-
+    private var droneSynthInstrument: SynthInstrument? = null
+    private var droneAdsr: ADSR? = null
+    private var droneToneEvent: SynthEvent? = null
     private val _isDronePlaying = MutableStateFlow(false)
 
+    // METRONOME
+    private var sequencerController: SequencerController? = null
+    private var channelGroup: ChannelGroup? = null
+    private var metronomeInstrument: SampledInstrument? = null
+    private val metronomeEvents = mutableListOf<SampleEvent>()
+
+    private var observer: MWEngine.IObserver? = null
+
+    private val _isMetronomePlaying = MutableStateFlow(false)
+    private val _metronomeTempo = MutableStateFlow(120)
+    private val _metronomeBeatsPerMeasure = MutableStateFlow(4)
+    private val _currentMetronomeBeat = MutableStateFlow(0)
+
     val uiState: StateFlow<AudioViewModelUiState> = combine(
-        _isDronePlaying
-    ) { arr ->
+        _isDronePlaying,
+        _isMetronomePlaying,
+        _metronomeTempo,
+        _metronomeBeatsPerMeasure,
+        _currentMetronomeBeat
+    ) { drone, metro, bpm, beats, current ->
         AudioViewModelUiState(
-            isDronePlaying = arr[0]
+            isDronePlaying = drone,
+            isMetronomePlaying = metro,
+            metronomeBpm = bpm,
+            metronomeBeatsPerMeasure = beats,
+            currentMetronomeBeat = current
         )
     }.stateIn(
         scope = viewModelScope,
@@ -54,55 +103,95 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
         }
     }
 
+    private fun loadSampleFromRaw(key: String, resourceId: Int) {
+        val context = getApplication<Application>().applicationContext
+        val cacheDir = context.cacheDir
+        val tempFile = File(cacheDir, "$key.wav")
+
+        try {
+            context.resources.openRawResource(resourceId).use { inputStream ->
+                FileOutputStream(tempFile).use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            }
+            JavaUtilities.createSampleFromFile(key, tempFile.absolutePath)
+        } catch (e: Exception) {
+            Log.e(LOG_TAG, "loadSampleFromRaw($key) failed", e)
+        }
+    }
+
+    /**
+     * Converts the MWEngine's pulses to beats in a measure
+     *
+     * MwEngine uses 24 pulses per beat to calculate musical time accurately
+     *
+     * @param pulse The pulse value provided by MWEngine as the current position in the measure
+     * @return The beat as the current position in the measure
+     */
+    fun convertPulseToBeats(pulse: Int): Int {
+        return pulse / PULSES_PER_BEAT
+    }
+
     fun initialize(activity: Activity) {
         if (isInitialized) return
 
-        // 1. Optimize performance (Requires the Activity)
         MWEngine.optimizePerformance(activity)
 
-        // 2. Get device-specific recommended buffer and sample rate
-        // We can safely use the Application context here
         val context = getApplication<Application>().applicationContext
         val sampleRate = MWEngine.getRecommendedSampleRate(context)
         val bufferSize = MWEngine.getRecommendedBufferSize(context)
 
-        // 3. Create the observer with the correct two-parameter signature
-        val observer = object : MWEngine.IObserver {
-
-            // Overload 1: Single integer
+        observer = object : MWEngine.IObserver {
             override fun handleNotification(notificationId: Int) {
-                // Handle simple events
+                // required override, intentionally unused
             }
 
-            // Overload 2: Two integers
             override fun handleNotification(notificationId: Int, notificationValue: Int) {
-                // Handle events with extra data attached
+                if (notificationId == Notifications.ids.SEQUENCER_POSITION_UPDATED.swigValue()) {
+                    _currentMetronomeBeat.value = convertPulseToBeats(notificationValue)
+                }
             }
         }
 
-        // 4. Instantiate the engine
+        // Instantiate the engine
         mwEngine = MWEngine(observer)
 
-        // 5. Create the output stream
-        // The Java code passes 5 arguments: sampleRate, bufferSize, outputChannels, inputChannels, driver
-// 5. Create the output stream using the strongly-typed enum
+        // Create the output stream
         val outputChannels = 2
         val inputChannels = 0
-        val audioDriver = Drivers.types.AAUDIO // Uses the low-latency AAudio driver
-
+        val audioDriver = Drivers.types.AAUDIO // low-latency AAudio driver
         mwEngine?.createOutput(sampleRate, bufferSize, outputChannels, inputChannels, audioDriver)
 
-        // Initialize drone
-        synthInstrument = SynthInstrument()
-        adsr = nl.igorski.mwengine.core.ADSR(0f, 0f, 1f, 0f)
-        synthInstrument?.setAdsr(adsr)
+        // createOutput creates a new SequencerController instance
+        // Must retrieve it after createOutput
+        sequencerController = mwEngine?.sequencerController
 
-        synthInstrument?.getOscillatorProperties(0)?.waveform = 0 // 0 = sine
-        liveToneEvent = SynthEvent(440.0f, synthInstrument)
+        // Initialize channel group for shared control over volume, effects, panning
+        channelGroup = ChannelGroup(1.0f)
+        mwEngine?.addChannelGroup(channelGroup)
+
+        // Initialize drone
+        droneSynthInstrument = SynthInstrument()
+        droneSynthInstrument?.registerInSequencer()
+        droneSynthInstrument?.audioChannel?.let { channelGroup?.addAudioChannel(it) }
+        droneAdsr = ADSR(0f, 0f, 1f, 0f)
+        droneSynthInstrument?.adsr = droneAdsr
+        droneSynthInstrument?.getOscillatorProperties(0)?.waveform = 0 // 0 = sine
+        droneToneEvent = SynthEvent(440.0f, droneSynthInstrument)
+
+        // Initialize metronome
+
+        MetronomeSample.entries.forEach { sample ->
+            loadSampleFromRaw(sample.key, sample.resId)
+        }
+
+        metronomeInstrument = SampledInstrument()
+        metronomeInstrument?.registerInSequencer()
+        metronomeInstrument?.audioChannel?.let { channelGroup?.addAudioChannel(it) }
+        setupMetronomeEvents()
 
         isInitialized = true
-
-
+        mwEngine?.start()
     }
 
     override fun onResume(owner: LifecycleOwner) {
@@ -119,44 +208,116 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
 
     override fun onDestroy(owner: LifecycleOwner) {
         // cleanup drone
-        liveToneEvent?.delete()
-        liveToneEvent = null
+        droneToneEvent?.delete()
+        droneToneEvent = null
 
-        adsr?.delete()
-        adsr = null
+        droneAdsr?.delete()
+        droneAdsr = null
 
-        synthInstrument?.delete()
-        synthInstrument = null
+        droneSynthInstrument?.delete()
+        droneSynthInstrument = null
+
+        metronomeInstrument?.delete()
+        metronomeInstrument = null
+
+        metronomeEvents.forEach { it.delete() }
+        metronomeEvents.clear()
+
+        sequencerController?.delete()
+        sequencerController = null
+
+        channelGroup?.delete()
+        channelGroup = null
 
         // Clean up the C++ memory!
         mwEngine?.dispose()
         mwEngine = null
+
+        observer = null
     }
 
     // DRONE
 
     fun startDrone() {
-        if (liveToneEvent != null) {
-            liveToneEvent?.play()
+        if (droneToneEvent != null) {
+            droneToneEvent?.play()
             _isDronePlaying.value = true
         }
     }
 
     fun stopDrone() {
-        if (liveToneEvent != null) {
-            liveToneEvent?.stop()
+        if (droneToneEvent != null) {
+            droneToneEvent?.stop()
             _isDronePlaying.value = false
         }
     }
 
-    fun pitchClassAndOctaveToHertz(pitchClass: Int, octave: Int) {
-
-    }
-
     fun updateDroneFrequency(frequency: Double) {
-        liveToneEvent?.frequency = frequency.toFloat()
+        droneToneEvent?.frequency = frequency.toFloat()
     }
 
+    // METRONOME
+    fun startMetronome() {
+        sequencerController?.rewind()
+        sequencerController?.setPlaying(true)
+        _isMetronomePlaying.value = true
+    }
+
+    fun stopMetronome() {
+        sequencerController?.setPlaying(false)
+        _isMetronomePlaying.value = false
+        _currentMetronomeBeat.value = 0
+    }
+
+    fun setMetronomeBpm(bpm: Int) {
+        _metronomeTempo.value = bpm
+        updateSequencerTempo()
+    }
+
+    fun setMetronomeBeatsPerMeasure(beats: Int) {
+        _metronomeBeatsPerMeasure.value = beats
+        setupMetronomeEvents()
+        updateSequencerTempo()
+    }
+
+    private fun updateSequencerTempo() {
+        sequencerController?.setTempoNow(
+            _metronomeTempo.value.toFloat(),
+            _metronomeBeatsPerMeasure.value,
+            4
+        )
+    }
+
+    private fun setupMetronomeEvents() {
+        val controller = sequencerController ?: return
+        val beats = _metronomeBeatsPerMeasure.value
+
+        controller.setPlaying(false)
+        controller.updateMeasures(1, beats)
+
+        metronomeEvents.forEach { it.delete() }
+        metronomeEvents.clear()
+
+        for (i in 0 until beats) {
+            val sampleEvent = SampleEvent(metronomeInstrument)
+            val sampleKey = if (i == 0) MetronomeSample.STRONG else MetronomeSample.WEAK
+
+            val sample = SampleManager.getSample(sampleKey.key)
+            if (sample == null) {
+                Log.e("METRONOME", "Sample $sampleKey NOT found during setup!")
+            }
+            sampleEvent.setSample(sample)
+            sampleEvent.positionEvent(0, beats, i)
+            sampleEvent.isSequenced = true
+            sampleEvent.addToSequencer()
+            metronomeEvents.add(sampleEvent)
+        }
+
+        if (_isMetronomePlaying.value) {
+            controller.setPlaying(true)
+        }
+        updateSequencerTempo()
+    }
 
 }
 
