@@ -52,7 +52,7 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
     }
 
     private val LOG_TAG = "AudioViewModel"
-    private val PULSES_PER_BEAT = 24
+    private val STEPS_PER_BEAT = 4
 
     private var mwEngine: MWEngine? = null
     private var isInitialized = false
@@ -120,18 +120,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
         }
     }
 
-    /**
-     * Converts the MWEngine's pulses to beats in a measure
-     *
-     * MwEngine uses 24 pulses per beat to calculate musical time accurately
-     *
-     * @param pulse The pulse value provided by MWEngine as the current position in the measure
-     * @return The beat as the current position in the measure
-     */
-    fun convertPulseToBeats(pulse: Int): Int {
-        return pulse / PULSES_PER_BEAT
-    }
-
     fun initialize(activity: Activity) {
         if (isInitialized) return
 
@@ -143,12 +131,17 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
 
         observer = object : MWEngine.IObserver {
             override fun handleNotification(notificationId: Int) {
-                // required override, intentionally unused
+                if (notificationId == Notifications.ids.SEQUENCER_POSITION_UPDATED.swigValue()) {
+                    // Map steps back to beats for the UI
+                    val currentStep = sequencerController?.getStepPosition() ?: 0
+                    _currentMetronomeBeat.value = currentStep / STEPS_PER_BEAT
+                }
             }
 
             override fun handleNotification(notificationId: Int, notificationValue: Int) {
                 if (notificationId == Notifications.ids.SEQUENCER_POSITION_UPDATED.swigValue()) {
-                    _currentMetronomeBeat.value = convertPulseToBeats(notificationValue)
+                    val currentStep = sequencerController?.getStepPosition() ?: 0
+                    _currentMetronomeBeat.value = currentStep / STEPS_PER_BEAT
                 }
             }
         }
@@ -292,12 +285,29 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
         val controller = sequencerController ?: return
         val beats = _metronomeBeatsPerMeasure.value
 
-        controller.setPlaying(false)
-        controller.updateMeasures(1, beats)
+        // stop the engine thread during reconfiguration to prevent crashes
+        mwEngine?.stop()
 
-        metronomeEvents.forEach { it.delete() }
+        controller.setPlaying(false)
+        controller.rewind() // Reset to beat 1
+
+        // cleanup existing events
+        metronomeEvents.forEach {
+            it.removeFromSequencer()
+            it.delete()
+        }
         metronomeEvents.clear()
 
+        // update tempo and measure structure
+        val totalSteps = beats * STEPS_PER_BEAT
+        controller.updateMeasures(1, totalSteps)
+        updateSequencerTempo()
+
+        // set the loop range in samples
+        val totalSamples = controller.samplesPerBar
+        controller.setLoopRange(0, totalSamples - 1)
+
+        // create and schedule new events
         for (i in 0 until beats) {
             val sampleEvent = SampleEvent(metronomeInstrument)
             val sampleKey = if (i == 0) MetronomeSample.STRONG else MetronomeSample.WEAK
@@ -307,16 +317,21 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
                 Log.e("METRONOME", "Sample $sampleKey NOT found during setup!")
             }
             sampleEvent.setSample(sample)
-            sampleEvent.positionEvent(0, beats, i)
+
+            sampleEvent.positionEvent(0, totalSteps, i * STEPS_PER_BEAT)
             sampleEvent.isSequenced = true
+            sampleEvent.volume = 1.0f
+
             sampleEvent.addToSequencer()
             metronomeEvents.add(sampleEvent)
         }
 
+        // restart engine thread
+        mwEngine?.start()
+
         if (_isMetronomePlaying.value) {
             controller.setPlaying(true)
         }
-        updateSequencerTempo()
     }
 
 }

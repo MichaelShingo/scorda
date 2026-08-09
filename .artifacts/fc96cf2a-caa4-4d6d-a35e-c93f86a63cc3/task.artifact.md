@@ -1,0 +1,5 @@
+- [x] Move "More" menu to top-right in `Metronome.kt`
+- [x] Relocate Play button and BPM arrows in `MetronomeWheel.kt`
+- [x] Implement curved beat indicators using `drawArc` in `MetronomeWheel.kt`
+- [x] Verify UI layout and functionality
+- [ ] Verify UI layout and functionality

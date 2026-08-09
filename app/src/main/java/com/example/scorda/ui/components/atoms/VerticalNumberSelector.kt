@@ -1,7 +1,7 @@
 package com.example.scorda.ui.components.atoms
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,7 +21,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -57,9 +56,9 @@ fun VerticalNumberSelector(
     }
     val focusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }.collect { page ->
-            onValueChange(list[page])
+    LaunchedEffect(pagerState.isScrollInProgress) {
+        if (!pagerState.isScrollInProgress) {
+            onValueChange(list[pagerState.currentPage])
         }
     }
 
@@ -72,19 +71,24 @@ fun VerticalNumberSelector(
     }
 
     Column(
-        modifier = modifier.padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = modifier
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Box(contentAlignment = Alignment.Center) {
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             VerticalPager(
                 state = pagerState,
                 modifier = Modifier
-                    .height(60.dp)
+                    .height(32.dp)
                     .width(80.dp)
                     .clickable {
                         textFieldValue = TextFieldValue(

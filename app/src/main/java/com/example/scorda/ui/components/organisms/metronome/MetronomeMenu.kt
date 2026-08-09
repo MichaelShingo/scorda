@@ -1,7 +1,7 @@
-package com.example.scorda.ui.components.molecules.metronome
+package com.example.scorda.ui.components.organisms.metronome
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -19,7 +19,7 @@ fun MetronomeMenu(
     var expanded by remember { mutableStateOf(false) }
 
     IconButton(onClick = { expanded = true }) {
-        Icon(Icons.Rounded.MoreVert, contentDescription = "More options")
+        Icon(Icons.Rounded.Menu, contentDescription = "More options")
     }
 
     DropdownMenu(
@@ -40,10 +40,6 @@ fun MetronomeMenu(
         )
         DropdownMenuItem(
             text = { Text("Fullscreen") },
-            onClick = { expanded = false }
-        )
-        DropdownMenuItem(
-            text = { Text("clickTrack Creator") },
             onClick = { expanded = false }
         )
     }

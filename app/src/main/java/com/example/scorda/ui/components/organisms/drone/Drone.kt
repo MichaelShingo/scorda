@@ -19,7 +19,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.scorda.audio.LocalAudioViewModel
 import com.example.scorda.domain.model.drone.DroneState
 import com.example.scorda.ui.components.atoms.VerticalNumberSelector
-import com.example.scorda.ui.components.molecules.drone.PitchWheel
 
 @Composable
 fun Drone() {

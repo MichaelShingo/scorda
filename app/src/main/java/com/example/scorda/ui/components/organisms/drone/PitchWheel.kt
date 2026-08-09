@@ -1,4 +1,4 @@
-package com.example.scorda.ui.components.molecules.drone
+package com.example.scorda.ui.components.organisms.drone
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -145,7 +145,7 @@ fun PitchWheel(
                         contentAlignment = Alignment.TopCenter
                     ) {
                         Text(
-                            text = pitch.displayNameDrone,
+                            text = pitch.displayNameSharps,
                             modifier = Modifier
                                 .padding(top = 16.dp)
                                 .graphicsLayer {

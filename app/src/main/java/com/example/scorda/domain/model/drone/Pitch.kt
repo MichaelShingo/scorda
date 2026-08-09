@@ -4,7 +4,7 @@ enum class Pitch(
     val displayNameDrone: String,
     val semitonesFromC: Int,
     val displayNameSharps: String,
-    displayNameFlats: String
+    val displayNameFlats: String
 ) {
     C("C", 0, "C", "C"),
     C_SHARP("#/b", 1, "C#", "Db"),

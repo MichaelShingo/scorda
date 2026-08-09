@@ -1,33 +1,35 @@
-# Metronome Sequencer Fix Plan
+# Metronome Reconfiguration Stability Plan
 
-Fix the metronome sequencer progression and audio routing issues. While manual click tests work, the scheduled sequencer events are not producing sound or advancing the UI.
+Address the persistent crash occurring when decreasing beats per measure by ensuring the audio rendering thread is completely halted during engine reconfiguration.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **Audio Routing**: In `mwengine`, sequenced instruments must be part of a `ChannelGroup` added to the `MWEngine` instance to be included in the rendering loop. I will implement this routing.
-> - **Sequencer Clocking**: I will add full notification logging to verify if the engine is actually firing beat updates.
-> - **Event Properties**: I will explicitly set `setIsSequenced(true)` and `volume` on all `SampleEvent` instances to ensure they are visible to the sequencer and mixer.
+> - **Full Engine Halt**: Instead of just pausing the sequencer, I will stop the entire `MWEngine` rendering thread (`mwEngine?.stop()`) while updating the measure structure and events. This eliminates any race conditions where the engine might attempt to render a buffer using inconsistent state.
+> - **Clear-First Strategy**: I will explicitly remove all old events from the sequencer **before** changing the number of steps per measure.
 
 ## Proposed Changes
 
-### Audio Engine Logic
+### Audio Engine Integration
 #### [MODIFY] [AudioViewModel.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/audio/AudioViewModel.kt)
-- **Implement ChannelGroup**:
-    - Add `private var channelGroup: ChannelGroup? = null`.
-    - In `initialize`, create the group and add the drone and metronome instrument audio channels to it.
-    - Register the group with `mwEngine?.addChannelGroup(channelGroup)`.
-- **Enhanced Observer Logging**:
-    - Add `Log.d` for all received `notificationId`s to track engine activity.
-- **Sequencer Control**:
-    - Call `sequencerController?.rewind()` when starting the metronome to ensure it begins at a valid position.
-- **Event Refinement**:
-    - Explicitly set `setIsSequenced(true)` and `volume = 1.0f` on each scheduled `SampleEvent`.
+- **Stop Engine Thread**: At the start of `setupMetronomeEvents()`, call `mwEngine?.stop()`.
+- **Atomic Cleanup**:
+    - Move the event clearing logic (`it.removeFromSequencer()`, `it.delete()`) to the very top, immediately after stopping the engine.
+    - This ensures no "orphaned" events exist that exceed the new measure bounds.
+- **Sequential Configuration**:
+    - Call `rewind()`.
+    - Update measure structure and tempo.
+    - Set the new loop range.
+    - Create and add new events.
+- **Restart Engine**: Call `mwEngine?.start()` at the end of the method.
+- **Playing State**: Restore the sequencer playing state (`setPlaying(true)`) only if the metronome was active.
 
 ## Verification Plan
 
 ### Manual Verification
 - Deploy to device.
-- Start Metronome.
-- **Monitor Logcat**: Check for `Notification: X` logs. If `SEQUENCER_POSITION_UPDATED` (usually ID 0) is firing, the sequencer is running.
-- **Listen**: Check if audio plays in sync with UI indicators.
+- Start metronome playback at a high beat count (e.g., 8).
+- **Stress Test**: Rapidly decrease the beats to 1.
+- **Verify**:
+    - No app crash occurs.
+    - Sound and UI restart cleanly from Beat 1 of the new measure.

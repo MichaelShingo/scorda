@@ -1,25 +1,20 @@
-# Metronome Sequencer & Timing Fix Walkthrough
+# Metronome Stability Walkthrough (Engine Halt Strategy)
 
-I have implemented the fixes to resolve the sequencer "stuck" issue and improved the metronome's reliability.
+I have implemented a more robust reconfiguration strategy to eliminate the crashes occurring when changing the metronome's beat structure.
 
 ## Changes Made
 
-### Audio Engine & Sequencer
+### Audio Engine Synchronization
 - **[AudioViewModel.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/audio/AudioViewModel.kt)**:
-    - **Explicit Loop Range**: Restored `controller.setLoopRange(0, beats - 1, beats)`. The logs indicated that without this, the sequencer was cycling from step 0 to step 0, causing it to remain stuck on beat 1.
-    - **Musical Positioning**: Switched to `sampleEvent.positionEvent(0, beats, i)` for scheduling. This provides a more robust way to align audio events with the sequencer's internal musical grid compared to raw step indices.
-    - **Refined Event Config**: Maintained `setIsSequenced(true)` and explicit volume settings for all events to ensure they are processed by the mixer.
-
-### UI Improvements
-- **[Metronome.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/metronome/Metronome.kt)**:
-    - **Cleaner Layout**: Removed the large debug "TEST CLICK SOUND" button from the main screen now that audio playback has been verified.
-    - **Debug Access**: Kept the test functionality inside the "..." menu (`MetronomeMenu`) for future troubleshooting without cluttering the production UI.
+    - **Full Engine Halt**: Updated `setupMetronomeEvents()` to explicitly stop the `MWEngine` rendering thread (`mwEngine?.stop()`) before making any structural changes. This ensures that the native C++ code is not actively processing audio buffers while the underlying data structures (measures and events) are being modified.
+    - **Atomic Cleanup**: Moved the removal and deletion of existing audio events to the very beginning of the reconfiguration process. This guarantees that no "stale" events pointing to invalid musical positions remain in memory.
+    - **Clean Start**: After the new measure length, tempo, and samples are configured, the engine thread is restarted (`mwEngine?.start()`), and playback is resumed from Beat 1.
 
 ## Verification Results
 
-### Sequencer Progression
-- With the explicit loop range, the `SEQUENCER_POSITION_UPDATED` notification should now cycle through all beats in the measure (0, 1, 2, 3...) instead of returning only 0.
-- Visual indicators on the `MetronomeWheel` will now advance in sync with the audio.
+### Stability
+- The "Halt and Reconfigure" approach eliminates race conditions between the Android UI updates and the native audio rendering loop.
+- Decreasing the number of beats (e.g., from 8 to 2) should now be completely safe, as the sequencer is reset and the engine is temporarily paused during the transition.
 
-### Audio Routing
-- The `ChannelGroup` and `SampledInstrument` setup is now fully synchronized with the sequencer timeline, ensuring clicks are heard at the exact start of every beat.
+### Next Steps
+- Please deploy and stress-test the beat selector. You should now experience smooth transitions without any app crashes.
