@@ -20,6 +20,18 @@ android {
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
         }
+        externalNativeBuild {
+            cmake {
+                // Optional: target specific ABIs to reduce build time during dev
+                abiFilters += listOf("arm64-v8a", "x86_64")
+            }
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 
     buildTypes {
@@ -51,6 +63,7 @@ android {
 
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui)
@@ -61,7 +74,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     testImplementation(libs.junit)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
@@ -74,7 +86,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.datastore.preferences)
-
+    implementation(libs.lifecycle.common)
     // PDF Viewer
     implementation(libs.androidx.pdf.viewer)
     implementation(libs.androidx.pdf.compose)
@@ -82,5 +94,7 @@ dependencies {
     implementation(libs.androidx.pdf.viewer.fragment)
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.reorderable)
-    implementation("androidx.compose.foundation:foundation:1.7.0")
+    implementation(libs.androidx.compose.foundation)
+    implementation(files("libs/mwengine-release.aar"))
+
 }

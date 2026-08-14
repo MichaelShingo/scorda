@@ -1,7 +1,6 @@
 package com.example.scorda.ui.components.organisms.navbar.musictools
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -78,7 +77,6 @@ fun MusicTools(modifier: Modifier = Modifier) {
             state = pagerState,
             modifier = Modifier
                 .weight(1f)
-                .padding(16.dp)
         ) { pageIndex ->
             when (pageIndex) {
                 0 -> Metronome()

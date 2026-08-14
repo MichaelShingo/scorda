@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
+import com.example.scorda.audio.AudioViewModel
+import com.example.scorda.audio.LocalAudioViewModel
 import com.example.scorda.data.SettingsRepository
 import com.example.scorda.ui.components.organisms.navbar.Navbar
 import com.example.scorda.ui.navigation.LocalNavController
@@ -46,9 +48,15 @@ class MainActivity : FragmentActivity() {
         AnnotationViewModel.provideFactory(scoreViewModel)
     }
 
+    private val audioViewModel: AudioViewModel by viewModels()
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        lifecycle.addObserver(audioViewModel)
+        audioViewModel.initialize(this)
 
         val settingsRepository = SettingsRepository(applicationContext)
         val themeViewModel = ThemeViewModel(settingsRepository)
@@ -62,6 +70,7 @@ class MainActivity : FragmentActivity() {
                 LocalNavController provides navController,
                 LocalScoreViewModel provides scoreViewModel,
                 LocalAnnotationViewModel provides annotationViewModel,
+                LocalAudioViewModel provides audioViewModel
             ) {
                 val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
 

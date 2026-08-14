@@ -91,6 +91,7 @@ fun Navbar() {
                         )
 
                         AnchoredPopup(
+                            size = CustomAnchoredPopupSize.Medium,
                             anchor = { onOpen, isExpanded ->
                                 NavbarButton(
                                     imageVector = Icons.Rounded.GraphicEq,
