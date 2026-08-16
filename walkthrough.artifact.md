@@ -1,31 +1,35 @@
-# PdfRenderer Zero-Latency Score View Walkthrough
+# Page Preview Slider Rework Walkthrough
 
-I have completely replaced the `androidx.pdf` library with a native `PdfRenderer`-based engine. This change provides absolute control over rendering performance and solves the "stuck in loading" issues.
+I have overhauled the `PagePreviewSlider` to provide a more intuitive and performant "scrubbing" experience using a Material 3 Slider with a floating page preview.
 
-## Architectural Overhaul
+## Key Changes
 
-### 1. Native `PdfRenderer` Integration
-- **Engine**: Implemented `PdfRendererCore`, a thread-safe wrapper around the native Android PDF engine. It uses a `Mutex` to ensure that only one page is rendered at a time, preventing crashes while allowing background pre-rendering.
-- **Benefit**: Significant reduction in APK size and elimination of library-specific overhead.
+### 1. Material 3 Discrete Slider
+- **UI**: Replaced the row of thumbnails with a standard `Slider` component.
+- **Behavior**: The slider is configured with discrete steps, one for each page in the score. This makes it easy to snap exactly to a specific page.
+- **Visuals**: The slider spans the full width of the viewport (with padding), providing a large touch target for easy navigation.
 
-### 2. Custom Zoomable Bitmap Engine
-- **Component**: Created `ZoomablePdfPage`, which renders PDF pages directly into bitmaps.
-- **Interactions**: Implemented custom pinch-to-zoom and pan gestures using Compose's `transformable` state.
-- **Zero Latency**: By using `HorizontalPager` with `beyondViewportPageCount = 1`, adjacent pages are rendered into bitmaps in the background. Swiping to the next page is now truly instantaneous.
+### 2. Floating "Live" Preview
+- **Mechanism**: When you touch or drag the slider thumb, a "tooltip" box appears directly above it.
+- **Content**: The tooltip shows a real-time preview of the page you are currently hovering over, along with a "Page X" label.
+- **Positioning**: The tooltip moves horizontally along with the slider thumb. I've added logic to ensure the tooltip never goes off-screen, even when navigating the very first or very last pages.
 
-### 3. Coordinate Mapping Bridge
-- **Innovation**: Implemented a `PageTransform` interface that maps screen coordinates to PDF point space.
-- **Compatibility**: The existing `DrawingCanvas` and annotation system were refactored to use this bridge, ensuring all previous drawings remain accurate and compatible with the new bitmap-based rendering.
+### 3. Performance Optimization (Deferred Navigation)
+- **Problem**: In the previous design, swiping through many thumbnails could be heavy as it triggered multiple renders.
+- **Solution**: The main `ScoreView` now **only** switches pages when you release the slider. While you are dragging, only the small, low-resolution preview thumbnail is updated.
+- **Benefit**: This allows for extremely smooth, "zero-lag" scrubbing through documents with hundreds of pages.
 
-### 4. Intelligent Navigation (Landscape)
-- **Feature**: Re-implemented the "scroll-then-turn" logic. In landscape mode, tapping "Next" will scroll the zoomed bitmap vertically to reveal more content. It only advances the pager once the bottom of the page is reached.
+### 4. High-Speed Thumbnail Rendering
+- **Optimization**: Previews are rendered at a lower resolution (120dp width) using the `PdfRendererCore`. This ensures that even on older devices, the preview can update as fast as the user moves their finger.
 
-## Reliability Improvements
-- **No More Proxies**: Removed the complex `IsolatedPagePdfDocument` proxies.
-- **Stable Lifecycle**: `PdfRendererCore` is automatically closed when a score is switched or the view is disposed, preventing memory leaks.
-- **Aspect Ratio Fix**: The new engine calculates precise target bitmap sizes based on the page's natural ratio and the device's screen density.
+## Technical Details
 
-## Verification
+### [PagePreviewSlider.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/PagePreviewSlider.kt)
+- Implemented `MutableInteractionSource` to track `isPressed` and `isDragged`.
+- Used `BoxWithConstraints` to dynamically calculate thumb position for tooltip placement.
+- Integrated `produceState` for efficient, asynchronous bitmap loading during scrubbing.
+
+## Verification Results
 - **Build**: Successfully compiled.
-- **Performance**: Static analysis and pre-rendering logic confirm that adjacent pages are kept in memory as bitmaps for gapless navigation.
-- **Accuracy**: Coordinate mapping verified to handle zoom and translation correctly for drawing.
+- **Responsiveness**: Verified that the tooltip position tracks the thumb correctly.
+- **Lifecycle**: Verified that the main pager only scrolls when `onValueChangeFinished` is triggered.

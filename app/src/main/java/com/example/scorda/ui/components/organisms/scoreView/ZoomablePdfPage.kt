@@ -1,7 +1,6 @@
 package com.example.scorda.ui.components.organisms.scoreView
 
 import android.graphics.Bitmap
-import android.util.Size
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -28,7 +26,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.zIndex
 import com.example.scorda.ui.viewmodel.AnnotationUiState
 import kotlin.math.max
 import kotlin.math.min
@@ -72,7 +69,7 @@ fun ZoomablePdfPage(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(Color.White),
         contentAlignment = Alignment.Center
     ) {
         val viewWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
@@ -112,16 +109,21 @@ fun ZoomablePdfPage(
                 override val zoom: Float = state.scale * fitScale
                 override fun screenToPdf(offset: Offset): Offset? {
                     val (w, h) = dimensions ?: return null
-                    val localX = (offset.x - viewWidthPx / 2f - state.offset.x) / state.scale + (w * fitScale / 2f)
-                    val localY = (offset.y - viewHeightPx / 2f - state.offset.y) / state.scale + (h * fitScale / 2f)
+                    val localX =
+                        (offset.x - viewWidthPx / 2f - state.offset.x) / state.scale + (w * fitScale / 2f)
+                    val localY =
+                        (offset.y - viewHeightPx / 2f - state.offset.y) / state.scale + (h * fitScale / 2f)
                     return Offset(localX / fitScale, localY / fitScale)
                 }
+
                 override fun pdfToScreen(pdfOffset: Offset): Offset? {
                     val (w, h) = dimensions ?: return null
                     val localX = pdfOffset.x * fitScale
                     val localY = pdfOffset.y * fitScale
-                    val screenX = (localX - w * fitScale / 2f) * state.scale + viewWidthPx / 2f + state.offset.x
-                    val screenY = (localY - h * fitScale / 2f) * state.scale + viewHeightPx / 2f + state.offset.y
+                    val screenX =
+                        (localX - w * fitScale / 2f) * state.scale + viewWidthPx / 2f + state.offset.x
+                    val screenY =
+                        (localY - h * fitScale / 2f) * state.scale + viewHeightPx / 2f + state.offset.y
                     return Offset(screenX, screenY)
                 }
             }
@@ -130,7 +132,10 @@ fun ZoomablePdfPage(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .transformable(state = transformableState, enabled = !annotationUiState.isDrawingMode)
+                .transformable(
+                    state = transformableState,
+                    enabled = !annotationUiState.isDrawingMode
+                )
                 .pointerInput(Unit) {
                     detectTapGestures(onTap = { onToggleNavbar() })
                 }

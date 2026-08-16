@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FormatListNumbered
 import androidx.compose.material.icons.rounded.Gesture
@@ -31,7 +32,7 @@ import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Navbar() {
+fun Navbar(modifier: Modifier = Modifier) {
     val scoreViewModel = LocalScoreViewModel.current
     val annotationViewModel = LocalAnnotationViewModel.current
     val scoreUiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
@@ -39,6 +40,7 @@ fun Navbar() {
     val currentSetlistId = scoreUiState.openTabs.getOrNull(scoreUiState.selectedTabIndex)?.setlistId
 
     TopAppBar(
+        modifier = modifier,
         title = {
             Text(scoreUiState.selectedScore?.score?.title ?: "Scorda")
         },

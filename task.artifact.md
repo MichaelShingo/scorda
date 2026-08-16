@@ -1,19 +1,15 @@
-# PdfRenderer Rework Task List
+# Page Preview Slider Rework Task List
 
-- [x] **Cleanup**
-    - [x] Delete `IsolatedPagePdfDocument.kt`
-    - [x] Delete `PdfPage.kt`
-- [x] **Core Rendering**
-    - [x] Implement `PdfRendererCore.kt` with Mutex synchronization
-- [x] **UI Components**
-    - [x] Implement `ZoomablePdfPage.kt` with pinch-to-zoom and pan
-    - [x] Refactor `DrawingCanvas.kt` to use custom coordinate mapping
-- [x] **ScoreView Integration**
-    - [x] Update `ScoreView.kt` to use `HorizontalPager` + `ZoomablePdfPage`
-    - [x] Implement bitmap pre-caching logic (via `beyondViewportPageCount`)
-    - [x] Handle `PdfRenderer` lifecycle (close on score switch)
-- [x] **Verification**
-    - [x] Verify build
-    - [x] Verify instant page turns
-    - [x] Verify landscape "half-page" scrolling
-    - [x] Verify annotation persistence and accuracy
+- [x] **UI Component Rework**
+    - [x] Replace `LazyRow` with Material 3 `Slider` in `PagePreviewSlider.kt`
+    - [x] Implement `MutableInteractionSource` to detect touch/drag states
+    - [x] Create `PagePreviewTooltip` for floating thumbnail display
+- [x] **Rendering Logic**
+    - [x] Implement deferred page selection (only on drag release)
+    - [x] Optimize preview bitmap rendering for speed
+- [x] **Integration**
+    - [x] Verify positioning of the tooltip relative to the slider thumb
+    - [x] Ensure correct aspect ratio for preview bitmaps
+- [ ] **Verification**
+    - [ ] Test scrubbing through large scores
+    - [ ] Verify zero-lag UI during slider interaction
