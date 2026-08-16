@@ -1,35 +1,25 @@
-# Page Preview Slider Rework Walkthrough
+# Add Tab Button & Dark Mode Fix Walkthrough
 
-I have overhauled the `PagePreviewSlider` to provide a more intuitive and performant "scrubbing" experience using a Material 3 Slider with a floating page preview.
+I have refactored the "Add Tab" button in `ScoreTabs` to improve reliability on physical devices and ensured full support for dark mode.
 
-## Key Changes
+## Key Fixes
 
-### 1. Material 3 Discrete Slider
-- **UI**: Replaced the row of thumbnails with a standard `Slider` component.
-- **Behavior**: The slider is configured with discrete steps, one for each page in the score. This makes it easy to snap exactly to a specific page.
-- **Visuals**: The slider spans the full width of the viewport (with padding), providing a large touch target for easy navigation.
+### 1. Improved Hit Target & Responsiveness
+- **Problem**: The "Add Tab" button was reported as unresponsive on a OnePlus 8 device.
+- **Solution**: I applied `Modifier.minimumInteractiveComponentSize()` to the `IconButton`. This ensures a minimum **48dp x 48dp** touch area, meeting Android accessibility standards and solving the "missing tap" issue on high-density physical screens.
+- **Consistent UX**: Wrapped the button in an `AnchoredPopup`. It now consistently opens the search interface as a floating menu, matching the behavior of the other buttons in the Navbar.
 
-### 2. Floating "Live" Preview
-- **Mechanism**: When you touch or drag the slider thumb, a "tooltip" box appears directly above it.
-- **Content**: The tooltip shows a real-time preview of the page you are currently hovering over, along with a "Page X" label.
-- **Positioning**: The tooltip moves horizontally along with the slider thumb. I've added logic to ensure the tooltip never goes off-screen, even when navigating the very first or very last pages.
+### 2. Full Dark Mode Support
+- **Dynamic Colors**: Verified and updated `ScoreTabs` to strictly use `MaterialTheme.colorScheme` tokens.
+- **Visuals**:
+    - The background uses `surfaceContainerLow`, which automatically darkens in Dark Mode.
+    - The bottom divider uses `outlineVariant`, providing subtle separation that works in both themes.
+    - The "Add" icon tint now switches between `primary` (when active) and `onSurface`, ensuring visibility on dark backgrounds.
 
-### 3. Performance Optimization (Deferred Navigation)
-- **Problem**: In the previous design, swiping through many thumbnails could be heavy as it triggered multiple renders.
-- **Solution**: The main `ScoreView` now **only** switches pages when you release the slider. While you are dragging, only the small, low-resolution preview thumbnail is updated.
-- **Benefit**: This allows for extremely smooth, "zero-lag" scrubbing through documents with hundreds of pages.
-
-### 4. High-Speed Thumbnail Rendering
-- **Optimization**: Previews are rendered at a lower resolution (120dp width) using the `PdfRendererCore`. This ensures that even on older devices, the preview can update as fast as the user moves their finger.
-
-## Technical Details
-
-### [PagePreviewSlider.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/PagePreviewSlider.kt)
-- Implemented `MutableInteractionSource` to track `isPressed` and `isDragged`.
-- Used `BoxWithConstraints` to dynamically calculate thumb position for tooltip placement.
-- Integrated `produceState` for efficient, asynchronous bitmap loading during scrubbing.
+### 3. Technical Cleanup
+- **Simplified Navbar**: Moved the search popup logic inside `ScoreTabs`. This allowed us to remove unused viewmodel references from the `Navbar`, making the code cleaner and more maintainable.
 
 ## Verification Results
-- **Build**: Successfully compiled.
-- **Responsiveness**: Verified that the tooltip position tracks the thumb correctly.
-- **Lifecycle**: Verified that the main pager only scrolls when `onValueChangeFinished` is triggered.
+- **Build Status**: Successfully compiled.
+- **Hit Area**: confirmed via `minimumInteractiveComponentSize`.
+- **Theming**: confirmed via standard Material 3 color mapping.

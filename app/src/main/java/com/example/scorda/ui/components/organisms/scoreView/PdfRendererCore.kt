@@ -21,8 +21,14 @@ class PdfRendererCore(private val file: File) : AutoCloseable {
         ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
     private val renderer: PdfRenderer = PdfRenderer(pfd)
     private val mutex = Mutex()
+    private var isClosed = false
 
-    val pageCount: Int get() = renderer.pageCount
+    val pageCount: Int
+        get() = if (isClosed) 0 else try {
+            renderer.pageCount
+        } catch (e: IllegalStateException) {
+            0
+        }
 
     /**
      * Renders a specific page into a [Bitmap].
@@ -32,9 +38,10 @@ class PdfRendererCore(private val file: File) : AutoCloseable {
      */
     suspend fun renderPage(pageIndex: Int, targetWidth: Int, targetHeight: Int): Bitmap? =
         withContext(Dispatchers.IO) {
-            if (pageIndex !in 0 until pageCount) return@withContext null
+            if (isClosed || pageIndex !in 0 until pageCount) return@withContext null
 
             mutex.withLock {
+                if (isClosed) return@withLock null
                 var page: PdfRenderer.Page? = null
                 try {
                     page = renderer.openPage(pageIndex)
@@ -43,10 +50,13 @@ class PdfRendererCore(private val file: File) : AutoCloseable {
                     page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                     bitmap
                 } catch (e: Exception) {
-                    e.printStackTrace()
                     null
                 } finally {
-                    page?.close()
+                    try {
+                        page?.close()
+                    } catch (e: Exception) {
+                        // Ignore
+                    }
                 }
             }
         }
@@ -55,24 +65,32 @@ class PdfRendererCore(private val file: File) : AutoCloseable {
      * Retrieves the original dimensions of a page in PDF points.
      */
     suspend fun getPageDimensions(pageIndex: Int): Pair<Int, Int>? = withContext(Dispatchers.IO) {
-        if (pageIndex !in 0 until pageCount) return@withContext null
+        if (isClosed || pageIndex !in 0 until pageCount) return@withContext null
         mutex.withLock {
+            if (isClosed) return@withLock null
             var page: PdfRenderer.Page? = null
             try {
                 page = renderer.openPage(pageIndex)
                 page.width to page.height
+            } catch (e: Exception) {
+                null
             } finally {
-                page?.close()
+                try {
+                    page?.close()
+                } catch (e: Exception) {
+                    // Ignore
+                }
             }
         }
     }
 
     override fun close() {
+        isClosed = true
         try {
             renderer.close()
             pfd.close()
         } catch (e: Exception) {
-            e.printStackTrace()
+            // Already closed
         }
     }
 }

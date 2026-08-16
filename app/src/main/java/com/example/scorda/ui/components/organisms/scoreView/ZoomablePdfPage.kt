@@ -76,7 +76,7 @@ fun ZoomablePdfPage(
         val viewHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
         state.viewHeightPx = viewHeightPx
 
-        val dimensions by produceState<Pair<Int, Int>?>(null, pageIndex) {
+        val dimensions by produceState<Pair<Int, Int>?>(null, pdfRendererCore, pageIndex) {
             value = pdfRendererCore.getPageDimensions(pageIndex)
         }
 
@@ -87,7 +87,7 @@ fun ZoomablePdfPage(
 
         state.pageHeightPx = dimensions?.let { it.second * fitScale } ?: 0f
 
-        val bitmap by produceState<Bitmap?>(null, pageIndex, dimensions, fitScale) {
+        val bitmap by produceState<Bitmap?>(null, pdfRendererCore, pageIndex, dimensions, fitScale) {
             val (w, h) = dimensions ?: return@produceState
             val targetWidth = (w * fitScale).toInt()
             val targetHeight = (h * fitScale).toInt()

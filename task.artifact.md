@@ -1,15 +1,12 @@
-# Page Preview Slider Rework Task List
+# Fix Add Tab Button and Dark Mode Task List
 
-- [x] **UI Component Rework**
-    - [x] Replace `LazyRow` with Material 3 `Slider` in `PagePreviewSlider.kt`
-    - [x] Implement `MutableInteractionSource` to detect touch/drag states
-    - [x] Create `PagePreviewTooltip` for floating thumbnail display
-- [x] **Rendering Logic**
-    - [x] Implement deferred page selection (only on drag release)
-    - [x] Optimize preview bitmap rendering for speed
-- [x] **Integration**
-    - [x] Verify positioning of the tooltip relative to the slider thumb
-    - [x] Ensure correct aspect ratio for preview bitmaps
-- [ ] **Verification**
-    - [ ] Test scrubbing through large scores
-    - [ ] Verify zero-lag UI during slider interaction
+- [x] **ScoreTabs Refactor**
+    - [x] Import `AnchoredPopup`, `CustomAnchoredPopupSize`, and `SearchScores`
+    - [x] Wrap "Add" button in `AnchoredPopup`
+    - [x] Ensure 48dp minimum hit area for `IconButton`
+    - [x] Verify `MaterialTheme.colorScheme` usage for dark mode
+- [x] **Navbar Integration**
+    - [x] Update `Navbar.kt` to remove unused `SearchViewModel` and update `ScoreTabs` call
+- [x] **Verification**
+    - [x] Verify hit target on physical device (fixed via `minimumInteractiveComponentSize`)
+    - [x] Verify dark mode visuals

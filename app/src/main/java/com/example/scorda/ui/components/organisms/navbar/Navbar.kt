@@ -7,8 +7,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FormatListNumbered
 import androidx.compose.material.icons.rounded.Gesture
@@ -22,7 +23,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.scorda.ui.components.molecules.scoreTabs.ScoreTabs
 import com.example.scorda.ui.components.organisms.drawing.DrawingPanel
 import com.example.scorda.ui.components.organisms.navbar.musictools.MusicTools
 import com.example.scorda.ui.components.organisms.searchScores.SearchScores
@@ -39,93 +42,104 @@ fun Navbar(modifier: Modifier = Modifier) {
     val annotationUiState by annotationViewModel.uiState.collectAsStateWithLifecycle()
     val currentSetlistId = scoreUiState.openTabs.getOrNull(scoreUiState.selectedTabIndex)?.setlistId
 
-    TopAppBar(
-        modifier = modifier,
-        title = {
-            Text(scoreUiState.selectedScore?.score?.title ?: "Scorda")
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        actions = {
-            AnimatedContent(
-                targetState = annotationUiState.isDrawingMode,
-                transitionSpec = {
-                    if (targetState) {
-                        (slideInHorizontally { it } + fadeIn())
-                            .togetherWith(slideOutHorizontally { -it } + fadeOut())
-                    } else {
-                        (slideInHorizontally { -it } + fadeIn())
-                            .togetherWith(slideOutHorizontally { it } + fadeOut())
-                    }.using(
-                        SizeTransform(clip = false)
-                    )
-                },
-                label = "NavbarActionsAnimation"
-            ) { isDrawingMode ->
-                if (isDrawingMode) {
-                    DrawingPanel()
-                } else {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        AddScoreButton(viewModel = scoreViewModel)
-
-                        AnchoredPopup(
-                            size = CustomAnchoredPopupSize.Large,
-                            anchor = { onOpen, isExpanded ->
-                                NavbarButton(
-                                    imageVector = Icons.Rounded.FormatListNumbered,
-                                    contentDescription = "Setlists",
-                                    onClick = onOpen,
-                                    isSelected = isExpanded
-                                )
-                            }
-                        ) { onDismiss ->
-                            SetlistScreen(
-                                onClose = onDismiss,
-                                initialSetlistId = currentSetlistId
-                            )
-                        }
-
-                        NavbarButton(
-                            imageVector = Icons.Rounded.Gesture,
-                            contentDescription = "Annotate",
-                            onClick = { annotationViewModel.toggleDrawingMode() }
+    Column(modifier = modifier) {
+        TopAppBar(
+            title = {
+                Text(scoreUiState.selectedScore?.score?.title ?: "Scorda")
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            actions = {
+                AnimatedContent(
+                    targetState = annotationUiState.isDrawingMode,
+                    transitionSpec = {
+                        if (targetState) {
+                            (slideInHorizontally { it } + fadeIn())
+                                .togetherWith(slideOutHorizontally { -it } + fadeOut())
+                        } else {
+                            (slideInHorizontally { -it } + fadeIn())
+                                .togetherWith(slideOutHorizontally { it } + fadeOut())
+                        }.using(
+                            SizeTransform(clip = false)
                         )
+                    },
+                    label = "NavbarActionsAnimation"
+                ) { isDrawingMode ->
+                    if (isDrawingMode) {
+                        DrawingPanel()
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            AddScoreButton(viewModel = scoreViewModel)
 
-                        AnchoredPopup(
-                            size = CustomAnchoredPopupSize.Medium,
-                            anchor = { onOpen, isExpanded ->
-                                NavbarButton(
-                                    imageVector = Icons.Rounded.GraphicEq,
-                                    contentDescription = "Music Tools",
-                                    onClick = onOpen,
-                                    isSelected = isExpanded
+                            AnchoredPopup(
+                                size = CustomAnchoredPopupSize.Large,
+                                anchor = { onOpen, isExpanded ->
+                                    NavbarButton(
+                                        imageVector = Icons.Rounded.FormatListNumbered,
+                                        contentDescription = "Setlists",
+                                        onClick = onOpen,
+                                        isSelected = isExpanded
+                                    )
+                                }
+                            ) { onDismiss ->
+                                SetlistScreen(
+                                    onClose = onDismiss,
+                                    initialSetlistId = currentSetlistId
                                 )
                             }
-                        ) {
-                            MusicTools()
-                        }
 
-                        AnchoredPopup(
-                            size = CustomAnchoredPopupSize.Large,
-                            anchor = { onOpen, isExpanded ->
-                                NavbarButton(
-                                    imageVector = Icons.Rounded.Search,
-                                    contentDescription = "Search Scores",
-                                    onClick = onOpen,
-                                    isSelected = isExpanded
-                                )
-                            }
-                        ) { onDismiss ->
-                            SearchScores(
-                                onScoreClick = { onDismiss() }
+                            NavbarButton(
+                                imageVector = Icons.Rounded.Gesture,
+                                contentDescription = "Annotate",
+                                onClick = { annotationViewModel.toggleDrawingMode() }
                             )
-                        }
 
-                        MoreDropdownMenu()
+                            AnchoredPopup(
+                                size = CustomAnchoredPopupSize.Medium,
+                                anchor = { onOpen, isExpanded ->
+                                    NavbarButton(
+                                        imageVector = Icons.Rounded.GraphicEq,
+                                        contentDescription = "Music Tools",
+                                        onClick = onOpen,
+                                        isSelected = isExpanded
+                                    )
+                                }
+                            ) {
+                                MusicTools()
+                            }
+
+                            AnchoredPopup(
+                                size = CustomAnchoredPopupSize.Large,
+                                anchor = { onOpen, isExpanded ->
+                                    NavbarButton(
+                                        imageVector = Icons.Rounded.Search,
+                                        contentDescription = "Search Scores",
+                                        onClick = onOpen,
+                                        isSelected = isExpanded
+                                    )
+                                }
+                            ) { onDismiss ->
+                                SearchScores(
+                                    onScoreClick = { onDismiss() }
+                                )
+                            }
+
+                            MoreDropdownMenu()
+                        }
                     }
                 }
-            }
-        },
-    )
+            },
+        )
+
+        if (scoreUiState.openTabs.isNotEmpty()) {
+            ScoreTabs(
+                openTabs = scoreUiState.openTabs,
+                selectedTabIndex = scoreUiState.selectedTabIndex,
+                onTabSelected = { scoreViewModel.selectTab(it) },
+                onTabClosed = { scoreViewModel.closeTab(it) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
 }
