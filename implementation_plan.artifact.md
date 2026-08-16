@@ -1,32 +1,59 @@
-# Fix Add Tab Button and Dark Mode Support
+# Standard Adaptive Layout with WindowSizeClass & CompositionLocal
 
-This plan addresses the unresponsiveness of the "Add Tab" button on physical devices and ensures proper dark mode support for the `ScoreTabs` component.
+This plan refactors the adaptive layout logic to use the standard Material 3 `WindowSizeClass` system, provided globally via `CompositionLocal` to avoid parameter drilling.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **Functional Fix**: I am wrapping the "Add Tab" button in an `AnchoredPopup` consistent with the other Navbar buttons. This will not only fix the hit target issues but also actually show the Search UI when clicked, which was previously missing.
-> - **Hit Target**: I will ensure the `IconButton` has a minimum 48dp hit area to comply with accessibility standards and improve reliability on physical devices like the OnePlus 8.
+> - **Global Availability**: `WindowSizeClass` will be available to **all** composables via `LocalWindowSizeClass.current`. This follows modern Compose best practices.
+> - **Dependency Update**: I will add `androidx.compose.material3:material3-window-size-class` to the project.
 
 ## Proposed Changes
 
-### UI Components
+### 1. Build Configuration
 
-#### [MODIFY] [ScoreTabs.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/molecules/scoreTabs/ScoreTabs.kt)
-- Import `AnchoredPopup` and `CustomAnchoredPopupSize`.
-- Import `SearchScores` to use as the popup content.
-- Wrap the "Add" `IconButton` in an `AnchoredPopup`.
-- Remove the `onAddTabClick` parameter from `ScoreTabs` as it will now handle its own popup (or pass it down if needed, but internalizing the popup is cleaner for the Navbar).
-- Update the `IconButton` modifier to have consistent padding and a reliable hit area.
-- Ensure `SecondaryScrollableTabRow` colors and the `HorizontalDivider` color properly utilize `MaterialTheme.colorScheme` for dark mode compatibility.
+#### [MODIFY] [libs.versions.toml](file:///D:/apps/scorda/gradle/libs.versions.toml)
+- Add `androidx-compose-material3-windowSizeClass` library definition.
+
+#### [MODIFY] [app/build.gradle.kts](file:///D:/apps/scorda/app/build.gradle.kts)
+- Add `implementation(libs.androidx.compose.material3.windowSizeClass)` dependency.
+
+---
+
+### 2. Infrastructure
+
+#### [NEW] [WindowSizeClassProvider.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/theme/WindowSizeClassProvider.kt)
+- Define `LocalWindowSizeClass` using `staticCompositionLocalOf`.
+
+---
+
+### 3. MainActivity Integration
+
+#### [MODIFY] [MainActivity.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/MainActivity.kt)
+- Import `calculateWindowSizeClass`.
+- Calculate `windowSizeClass` in `setContent`.
+- Wrap the entire UI in `CompositionLocalProvider(LocalWindowSizeClass provides windowSizeClass)`.
+
+---
+
+### 4. UI Components Refactor
 
 #### [MODIFY] [Navbar.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/navbar/Navbar.kt)
-- Update the call to `ScoreTabs` to remove the `onAddTabClick` lambda if I decide to internalize it.
+- Access `WindowSizeClass` via `LocalWindowSizeClass.current`.
+- Replace `LocalWindowInfo` logic with size class checks:
+    - `widthSizeClass == WindowWidthSizeClass.Compact` -> Show Info Icon.
+    - Otherwise -> Show Title.
+
+#### [MODIFY] [ScoreView.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ScoreView.kt)
+- Access `WindowSizeClass` via `LocalWindowSizeClass.current`.
+- Use size classes to inform layout decisions if needed (retaining existing landscape logic where appropriate).
 
 ## Verification Plan
 
+### Automated Tests
+- Build verification to ensure the new dependency and `CompositionLocal` are correctly integrated.
+
 ### Manual Verification
-- **OnePlus 8 Test**: Verify that tapping the "+" button reliably opens the Search popup.
-- **Dark Mode Toggle**: Verify that the `ScoreTabs` background, tab text, and close icons all correctly transition between light and dark themes.
-- **Tab Switching**: Ensure that clicking existing tabs still works as expected.
-- **Large Tab Counts**: Verify that the row remains scrollable and the "Add" button stays accessible.
+- Verify that the Navbar title correctly switches to the info icon on small screens/windows.
+- Verify that the layout remains responsive in split-screen mode on various devices.
+- Verify that no regressions were introduced in the ScoreView's centering or navigation.

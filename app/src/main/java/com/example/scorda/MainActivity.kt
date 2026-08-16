@@ -12,6 +12,8 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -25,6 +27,7 @@ import com.example.scorda.ui.components.organisms.navbar.Navbar
 import com.example.scorda.ui.navigation.LocalNavController
 import com.example.scorda.ui.navigation.ScordaNavHost
 import com.example.scorda.ui.theme.LocalThemeViewModel
+import com.example.scorda.ui.theme.LocalWindowSizeClass
 import com.example.scorda.ui.theme.ScordaTheme
 import com.example.scorda.ui.theme.ThemeViewModel
 import com.example.scorda.ui.viewmodel.AnnotationViewModel
@@ -51,6 +54,7 @@ class MainActivity : FragmentActivity() {
     private val audioViewModel: AudioViewModel by viewModels()
 
 
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -63,6 +67,7 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             val navController = rememberNavController()
+            val windowSizeClass = calculateWindowSizeClass(this)
 
             CompositionLocalProvider(
                 LocalThemeViewModel provides themeViewModel,
@@ -70,7 +75,8 @@ class MainActivity : FragmentActivity() {
                 LocalNavController provides navController,
                 LocalScoreViewModel provides scoreViewModel,
                 LocalAnnotationViewModel provides annotationViewModel,
-                LocalAudioViewModel provides audioViewModel
+                LocalAudioViewModel provides audioViewModel,
+                LocalWindowSizeClass provides windowSizeClass
             ) {
                 val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
 

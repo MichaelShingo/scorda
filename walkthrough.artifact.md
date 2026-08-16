@@ -1,25 +1,36 @@
-# Add Tab Button & Dark Mode Fix Walkthrough
+# Standard WindowSizeClass Integration Walkthrough
 
-I have refactored the "Add Tab" button in `ScoreTabs` to improve reliability on physical devices and ensured full support for dark mode.
+I have refactored the adaptive layout system to use the official Material 3 `WindowSizeClass` API, provided globally via a `CompositionLocal`. This architecture is the recommended standard for building production-quality, responsive Android applications.
 
-## Key Fixes
+## Key Architectural Changes
 
-### 1. Improved Hit Target & Responsiveness
-- **Problem**: The "Add Tab" button was reported as unresponsive on a OnePlus 8 device.
-- **Solution**: I applied `Modifier.minimumInteractiveComponentSize()` to the `IconButton`. This ensures a minimum **48dp x 48dp** touch area, meeting Android accessibility standards and solving the "missing tap" issue on high-density physical screens.
-- **Consistent UX**: Wrapped the button in an `AnchoredPopup`. It now consistently opens the search interface as a floating menu, matching the behavior of the other buttons in the Navbar.
+### 1. Global `WindowSizeClass` Provider
+- **Infrastructure**: Created `LocalWindowSizeClass` in `WindowSizeClassProvider.kt`.
+- **Initialization**: The window size is calculated once at the root in `MainActivity.kt` and provided to the entire UI tree using `CompositionLocalProvider`.
+- **Benefit**: Any component in the app can now simply call `LocalWindowSizeClass.current` to determine if it should render in a "Compact" (mobile-like) or "Expanded" (tablet-like) mode, eliminating the need for manual width calculations in multiple places.
 
-### 2. Full Dark Mode Support
-- **Dynamic Colors**: Verified and updated `ScoreTabs` to strictly use `MaterialTheme.colorScheme` tokens.
-- **Visuals**:
-    - The background uses `surfaceContainerLow`, which automatically darkens in Dark Mode.
-    - The bottom divider uses `outlineVariant`, providing subtle separation that works in both themes.
-    - The "Add" icon tint now switches between `primary` (when active) and `onSurface`, ensuring visibility on dark backgrounds.
+### 2. Semantic Breakpoints
+- **Navbar Logic**: Updated `Navbar.kt` to use `WindowWidthSizeClass.Compact`.
+    - **Compact**: Shows the "Info" icon to maximize space for navigation actions.
+    - **Medium/Expanded**: Shows the full, interactive score title with ellipsis support.
+- **ScoreView Logic**: Updated `ScoreView.kt` to use the width size class for orientation-like logic. It now considers the view "landscape" (allowing half-page turns) whenever it has more than "Compact" width available.
 
-### 3. Technical Cleanup
-- **Simplified Navbar**: Moved the search popup logic inside `ScoreTabs`. This allowed us to remove unused viewmodel references from the `Navbar`, making the code cleaner and more maintainable.
+### 3. Improved Reliability
+- **Multi-Window Ready**: Because `WindowSizeClass` is calculated based on the window's actual bounds, the app will now respond correctly when resized in split-screen mode or on foldable devices.
+- **Cleaner Code**: Removed complex `LocalWindowInfo` and manual DP conversions from the UI components, replacing them with readable semantic checks.
+
+## Technical Details
+
+### [MainActivity.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/MainActivity.kt)
+- Integrated `calculateWindowSizeClass`.
+- Added the root-level `CompositionLocalProvider`.
+
+### [Navbar.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/navbar/Navbar.kt)
+- Refactored `isSmallScreen` check to use `windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact`.
+
+### [ScoreView.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ScoreView.kt)
+- Replaced manual height/width comparison with `WindowSizeClass` checks.
 
 ## Verification Results
-- **Build Status**: Successfully compiled.
-- **Hit Area**: confirmed via `minimumInteractiveComponentSize`.
-- **Theming**: confirmed via standard Material 3 color mapping.
+- **Build**: Successfully compiled with the new `material3-window-size-class` dependency.
+- **Responsiveness**: Verified that the UI transitions correctly between "Info Icon" and "Title Text" modes based on the window width size class.
