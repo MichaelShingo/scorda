@@ -19,8 +19,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.pdf.PdfPoint
-import androidx.pdf.compose.PdfViewerState
 import com.example.scorda.data.database.entities.AnnotationPoint
 import com.example.scorda.data.database.entities.Stroke
 import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
@@ -28,15 +26,14 @@ import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
 
 @Composable
 fun DrawingCanvas(
-    pdfViewerState: PdfViewerState,
+    pageTransform: PageTransform,
     pageIndex: Int,
     isDrawingMode: Boolean,
     modifier: Modifier = Modifier
 ) {
     val annotationViewModel = LocalAnnotationViewModel.current
-    val strokes by annotationViewModel.getVisibleStrokesForPage(pageIndex)
-        .collectAsState(initial = emptyList())
     val annotationUiState by annotationViewModel.uiState.collectAsStateWithLifecycle()
+    val strokes = annotationUiState.strokesByPage[pageIndex] ?: emptyList()
 
     val activeLayerId = annotationUiState.activeLayerId
     val selectedBrush = annotationUiState.selectedBrush
@@ -58,10 +55,9 @@ fun DrawingCanvas(
                 if (!isEraserMode && selectedBrush == null) return@pointerInput
 
                 fun eraseAt(offset: Offset) {
-                    val pdfPoint = pdfViewerState.visibleOffsetToPdfPoint(offset) ?: return
-                    if (pdfPoint.pageNum != 0) return
+                    val pdfPoint = pageTransform.screenToPdf(offset) ?: return
 
-                    val eraserRadiusPdf = eraserRadiusPx / pdfViewerState.zoom
+                    val eraserRadiusPdf = eraserRadiusPx / pageTransform.zoom
                     val strokesToDelete = currentStrokes.filter { stroke ->
                         val threshold = eraserRadiusPdf + (stroke.thickness / 2f)
                         val thresholdSq = threshold * threshold
@@ -79,8 +75,8 @@ fun DrawingCanvas(
 
                 detectDragGestures(
                     onDragStart = { offset ->
-                        val pdfPoint = pdfViewerState.visibleOffsetToPdfPoint(offset)
-                        if (pdfPoint != null && pdfPoint.pageNum == 0) {
+                        val pdfPoint = pageTransform.screenToPdf(offset)
+                        if (pdfPoint != null) {
                             currentStrokePoints.add(AnnotationPoint(pdfPoint.x, pdfPoint.y))
                         }
                         if (isEraserMode) {
@@ -88,8 +84,8 @@ fun DrawingCanvas(
                         }
                     },
                     onDrag = { change, _ ->
-                        val pdfPoint = pdfViewerState.visibleOffsetToPdfPoint(change.position)
-                        if (pdfPoint != null && pdfPoint.pageNum == 0) {
+                        val pdfPoint = pageTransform.screenToPdf(change.position)
+                        if (pdfPoint != null) {
                             currentStrokePoints.add(AnnotationPoint(pdfPoint.x, pdfPoint.y))
                         }
                         if (isEraserMode) {
@@ -121,7 +117,7 @@ fun DrawingCanvas(
             val path = Path()
             stroke.points.forEachIndexed { index, point ->
                 val screenOffset =
-                    pdfViewerState.pdfPointToVisibleOffset(PdfPoint(0, point.x, point.y))
+                    pageTransform.pdfToScreen(Offset(point.x, point.y))
                 if (screenOffset != null) {
                     if (index == 0) path.moveTo(screenOffset.x, screenOffset.y)
                     else path.lineTo(screenOffset.x, screenOffset.y)
@@ -131,7 +127,7 @@ fun DrawingCanvas(
                 path = path,
                 color = Color(stroke.color),
                 style = DrawStroke(
-                    width = stroke.thickness * pdfViewerState.zoom,
+                    width = stroke.thickness * pageTransform.zoom,
                     cap = StrokeCap.Round,
                     join = StrokeJoin.Round
                 )
@@ -143,7 +139,7 @@ fun DrawingCanvas(
             val path = Path()
             currentStrokePoints.forEachIndexed { index, point ->
                 val screenOffset =
-                    pdfViewerState.pdfPointToVisibleOffset(PdfPoint(0, point.x, point.y))
+                    pageTransform.pdfToScreen(Offset(point.x, point.y))
                 if (screenOffset != null) {
                     if (index == 0) path.moveTo(screenOffset.x, screenOffset.y)
                     else path.lineTo(screenOffset.x, screenOffset.y)
@@ -153,7 +149,7 @@ fun DrawingCanvas(
                 path = path,
                 color = if (isEraserMode) Color.Gray.copy(alpha = 0.3f) else Color(selectedBrush?.color ?: 0),
                 style = DrawStroke(
-                    width = (if (isEraserMode) eraserRadiusPx * 2 else (selectedBrush?.thickness ?: 5f)) * pdfViewerState.zoom,
+                    width = (if (isEraserMode) eraserRadiusPx * 2 else (selectedBrush?.thickness ?: 5f)) * pageTransform.zoom,
                     cap = StrokeCap.Round,
                     join = StrokeJoin.Round
                 )

@@ -1,10 +1,13 @@
 package com.example.scorda.ui.components.organisms.scoreView
 
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 
 @Composable
@@ -18,36 +21,36 @@ fun ScoreInteractionOverlay(
         modifier = modifier
             .fillMaxSize()
             .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    val width = size.width
-                    val height = size.height
-                    val x = offset.x
-                    val y = offset.y
+                awaitEachGesture {
+                    val down = awaitFirstDown(pass = PointerEventPass.Main)
+                    val up = waitForUpOrCancellation(pass = PointerEventPass.Main)
 
-                    val column1Width = width * 0.25f
-                    val column2Width = width * 0.50f
-                    val topRegionHeight = height * 0.15f
+                    if (up != null && up.id == down.id) {
+                        // It's a tap. Check if it's a single pointer tap
+                        if (currentEvent.changes.size == 1) {
+                            val offset = up.position
+                            val width = size.width
+                            val height = size.height
+                            val x = offset.x
+                            val y = offset.y
 
-                    when {
-                        // Column 1: Left 25%
-                        x < column1Width -> {
-                            if (y < topRegionHeight) {
-                                onToggleNavbar()
-                            } else {
-                                onPreviousPage()
+                            val column1Width = width * 0.25f
+                            val column2Width = width * 0.50f
+                            val topRegionHeight = height * 0.15f
+
+                            when {
+                                x < column1Width -> {
+                                    if (y < topRegionHeight) onToggleNavbar() else onPreviousPage()
+                                }
+                                x < (column1Width + column2Width) -> {
+                                    onToggleNavbar()
+                                }
+                                else -> {
+                                    if (y < topRegionHeight) onToggleNavbar() else onNextPage()
+                                }
                             }
-                        }
-                        // Column 2: Middle 50%
-                        x < (column1Width + column2Width) -> {
-                            onToggleNavbar()
-                        }
-                        // Column 3: Right 25%
-                        else -> {
-                            if (y < topRegionHeight) {
-                                onToggleNavbar()
-                            } else {
-                                onNextPage()
-                            }
+                            // Consume the tap so it doesn't trigger PDF selection/etc if we don't want it
+                            up.consume()
                         }
                     }
                 }
