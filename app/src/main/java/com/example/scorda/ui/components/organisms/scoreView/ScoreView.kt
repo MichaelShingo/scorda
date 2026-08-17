@@ -36,6 +36,7 @@ import com.example.scorda.ui.components.organisms.drawing.LayersPanel
 import com.example.scorda.ui.theme.LocalWindowSizeClass
 import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
+import com.example.scorda.util.PdfRendererCore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
@@ -90,10 +91,14 @@ fun ScoreView() {
             .background(androidx.compose.ui.graphics.Color.White)
     ) {
         val core = pdfRendererCore
-        if (selectedScore != null && core != null) {
+        if (selectedScore != null && core != null && core.path == selectedScore.score.filePath) {
             key(selectedScore.score.id) {
+                val initialPage = remember(selectedTab, core) {
+                    val lastPage = selectedTab?.lastOpenPage ?: 0
+                    if (lastPage == -1) (core.pageCount - 1).coerceAtLeast(0) else lastPage
+                }
                 val pagerState = rememberPagerState(
-                    initialPage = selectedTab?.lastOpenPage ?: 0,
+                    initialPage = initialPage,
                     pageCount = { core.pageCount }
                 )
 

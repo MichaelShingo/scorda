@@ -27,6 +27,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import com.example.scorda.ui.viewmodel.AnnotationUiState
+import com.example.scorda.util.PdfRendererCore
 import kotlin.math.max
 import kotlin.math.min
 
@@ -87,7 +88,13 @@ fun ZoomablePdfPage(
 
         state.pageHeightPx = dimensions?.let { it.second * fitScale } ?: 0f
 
-        val bitmap by produceState<Bitmap?>(null, pdfRendererCore, pageIndex, dimensions, fitScale) {
+        val bitmap by produceState<Bitmap?>(
+            null,
+            pdfRendererCore,
+            pageIndex,
+            dimensions,
+            fitScale
+        ) {
             val (w, h) = dimensions ?: return@produceState
             val targetWidth = (w * fitScale).toInt()
             val targetHeight = (h * fitScale).toInt()
