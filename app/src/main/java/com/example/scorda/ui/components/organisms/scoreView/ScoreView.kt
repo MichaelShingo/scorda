@@ -59,6 +59,7 @@ fun ScoreView() {
     val selectedTab = scoreUiState.openTabs.getOrNull(scoreUiState.selectedTabIndex)
 
     val pdfRendererCore by produceState<PdfRendererCore?>(initialValue = null, selectedScore) {
+        value = null
         val path = selectedScore?.score?.filePath
         if (path != null) {
             val core = try {
@@ -118,7 +119,57 @@ fun ScoreView() {
                     contentAlignment = Alignment.Center
                 ) {
                     val viewportHeight = maxHeight
-                    Box(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(
+                                if (!annotationUiState.isDrawingMode) {
+                                    Modifier.scoreInteraction(
+                                        onToggleNavbar = { scoreViewModel.toggleNavbar() },
+                                        onPreviousPage = {
+                                            scope.launch {
+                                                val currentPageState =
+                                                    pageStates[pagerState.currentPage]
+                                                if (isLandscape && currentPageState != null && currentPageState.canScrollUp()) {
+                                                    currentPageState.scrollBy(
+                                                        Offset(
+                                                            0f,
+                                                            viewportHeight.value * 0.8f
+                                                        )
+                                                    )
+                                                    return@launch
+                                                }
+                                                if (pagerState.currentPage > 0) {
+                                                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                                } else {
+                                                    scoreViewModel.navigateToPreviousScoreInSetlist()
+                                                }
+                                            }
+                                        },
+                                        onNextPage = {
+                                            scope.launch {
+                                                val currentPageState =
+                                                    pageStates[pagerState.currentPage]
+                                                if (isLandscape && currentPageState != null && currentPageState.canScrollDown()) {
+                                                    currentPageState.scrollBy(
+                                                        Offset(
+                                                            0f,
+                                                            -viewportHeight.value * 0.8f
+                                                        )
+                                                    )
+                                                    return@launch
+                                                }
+                                                if (pagerState.currentPage < core.pageCount - 1) {
+                                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                                } else {
+                                                    scoreViewModel.navigateToNextScoreInSetlist()
+                                                }
+                                            }
+                                        }
+                                    )
+                                } else Modifier
+                            )
+                    ) {
                         HorizontalPager(
                             state = pagerState,
                             modifier = Modifier.fillMaxSize(),
@@ -128,14 +179,14 @@ fun ScoreView() {
                                 top = topPadding,
                                 bottom = bottomPadding
                             ),
-                            userScrollEnabled = !annotationUiState.isDrawingMode
+                            userScrollEnabled = !annotationUiState.isDrawingMode && (pageStates[pagerState.currentPage]?.scale
+                                ?: 1f) <= 1.05f
                         ) { pageIndex ->
                             val pageState = pageStates.getOrPut(pageIndex) { PageState() }
                             ZoomablePdfPage(
                                 pdfRendererCore = core,
                                 pageIndex = pageIndex,
                                 annotationUiState = annotationUiState,
-                                onToggleNavbar = { scoreViewModel.toggleNavbar() },
                                 state = pageState,
                                 modifier = Modifier.fillMaxSize()
                             )
@@ -153,50 +204,6 @@ fun ScoreView() {
                             LayersPanel(
                                 pageIndex = pagerState.currentPage,
                                 onClose = { annotationViewModel.toggleLayersPanel() }
-                            )
-                        }
-
-                        if (!annotationUiState.isDrawingMode) {
-                            val currentPageState = pageStates[pagerState.currentPage]
-                            ScoreInteractionOverlay(
-                                onToggleNavbar = { scoreViewModel.toggleNavbar() },
-                                onPreviousPage = {
-                                    scope.launch {
-                                        if (isLandscape && currentPageState != null && currentPageState.canScrollUp()) {
-                                            currentPageState.scrollBy(
-                                                Offset(
-                                                    0f,
-                                                    viewportHeight.value * 0.8f
-                                                )
-                                            )
-                                            return@launch
-                                        }
-                                        if (pagerState.currentPage > 0) {
-                                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                                        } else {
-                                            scoreViewModel.navigateToPreviousScoreInSetlist()
-                                        }
-                                    }
-                                },
-                                onNextPage = {
-                                    scope.launch {
-                                        if (isLandscape && currentPageState != null && currentPageState.canScrollDown()) {
-                                            currentPageState.scrollBy(
-                                                Offset(
-                                                    0f,
-                                                    -viewportHeight.value * 0.8f
-                                                )
-                                            )
-                                            return@launch
-                                        }
-                                        if (pagerState.currentPage < core.pageCount - 1) {
-                                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                        } else {
-                                            scoreViewModel.navigateToNextScoreInSetlist()
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.fillMaxSize()
                             )
                         }
                     }

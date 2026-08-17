@@ -3,7 +3,7 @@ package com.example.scorda.ui.components.organisms.scoreView
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Box
@@ -35,26 +35,35 @@ class PageState {
     var scale by mutableFloatStateOf(1f)
     var offset by mutableStateOf(Offset.Zero)
     var pageHeightPx by mutableFloatStateOf(0f)
+    var pageWidthPx by mutableFloatStateOf(0f)
     var viewHeightPx by mutableFloatStateOf(0f)
+    var viewWidthPx by mutableFloatStateOf(0f)
 
     fun scrollBy(delta: Offset): Offset {
         val scaledHeight = pageHeightPx * scale
-        val maxScroll = max(0f, scaledHeight - viewHeightPx) / 2f
-        val oldY = offset.y
-        offset = Offset(offset.x, (offset.y + delta.y).coerceIn(-maxScroll, maxScroll))
-        return Offset(0f, offset.y - oldY)
+        val scaledWidth = pageWidthPx * scale
+
+        val maxScrollY = max(0f, (scaledHeight - viewHeightPx) / 2f)
+        val maxScrollX = max(0f, (scaledWidth - viewWidthPx) / 2f)
+
+        val oldOffset = offset
+        offset = Offset(
+            (offset.x + delta.x).coerceIn(-maxScrollX, maxScrollX),
+            (offset.y + delta.y).coerceIn(-maxScrollY, maxScrollY)
+        )
+        return offset - oldOffset
     }
 
     fun canScrollDown(): Boolean {
         val scaledHeight = pageHeightPx * scale
-        val maxScroll = max(0f, scaledHeight - viewHeightPx) / 2f
-        return offset.y > -maxScroll + 10f
+        val maxScrollY = max(0f, (scaledHeight - viewHeightPx) / 2f)
+        return offset.y > -maxScrollY + 10f
     }
 
     fun canScrollUp(): Boolean {
         val scaledHeight = pageHeightPx * scale
-        val maxScroll = max(0f, scaledHeight - viewHeightPx) / 2f
-        return offset.y < maxScroll - 10f
+        val maxScrollY = max(0f, (scaledHeight - viewHeightPx) / 2f)
+        return offset.y < maxScrollY - 10f
     }
 }
 
@@ -63,7 +72,6 @@ fun ZoomablePdfPage(
     pdfRendererCore: PdfRendererCore,
     pageIndex: Int,
     annotationUiState: AnnotationUiState,
-    onToggleNavbar: () -> Unit,
     modifier: Modifier = Modifier,
     state: PageState = remember { PageState() }
 ) {
@@ -75,6 +83,7 @@ fun ZoomablePdfPage(
     ) {
         val viewWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
         val viewHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
+        state.viewWidthPx = viewWidthPx
         state.viewHeightPx = viewHeightPx
 
         val dimensions by produceState<Pair<Int, Int>?>(null, pdfRendererCore, pageIndex) {
@@ -86,6 +95,7 @@ fun ZoomablePdfPage(
             min(viewWidthPx / w, viewHeightPx / h)
         }
 
+        state.pageWidthPx = dimensions?.let { it.first * fitScale } ?: 0f
         state.pageHeightPx = dimensions?.let { it.second * fitScale } ?: 0f
 
         val bitmap by produceState<Bitmap?>(
@@ -103,12 +113,7 @@ fun ZoomablePdfPage(
 
         val transformableState = rememberTransformableState { zoomChange, offsetChange, _ ->
             state.scale = (state.scale * zoomChange).coerceIn(1f, 5f)
-            val scaledHeight = state.pageHeightPx * state.scale
-            val maxScroll = max(0f, scaledHeight - viewHeightPx) / 2f
-            state.offset = Offset(
-                state.offset.x + offsetChange.x,
-                (state.offset.y + offsetChange.y).coerceIn(-maxScroll, maxScroll)
-            )
+            state.scrollBy(offsetChange)
         }
 
         val pageTransform = remember(state.scale, state.offset, fitScale, dimensions) {
@@ -136,6 +141,7 @@ fun ZoomablePdfPage(
             }
         }
 
+        // Parent Box that applies the transformations to BOTH content and annotations
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -143,8 +149,14 @@ fun ZoomablePdfPage(
                     state = transformableState,
                     enabled = !annotationUiState.isDrawingMode
                 )
-                .pointerInput(Unit) {
-                    detectTapGestures(onTap = { onToggleNavbar() })
+                .pointerInput(state.scale, annotationUiState.isDrawingMode) {
+                    // Consume drags when zoomed in so the pager doesn't swipe
+                    if (state.scale > 1.05f && !annotationUiState.isDrawingMode) {
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+                            state.scrollBy(dragAmount)
+                        }
+                    }
                 }
                 .graphicsLayer(
                     scaleX = state.scale,
@@ -164,13 +176,13 @@ fun ZoomablePdfPage(
             } else {
                 CircularProgressIndicator()
             }
-        }
 
-        DrawingCanvas(
-            pageTransform = pageTransform,
-            pageIndex = pageIndex,
-            isDrawingMode = annotationUiState.isDrawingMode,
-            modifier = Modifier.fillMaxSize()
-        )
+            DrawingCanvas(
+                pageTransform = pageTransform,
+                pageIndex = pageIndex,
+                isDrawingMode = annotationUiState.isDrawingMode,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }
