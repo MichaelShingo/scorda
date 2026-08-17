@@ -3,9 +3,10 @@ package com.example.scorda.ui.components.organisms.scoreView
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.calculateCentroidSize
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,11 +24,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import com.example.scorda.ui.viewmodel.AnnotationUiState
 import com.example.scorda.util.PdfRendererCore
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -111,20 +115,13 @@ fun ZoomablePdfPage(
             value = pdfRendererCore.renderPage(pageIndex, targetWidth, targetHeight)
         }
 
-        val transformableState = rememberTransformableState { zoomChange, offsetChange, _ ->
-            state.scale = (state.scale * zoomChange).coerceIn(1f, 5f)
-            state.scrollBy(offsetChange)
-        }
-
         val pageTransform = remember(state.scale, state.offset, fitScale, dimensions) {
             object : PageTransform {
                 override val zoom: Float = state.scale * fitScale
                 override fun screenToPdf(offset: Offset): Offset? {
                     val (w, h) = dimensions ?: return null
-                    val localX =
-                        (offset.x - viewWidthPx / 2f - state.offset.x) / state.scale + (w * fitScale / 2f)
-                    val localY =
-                        (offset.y - viewHeightPx / 2f - state.offset.y) / state.scale + (h * fitScale / 2f)
+                    val localX = (offset.x - viewWidthPx / 2f - state.offset.x) / state.scale + (w * fitScale / 2f)
+                    val localY = (offset.y - viewHeightPx / 2f - state.offset.y) / state.scale + (h * fitScale / 2f)
                     return Offset(localX / fitScale, localY / fitScale)
                 }
 
@@ -132,29 +129,58 @@ fun ZoomablePdfPage(
                     val (w, h) = dimensions ?: return null
                     val localX = pdfOffset.x * fitScale
                     val localY = pdfOffset.y * fitScale
-                    val screenX =
-                        (localX - w * fitScale / 2f) * state.scale + viewWidthPx / 2f + state.offset.x
-                    val screenY =
-                        (localY - h * fitScale / 2f) * state.scale + viewHeightPx / 2f + state.offset.y
+                    val screenX = (localX - w * fitScale / 2f) * state.scale + viewWidthPx / 2f + state.offset.x
+                    val screenY = (localY - h * fitScale / 2f) * state.scale + viewHeightPx / 2f + state.offset.y
                     return Offset(screenX, screenY)
                 }
             }
         }
 
-        // Parent Box that applies the transformations to BOTH content and annotations
+        // Unified Gesture Detector using Initial Pass to prioritize child over pager
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .transformable(
-                    state = transformableState,
-                    enabled = !annotationUiState.isDrawingMode
-                )
-                .pointerInput(state.scale, annotationUiState.isDrawingMode) {
-                    // Consume drags when zoomed in so the pager doesn't swipe
-                    if (state.scale > 1.05f && !annotationUiState.isDrawingMode) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            state.scrollBy(dragAmount)
+                .pointerInput(annotationUiState.isDrawingMode) {
+                    if (annotationUiState.isDrawingMode) return@pointerInput
+
+                    awaitEachGesture {
+                        var zoom = 1f
+                        var pan = Offset.Zero
+                        var pastTouchSlop = false
+                        val touchSlop = viewConfiguration.touchSlop
+
+                        while (true) {
+                            // Use Initial Pass to "intercept" the start of a pinch/drag
+                            val event = awaitPointerEvent(pass = PointerEventPass.Initial)
+                            val changes = event.changes
+                            
+                            val isMultiTouch = changes.size > 1
+                            if (changes.all { it.changedToUp() }) break
+
+                            val zoomChange = event.calculateZoom()
+                            val panChange = event.calculatePan()
+
+                            if (!pastTouchSlop) {
+                                zoom *= zoomChange
+                                pan += panChange
+                                val centroidSize = event.calculateCentroidSize(useCurrent = false)
+                                val zoomMotion = abs(1 - zoom) * centroidSize
+                                val panMotion = pan.getDistance()
+
+                                if (zoomMotion > touchSlop || panMotion > touchSlop || isMultiTouch) {
+                                    pastTouchSlop = true
+                                }
+                            }
+
+                            if (pastTouchSlop) {
+                                // If we are zoomed in or doing a multi-touch gesture, 
+                                // we consume the event IN THE INITIAL PASS to prevent parent Pager from seeing it.
+                                if (state.scale > 1.01f || isMultiTouch) {
+                                    state.scale = (state.scale * zoomChange).coerceIn(1f, 5f)
+                                    state.scrollBy(panChange)
+                                    changes.forEach { it.consume() }
+                                }
+                            }
                         }
                     }
                 }

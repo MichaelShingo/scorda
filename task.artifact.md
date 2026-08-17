@@ -1,14 +1,13 @@
-# Gestures and Zooming Fix Task List
+# Unified Gesture & Zooming Task List
 
-- [ ] **PageState & Coordinate Mapping**
-    - [ ] Update `PageState` to support 2D panning and accurate boundaries
-    - [ ] Fix `PageTransform` to use unified 2D scale and offset
-- [ ] **ZoomablePdfPage Refactor**
-    - [ ] Wrap content in a zooming container so annotations scale with the PDF
-    - [ ] Implement one-finger panning detector that consumes events when zoomed
-- [ ] **Pager Integration**
-    - [ ] Update `HorizontalPager.userScrollEnabled` based on current page scale
+- [ ] **Unified Gesture Implementation**
+    - [ ] Remove `transformable` and `detectDragGestures` from `ZoomablePdfPage.kt`
+    - [ ] Implement a custom `pointerInput` block that handles both one-finger pan and two-finger transform simultaneously
+    - [ ] Implement logic to allow horizontal swipe to pass to pager ONLY when `scale == 1.0` and starting a horizontal drag
+- [ ] **State & Transformation Refinement**
+    - [ ] Ensure `PageState` updates are fluid and handle the "smooth handoff" between 1 and 2 fingers
+    - [ ] Verify `DrawingCanvas` still receives correct transformed coordinates
 - [ ] **Verification**
-    - [ ] Verify pinch-to-zoom works on all pages
-    - [ ] Verify annotations stay aligned during zoom
-    - [ ] Verify paging re-enables correctly at 1.0 scale
+    - [ ] Verify pinch-to-zoom is highly responsive even when already zoomed in
+    - [ ] Verify one-finger pan is fluid
+    - [ ] Verify horizontal paging works at 1.0x scale
