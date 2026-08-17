@@ -84,21 +84,19 @@ class MainActivity : FragmentActivity() {
                     val scoreUiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
 
                     Box(modifier = Modifier.fillMaxSize()) {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            AnimatedVisibility(
-                                visible = scoreUiState.isNavbarVisible,
-                                enter = slideInVertically { -it } + expandVertically(),
-                                exit = slideOutVertically { -it } + shrinkVertically()
-                            ) {
-                                Navbar()
-                            }
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        ScordaNavHost(
+                            navController = navController
+                        )
 
-                            Box(modifier = Modifier.weight(1f)) {
-                                ScordaNavHost(
-                                    navController = navController
-                                )
-                            }
+                        AnimatedVisibility(
+                            visible = scoreUiState.isNavbarVisible,
+                            enter = slideInVertically { -it },
+                            exit = slideOutVertically { -it }
+                        ) {
+                            Navbar()
                         }
+                    }
                     }
                 }
             }

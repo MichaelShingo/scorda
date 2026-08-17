@@ -1,6 +1,6 @@
 package com.example.scorda.ui.components.organisms.scoreView
 
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,14 +12,12 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,7 +45,8 @@ import kotlin.time.Duration.Companion.milliseconds
 fun ScoreView() {
     val scope = rememberCoroutineScope()
     val windowSizeClass = LocalWindowSizeClass.current
-    val isLandscape = windowSizeClass.widthSizeClass != androidx.compose.material3.windowsizeclass.WindowWidthSizeClass.Compact
+    val isLandscape =
+        windowSizeClass.widthSizeClass != androidx.compose.material3.windowsizeclass.WindowWidthSizeClass.Compact
 
     val scoreViewModel = LocalScoreViewModel.current
     val annotationViewModel = LocalAnnotationViewModel.current
@@ -73,9 +72,23 @@ fun ScoreView() {
         }
     }
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .background(androidx.compose.ui.graphics.Color.White)) {
+    val topPadding by animateDpAsState(
+        targetValue = if (scoreUiState.isNavbarVisible) {
+            if (scoreUiState.openTabs.isNotEmpty()) 112.dp else 64.dp
+        } else 0.dp,
+        label = "TopPadding"
+    )
+
+    val bottomPadding by animateDpAsState(
+        targetValue = if (scoreUiState.isNavbarVisible) 80.dp else 0.dp,
+        label = "BottomPadding"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(androidx.compose.ui.graphics.Color.White)
+    ) {
         val core = pdfRendererCore
         if (selectedScore != null && core != null) {
             key(selectedScore.score.id) {
@@ -96,10 +109,7 @@ fun ScoreView() {
                 }
 
                 BoxWithConstraints(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .animateContentSize(),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     val viewportHeight = maxHeight
@@ -109,6 +119,10 @@ fun ScoreView() {
                             modifier = Modifier.fillMaxSize(),
                             beyondViewportPageCount = 1,
                             pageSpacing = 0.dp,
+                            contentPadding = PaddingValues(
+                                top = topPadding,
+                                bottom = bottomPadding
+                            ),
                             userScrollEnabled = !annotationUiState.isDrawingMode
                         ) { pageIndex ->
                             val pageState = pageStates.getOrPut(pageIndex) { PageState() }
@@ -183,12 +197,13 @@ fun ScoreView() {
                     }
                 }
 
-                // Page Preview Slider at the bottom (moved out of the main Box to take up space)
+                // Page Preview Slider at the bottom (as an overlay)
                 androidx.compose.animation.AnimatedVisibility(
                     visible = scoreUiState.isNavbarVisible,
                     enter = slideInVertically { it } + expandVertically() + fadeIn(),
                     exit = slideOutVertically { it } + shrinkVertically() + fadeOut(),
                     modifier = Modifier
+                        .align(Alignment.BottomCenter)
                         .navigationBarsPadding()
                 ) {
                     PagePreviewSlider(
@@ -202,19 +217,18 @@ fun ScoreView() {
                     )
                 }
             }
-        } else {
+        } else if (selectedScore != null) {
             Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                if (selectedScore != null) {
-                    CircularProgressIndicator()
-                } else {
-                    Text("Welcome to Scorda. Get started by importing a score.")
-                }
+                CircularProgressIndicator()
             }
+        } else {
+            EmptyScoreView(
+                onDocumentPicked = scoreViewModel::onDocumentPicked,
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }

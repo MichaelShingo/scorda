@@ -1,36 +1,32 @@
-# Standard WindowSizeClass Integration Walkthrough
+# Simplified Welcome & Search Flow Walkthrough
 
-I have refactored the adaptive layout system to use the official Material 3 `WindowSizeClass` API, provided globally via a `CompositionLocal`. This architecture is the recommended standard for building production-quality, responsive Android applications.
+I have refactored the "No score open" experience to be more robust, thematic, and user-friendly by extracting it into a dedicated component and using a modern dialog-based search flow.
 
-## Key Architectural Changes
+## Key Improvements
 
-### 1. Global `WindowSizeClass` Provider
-- **Infrastructure**: Created `LocalWindowSizeClass` in `WindowSizeClassProvider.kt`.
-- **Initialization**: The window size is calculated once at the root in `MainActivity.kt` and provided to the entire UI tree using `CompositionLocalProvider`.
-- **Benefit**: Any component in the app can now simply call `LocalWindowSizeClass.current` to determine if it should render in a "Compact" (mobile-like) or "Expanded" (tablet-like) mode, eliminating the need for manual width calculations in multiple places.
+### 1. Dedicated `EmptyScoreView` Component
+- **Separation of Concerns**: Moved the welcome screen logic out of `ScoreView.kt` and into its own file: `EmptyScoreView.kt`.
+- **Dark Mode Support**: The welcome screen now uses a `Surface` with `MaterialTheme.colorScheme.background`. This ensures the background automatically switches between light and dark modes based on system settings, matching the rest of the application.
 
-### 2. Semantic Breakpoints
-- **Navbar Logic**: Updated `Navbar.kt` to use `WindowWidthSizeClass.Compact`.
-    - **Compact**: Shows the "Info" icon to maximize space for navigation actions.
-    - **Medium/Expanded**: Shows the full, interactive score title with ellipsis support.
-- **ScoreView Logic**: Updated `ScoreView.kt` to use the width size class for orientation-like logic. It now considers the view "landscape" (allowing half-page turns) whenever it has more than "Compact" width available.
+### 2. Large Search Dialog
+- **Mechanism**: Tapping the "Open a Score" button now triggers a `BasicAlertDialog` that hosts the `SearchScores` component.
+- **Benefit**: This provides a large, focused interface for finding and opening scores when none are currently active. It avoids the need for complex global popup state while remaining very easy to use.
+- **Auto-Dismiss**: The dialog automatically closes once a score is selected from the list.
 
-### 3. Improved Reliability
-- **Multi-Window Ready**: Because `WindowSizeClass` is calculated based on the window's actual bounds, the app will now respond correctly when resized in split-screen mode or on foldable devices.
-- **Cleaner Code**: Removed complex `LocalWindowInfo` and manual DP conversions from the UI components, replacing them with readable semantic checks.
+### 3. Integrated Import Flow
+- **Native Picker**: The "Import a Score" button is a prominent primary action that directly launches the Android system file picker for PDF documents.
+- **Seamless Loading**: Once a file is picked, the app immediately transitions into the PDF viewer with a loading spinner.
 
 ## Technical Details
 
-### [MainActivity.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/MainActivity.kt)
-- Integrated `calculateWindowSizeClass`.
-- Added the root-level `CompositionLocalProvider`.
+### [NEW] [EmptyScoreView.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/EmptyScoreView.kt)
+- Encapsulates the greeting, buttons, and search dialog logic.
+- Uses `rememberLauncherForActivityResult` for PDF imports.
 
-### [Navbar.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/navbar/Navbar.kt)
-- Refactored `isSmallScreen` check to use `windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact`.
-
-### [ScoreView.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ScoreView.kt)
-- Replaced manual height/width comparison with `WindowSizeClass` checks.
+### [MODIFY] [ScoreView.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ScoreView.kt)
+- Cleaned up to only manage the high-level switching between the PDF viewer, the loading state, and the `EmptyScoreView`.
 
 ## Verification Results
-- **Build**: Successfully compiled with the new `material3-window-size-class` dependency.
-- **Responsiveness**: Verified that the UI transitions correctly between "Info Icon" and "Title Text" modes based on the window width size class.
+- **Build Status**: Successfully compiled.
+- **Theme**: Verified that the background respects dark mode.
+- **Flow**: Confirmed that both "Import" and "Open" paths lead correctly to a rendered score.

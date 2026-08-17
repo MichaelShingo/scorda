@@ -62,6 +62,7 @@ fun Navbar(modifier: Modifier = Modifier) {
 
     var isEditDialogVisible by remember { mutableStateOf(false) }
 
+
     Column(modifier = modifier) {
         TopAppBar(
             title = {
@@ -150,6 +151,7 @@ fun Navbar(modifier: Modifier = Modifier) {
                             NavbarButton(
                                 imageVector = Icons.Rounded.Gesture,
                                 contentDescription = "Annotate",
+                                enabled = scoreUiState.openTabs.isNotEmpty(),
                                 onClick = { annotationViewModel.toggleDrawingMode() }
                             )
 

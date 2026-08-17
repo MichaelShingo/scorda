@@ -1,59 +1,37 @@
-# Standard Adaptive Layout with WindowSizeClass & CompositionLocal
+# Simple Welcome Screen & Search Dialog Implementation Plan
 
-This plan refactors the adaptive layout logic to use the standard Material 3 `WindowSizeClass` system, provided globally via `CompositionLocal` to avoid parameter drilling.
+This plan aims to simplify the "no score open" experience by extracting the welcome screen into its own component and using a full-screen dialog for searching scores.
 
 ## User Review Required
 
-> [!IMPORTANT]
-> - **Global Availability**: `WindowSizeClass` will be available to **all** composables via `LocalWindowSizeClass.current`. This follows modern Compose best practices.
-> - **Dependency Update**: I will add `androidx.compose.material3:material3-window-size-class` to the project.
+> [!NOTE]
+> - **Full Screen Search**: Tapping "Open a Score" on the welcome screen will now open the search interface in a dedicated dialog that covers most of the screen, rather than a small anchored popup.
+> - **Theme Support**: The welcome screen will now correctly adapt to Dark Mode using the standard `MaterialTheme.colorScheme.background`.
 
 ## Proposed Changes
 
-### 1. Build Configuration
+### 1. New Components
 
-#### [MODIFY] [libs.versions.toml](file:///D:/apps/scorda/gradle/libs.versions.toml)
-- Add `androidx-compose-material3-windowSizeClass` library definition.
-
-#### [MODIFY] [app/build.gradle.kts](file:///D:/apps/scorda/app/build.gradle.kts)
-- Add `implementation(libs.androidx.compose.material3.windowSizeClass)` dependency.
-
----
-
-### 2. Infrastructure
-
-#### [NEW] [WindowSizeClassProvider.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/theme/WindowSizeClassProvider.kt)
-- Define `LocalWindowSizeClass` using `staticCompositionLocalOf`.
+#### [NEW] [EmptyScoreView.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/EmptyScoreView.kt)
+- **Root**: `Surface` with `color = MaterialTheme.colorScheme.background`.
+- **Content**: The centered "Welcome to Scorda" text and action buttons.
+- **Search Dialog**: A `BasicAlertDialog` (Experimental) that renders the `SearchScores` component when triggered.
+- **Actions**:
+    - **Import**: Triggers the system file picker.
+    - **Open**: Toggles the local `isSearchDialogVisible` state.
 
 ---
 
-### 3. MainActivity Integration
-
-#### [MODIFY] [MainActivity.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/MainActivity.kt)
-- Import `calculateWindowSizeClass`.
-- Calculate `windowSizeClass` in `setContent`.
-- Wrap the entire UI in `CompositionLocalProvider(LocalWindowSizeClass provides windowSizeClass)`.
-
----
-
-### 4. UI Components Refactor
-
-#### [MODIFY] [Navbar.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/navbar/Navbar.kt)
-- Access `WindowSizeClass` via `LocalWindowSizeClass.current`.
-- Replace `LocalWindowInfo` logic with size class checks:
-    - `widthSizeClass == WindowWidthSizeClass.Compact` -> Show Info Icon.
-    - Otherwise -> Show Title.
+### 2. ScoreView Cleanup
 
 #### [MODIFY] [ScoreView.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ScoreView.kt)
-- Access `WindowSizeClass` via `LocalWindowSizeClass.current`.
-- Use size classes to inform layout decisions if needed (retaining existing landscape logic where appropriate).
+- Remove the inline `EmptyScoreView` and `WelcomeButton` composables.
+- Reference the new `EmptyScoreView` component from the separate file.
 
 ## Verification Plan
 
-### Automated Tests
-- Build verification to ensure the new dependency and `CompositionLocal` are correctly integrated.
-
 ### Manual Verification
-- Verify that the Navbar title correctly switches to the info icon on small screens/windows.
-- Verify that the layout remains responsive in split-screen mode on various devices.
-- Verify that no regressions were introduced in the ScoreView's centering or navigation.
+- **Dark Mode**: Verify that the welcome screen background turns dark when system dark mode is toggled.
+- **Search Flow**: Verify that "Open a Score" opens a large dialog and that selecting a score from the list correctly opens it in the viewer.
+- **Import Flow**: Verify that "Import a Score" still triggers the PDF file picker.
+- **Layout**: Ensure the welcome screen is perfectly centered and looks good on both phones and tablets.

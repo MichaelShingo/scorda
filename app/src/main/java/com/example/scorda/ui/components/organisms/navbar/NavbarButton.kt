@@ -16,10 +16,12 @@ fun NavbarButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isSelected: Boolean = false,
+    enabled: Boolean = true,
 ) {
     IconButton(
         onClick = onClick,
         modifier = modifier,
+        enabled = enabled,
         colors = IconButtonDefaults.iconButtonColors(
             contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
