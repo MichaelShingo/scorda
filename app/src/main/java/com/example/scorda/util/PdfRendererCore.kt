@@ -1,4 +1,4 @@
-package com.example.scorda.ui.components.organisms.scoreView
+package com.example.scorda.util
 
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -17,6 +17,7 @@ import java.io.File
  * this core uses a [Mutex] to synchronize all operations.
  */
 class PdfRendererCore(private val file: File) : AutoCloseable {
+    val path: String = file.absolutePath
     private val pfd: ParcelFileDescriptor =
         ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
     private val renderer: PdfRenderer = PdfRenderer(pfd)

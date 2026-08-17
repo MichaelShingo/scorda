@@ -125,7 +125,7 @@ class ScoreViewModel(
                         mutable[state.selectedTabIndex] = OpenScore(
                             scoreId = targetScore.score.id,
                             setlistId = setlistId,
-                            lastOpenPage = 0
+                            lastOpenPage = if (direction < 0) -1 else 0
                         )
                     }
                     mutable
