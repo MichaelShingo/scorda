@@ -95,6 +95,7 @@ dependencies {
     implementation(libs.androidx.pdf.viewer.fragment)
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.reorderable)
+    implementation(libs.telephoto.zoomable)
     implementation(libs.androidx.compose.foundation)
     implementation(files("libs/mwengine-release.aar"))
 
