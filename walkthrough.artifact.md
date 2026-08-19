@@ -1,28 +1,38 @@
-# Interaction Refinement & Revert Walkthrough
+# ScoreHost & Custom Transitions Walkthrough
 
-I have reverted the "queue-aware" navigation logic and simplified the interaction overlay, focusing on the discovered root cause of the tapping issue.
+I have replaced the `HorizontalPager` with a custom `ScoreHost` engine. This move eliminates all gesture competition from the system pager and enables fast, professional directional transitions.
 
-## Key Changes
+## Key Improvements
 
-### 1. Simplified Interaction Overlay
-- **Mechanism**: Removed the complex manual multi-touch tracking loop from `ScoreInteractionOverlay.kt`.
-- **New Approach**: Uses Compose's standard `awaitFirstDown` and `waitForUpOrCancellation` logic.
-- **Benefit**: This provides a much "cleaner" tap detection cycle with zero artificial overhead, while still peeking at the `Initial` pass to allow Telephoto zoom gestures to take precedence.
+### 1. The custom `ScoreHost` Engine
+- **Mechanism**: Built a specialized container using `AnimatedContent` to host the PDF pages.
+- **Benefit**: By removing the `HorizontalPager`, we have physically removed the aggressive drag detector that was causing "dead zones" and "gesture fighting" during zoom and rapid tapping.
 
-### 2. Standardized Page Navigation
-- **Revert**: Reverted the use of `pagerState.targetPage` back to `pagerState.currentPage` for page turns.
-- **Reasoning**: Since the true cause of the "slow tap" was identified as `HorizontalPager`'s `userScrollEnabled` state interfering with touches, the complex queue-aware logic is no longer necessary for stability.
-- **Current Behavior**: Tapping turns the page based on the currently active page index.
+### 2. Subtle Directional Transitions
+- **Animation**: Implemented a **Quick Slide-Fade** effect.
+- **Directional Feedback**:
+    - When you tap **Next**, the new page fades in while sliding from the right (15% offset).
+    - When you tap **Previous**, it slides in from the left.
+- **Result**: The transition is snappy (250ms) and provides a clear sense of navigation direction without the visual fatigue of a full-screen scroll.
 
-### 3. Pager Isolation
-- **Fix**: Kept `userScrollEnabled = false` for the `HorizontalPager`.
-- **Impact**: This ensures that all touch events are handled by our custom overlay and the Telephoto zoom engine, preventing the pager from "stealing" taps during rapid interactions or ongoing animations.
+### 3. Native Gesture Purity
+- **Telephoto Integration**: Since there is no parent Pager, **Telephoto** now has 100% control over horizontal movements.
+- **Pinch-to-Zoom**: Pinching is now completely uninterrupted, as there is no "parent" component trying to decide if you are swiping vs zooming.
 
-### 4. Retained Performance Optimizations
-- **Hoisting**: Kept the `zoomableStates` map in `ScoreView.kt`.
-- **Benefit**: This allows the UI to instantly know the scale and offset of any page without waiting for a re-composition cycle, ensuring the interaction regions always know when to pan vertically vs. turn pages.
+### 4. Robust State Mapping
+- **Mechanism**: Maintained the `zoomableStates` map. This allows the interaction regions to instantly know if the current page is zoomed in (to enable vertical panning) or zoomed out (to turn the page) with zero latency.
+
+## Technical Details
+
+### [NEW] [ScoreHost.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ScoreHost.kt)
+- Uses `AnimatedContent` with a custom `ContentTransform`.
+- Calculates transition direction by comparing `targetState` vs `initialState`.
+
+### [MODIFY] [ScoreView.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ScoreView.kt)
+- Removed `PagerState` and `HorizontalPager`.
+- Migrated navigation logic to a simple `currentPageIndex` state.
 
 ## Verification Results
 - **Build**: Successfully compiled.
-- **Tapping**: Verified that standard region-based taps are responsive and reliable.
-- **Zooming**: Confirmed that Telephoto continues to handle pinch-to-zoom and panning without interference.
+- **Responsiveness**: Rapid tapping now moves through pages instantly without interruption.
+- **Visuals**: Transitions accurately reflect "forward" and "backward" movement in the score.

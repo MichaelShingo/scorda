@@ -12,20 +12,20 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -92,23 +92,20 @@ fun ScoreView() {
         val core = pdfRendererCore
         if (selectedScore != null && core != null && core.path == selectedScore.score.filePath) {
             key(selectedScore.score.id) {
-                val initialPage = remember(selectedTab, core) {
+                var currentPageIndex by remember(selectedScore.score.id) {
                     val lastPage = selectedTab?.lastOpenPage ?: 0
-                    if (lastPage == -1) (core.pageCount - 1).coerceAtLeast(0) else lastPage
+                    val initial = if (lastPage == -1) (core.pageCount - 1).coerceAtLeast(0) else lastPage
+                    mutableIntStateOf(initial)
                 }
-                val pagerState = rememberPagerState(
-                    initialPage = initialPage,
-                    pageCount = { core.pageCount }
-                )
 
                 // Track states in a map for zero-latency lookups
                 val zoomableStates = remember(core) { mutableStateMapOf<Int, ZoomableState>() }
 
-                LaunchedEffect(pagerState.currentPage) {
+                LaunchedEffect(currentPageIndex) {
                     delay(300.milliseconds)
                     scoreViewModel.updateLastOpenPage(
                         selectedScore.score.id,
-                        pagerState.currentPage
+                        currentPageIndex
                     )
                 }
 
@@ -129,7 +126,7 @@ fun ScoreView() {
                                         onPreviousPage = {
                                             scope.launch {
                                                 val currentState =
-                                                    zoomableStates[pagerState.currentPage]
+                                                    zoomableStates[currentPageIndex]
                                                 if (currentState != null) {
                                                     val transform =
                                                         currentState.contentTransformation
@@ -144,8 +141,8 @@ fun ScoreView() {
                                                         return@launch
                                                     }
                                                 }
-                                                if (pagerState.currentPage > 0) {
-                                                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                                if (currentPageIndex > 0) {
+                                                    currentPageIndex--
                                                 } else {
                                                     scoreViewModel.navigateToPreviousScoreInSetlist()
                                                 }
@@ -153,8 +150,8 @@ fun ScoreView() {
                                         },
                                         onNextPage = {
                                             scope.launch {
-                                                if (pagerState.currentPage < core.pageCount - 1) {
-                                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                                if (currentPageIndex < core.pageCount - 1) {
+                                                    currentPageIndex++
                                                 } else {
                                                     scoreViewModel.navigateToNextScoreInSetlist()
                                                 }
@@ -164,23 +161,20 @@ fun ScoreView() {
                                 } else Modifier
                             )
                     ) {
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier.fillMaxSize(),
-                            beyondViewportPageCount = 1,
-                            pageSpacing = 0.dp,
-                            contentPadding = PaddingValues(
-                                top = topPadding,
-                                bottom = bottomPadding
-                            ),
-                            userScrollEnabled = false,
+                        ScoreHost(
+                            currentPageIndex = currentPageIndex,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(androidx.compose.ui.graphics.Color.White),
                         ) { pageIndex ->
                             val zoomableState = rememberZoomableState()
                             ZoomablePdfPage(
                                 pdfRendererCore = core,
                                 pageIndex = pageIndex,
                                 annotationUiState = annotationUiState,
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(top = topPadding, bottom = bottomPadding),
                                 zoomableState = zoomableState,
                                 onStateChange = { zoomableStates[pageIndex] = it }
                             )
@@ -196,7 +190,7 @@ fun ScoreView() {
                                 .zIndex(2f)
                         ) {
                             LayersPanel(
-                                pageIndex = pagerState.currentPage,
+                                pageIndex = currentPageIndex,
                                 onClose = { annotationViewModel.toggleLayersPanel() }
                             )
                         }
@@ -214,11 +208,9 @@ fun ScoreView() {
                 ) {
                     PagePreviewSlider(
                         pdfRendererCore = core,
-                        currentPage = pagerState.currentPage,
+                        currentPage = currentPageIndex,
                         onPageSelected = { page ->
-                            scope.launch {
-                                pagerState.animateScrollToPage(page)
-                            }
+                            currentPageIndex = page
                         }
                     )
                 }

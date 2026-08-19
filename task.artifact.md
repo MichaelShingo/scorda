@@ -1,13 +1,16 @@
-# Interaction Refinement & Revert Task List
+# ScoreHost Migration Task List
 
-- [x] **Simplified Interaction Overlay**
-    - [x] Remove complex manual gesture tracking from `ScoreInteractionOverlay.kt`
-    - [x] Use standard `waitForUpOrCancellation` for region taps
-- [x] **Revert Unnecessary Fixes**
-    - [x] Revert "queue-aware" navigation (`targetPage`) in `ScoreView.kt`
-    - [x] Keep `currentPage` based navigation for stability
-- [x] **Zero-Latency State Lookups**
-    - [x] Keep `zoomableStates` map for instant scale detection
+- [x] **Core Architecture**
+    - [x] Create `ScoreHost.kt` with `AnimatedContent` logic
+    - [x] Implement directional slide-fade transition
+- [x] **ScoreView Migration**
+    - [x] Remove `PagerState` and `HorizontalPager`
+    - [x] Implement `currentPageIndex` state tracking
+    - [x] Integrate `ScoreHost` as the primary content viewer
+- [x] **Gesture & State Refinement**
+    - [x] Ensure `ScoreInteractionOverlay` updates the new index state
+    - [x] Fix navbar visibility logic to work with the new index
 - [x] **Verification**
-    - [x] Build and verify standard page turn reliability
-    - [x] Verify `userScrollEnabled = false` prevents pager interference
+    - [x] Verify transition direction (Next vs Prev)
+    - [x] Verify rapid tapping performance
+    - [x] Verify Telephoto stability in the new host
