@@ -10,8 +10,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -21,10 +23,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import com.example.scorda.ui.viewmodel.AnnotationUiState
 import com.example.scorda.util.PdfRendererCore
+import kotlinx.coroutines.delay
 import me.saket.telephoto.zoomable.ZoomableState
 import me.saket.telephoto.zoomable.rememberZoomableState
 import me.saket.telephoto.zoomable.zoomable
+import kotlin.math.abs
 import kotlin.math.min
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun ZoomablePdfPage(
@@ -38,6 +43,8 @@ fun ZoomablePdfPage(
     LaunchedEffect(zoomableState) {
         onStateChange(zoomableState)
     }
+
+    var highResBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     BoxWithConstraints(
         modifier = modifier
@@ -68,6 +75,49 @@ fun ZoomablePdfPage(
             val targetWidth = (w * fitScale).toInt()
             val targetHeight = (h * fitScale).toInt()
             value = pdfRendererCore.renderPage(pageIndex, targetWidth, targetHeight)
+        }
+
+        // Logic to load high-resolution bitmap when zoom settles
+        LaunchedEffect(
+            zoomableState.contentTransformation,
+            zoomableState.isAnimationRunning,
+            pdfRendererCore,
+            pageIndex,
+            dimensions,
+            fitScale
+        ) {
+            val transform = zoomableState.contentTransformation
+            val currentScale = transform.scale.scaleX
+            val isAnimating = zoomableState.isAnimationRunning
+
+            if (currentScale <= 1.05f) {
+                highResBitmap = null
+                return@LaunchedEffect
+            }
+
+            if (!isAnimating) {
+                // Wait a small bit to ensure it's truly settled
+                delay(300.milliseconds)
+
+                val (w, h) = dimensions ?: return@LaunchedEffect
+                val targetScale = currentScale * fitScale
+
+                // Limit resolution to avoid OOM (max 5000px on longest side)
+                val maxDimension = 5000f
+                val boundedScale = min(targetScale, maxDimension / maxOf(w, h))
+
+                val targetWidth = (w * boundedScale).toInt()
+                val targetHeight = (h * boundedScale).toInt()
+
+                // Only re-render if the resolution difference is significant
+                val currentHighResWidth = highResBitmap?.width ?: 0
+                if (abs(targetWidth - currentHighResWidth) > 100) {
+                    val newBitmap = pdfRendererCore.renderPage(pageIndex, targetWidth, targetHeight)
+                    if (newBitmap != null) {
+                        highResBitmap = newBitmap
+                    }
+                }
+            }
         }
 
         val pageTransform = remember(zoomableState.contentTransformation, fitScale, dimensions) {
@@ -106,12 +156,23 @@ fun ZoomablePdfPage(
             contentAlignment = Alignment.Center
         ) {
             if (bitmap != null) {
+                // Show base bitmap always as a background
                 Image(
                     bitmap = bitmap!!.asImageBitmap(),
-                    contentDescription = "Page ${pageIndex + 1}",
+                    contentDescription = null,
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.background(Color.White)
                 )
+
+                // Overlay high-res bitmap if available
+                if (highResBitmap != null) {
+                    Image(
+                        bitmap = highResBitmap!!.asImageBitmap(),
+                        contentDescription = "Page ${pageIndex + 1} High Res",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             } else {
                 CircularProgressIndicator()
             }

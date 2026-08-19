@@ -1,12 +1,14 @@
-# Directional Score Transition Task List
+# Dynamic Resolution Zooming Task List
 
-- [x] **State Management**
-    - [x] Add `scoreNavigationDirection` state to `ScoreView.kt`
-    - [x] Add `previousTabIndex` tracking
-- [x] **Transition Refinement**
-    - [x] Update `transitionSpec` in `AnimatedContent` to use directional vertical slides
-    - [x] Update `scoreInteraction` logic to set the correct direction
-- [x] **Verification**
-    - [x] Verify "Down" animation for Next Score
-    - [x] Verify "Up" animation for Previous Score
-    - [x] Verify tab switching animation direction
+- [x] **High-Res Rendering Logic**
+    - [x] Add `highResBitmap` state to `ZoomablePdfPage.kt`
+    - [x] Implement `LaunchedEffect` to detect zoom "settle" events (stable scale + no animation)
+    - [x] Calculate target resolution based on current zoom level (with a safe cap)
+    - [x] Request high-res render from `PdfRendererCore`
+- [x] **UI Overlay & Transition**
+    - [x] Overlay `highResBitmap` on top of the base bitmap when ready
+    - [x] Clear `highResBitmap` when zooming back out or turning page
+- [ ] **Verification**
+    - [ ] Verify sharpness after zooming
+    - [ ] Verify memory usage stability
+    - [ ] Verify no "flashes" during the bitmap swap

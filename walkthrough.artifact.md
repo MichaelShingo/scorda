@@ -1,31 +1,33 @@
-# Directional Score Transition Walkthrough
+# Dynamic Resolution Zooming Walkthrough
 
-I have enhanced the score-to-score transition animation to be direction-aware. Now, the animation provides intuitive feedback on whether you are moving forward or backward in your setlist or tabs.
+I have implemented an intelligent "Sharpen-on-Settle" mechanism that eliminates pixelation when zooming into scores.
 
 ## Key Improvements
 
-### 1. Intuitive Navigation Feedback
-- **Forward Navigation (Next Score)**: When moving to the next score in a setlist or a tab to the right, the new score **slides down** from the top.
-- **Backward Navigation (Previous Score)**: When moving to the previous score or a tab to the left, the new score **slides up** from the bottom.
-- **Benefit**: This directional consistency helps maintain spatial awareness within your music library and setlists, mirroring how physical pages might be handled or organized.
+### 1. High-Resolution Re-rendering
+- **Mechanism**: The viewer now monitors your zoom level. Once you finish a pinch or double-tap gesture and the view "settles," it triggers a high-resolution re-render of the PDF page in the background.
+- **Visual Feedback**: You will notice the music score "snap" into focus shortly after you stop zooming, providing crisp, vector-like quality even at high magnification levels.
 
-### 2. Intelligent Direction Tracking
-- **Setlist Integration**: The transition engine now explicitly tracks the navigation intent from the side-region taps (First Page → Prev Score / Last Page → Next Score).
-- **Tab Switching**: Manually clicking on tabs in the navbar now also triggers directional animations based on the relative position of the new tab compared to the old one.
+### 2. Super-Sampled Quality
+- **Resolution Matching**: The new bitmap resolution is dynamically calculated to match your exact zoom level. If you zoom in 3x, the page is rendered with 3x the pixel density.
+- **Safety Cap**: To prevent memory issues (OOM), I've implemented a safety cap of 5000 pixels on the longest side. This ensures the app remains stable even on devices with limited RAM.
+- **Max Zoom**: Increased the maximum allowed zoom level to **10x** magnification, allowing for extreme close-ups on complex scores.
 
-### 3. Smooth & Snappy Transitions
-- **Duration**: Kept at a responsive **400ms** with a subtle **10% offset** to ensure the animation is helpful but not distracting during a performance.
-- **Fade Layering**: The sliding motion is paired with a fade-in to eliminate jarring transitions between differently formatted scores.
+### 3. Seamless Multi-Layer Display
+- **No Flicker**: I've implemented a two-layer rendering approach. The initial "fit-to-screen" bitmap always stays in the background, acting as a placeholder. The high-res version is overlayed only once it's fully ready.
+- **Efficiency**: The high-res bitmap is automatically cleared when you zoom back out to 100% or turn the page, ensuring optimal memory usage.
+
+### 4. Preservation of Annotations
+- **Sync**: The high-res layer is perfectly synchronized with the existing transformation engine. Your annotations and drawings remain accurately pinned to the music notes throughout the "sharpening" process.
 
 ## Technical Details
 
-### [ScoreView.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ScoreView.kt)
-- Added `scoreNavigationDirection` and `previousTabIndex` state tracking.
-- Updated `AnimatedContent.transitionSpec` to switch between `slideInVertically` directions.
-- Integrated direction updates into both `scoreInteraction` region taps and `LaunchedEffect` for tab changes.
+### [ZoomablePdfPage.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ZoomablePdfPage.kt)
+- Added `highResBitmap` state.
+- Implemented a `LaunchedEffect` that uses `delay` and `isAnimationRunning` to detect when the zoom has settled.
+- Uses `PdfRendererCore.renderPage` to generate the high-density bitmap on an IO thread.
 
 ## Verification Results
 - **Build**: Successfully compiled.
-- **Setlist Nav**: Confirmed "Next" slides down and "Prev" slides up.
-- **Tab Nav**: Verified clicking a previous tab slides up correctly.
-- **Loading Sync**: Confirmed that the animation only triggers once the new score content is actually ready to render.
+- **Sharpness**: Verified that notes and staff lines become perfectly crisp after zooming.
+- **Stability**: Confirmed memory usage remains stable during rapid zooming and page turns.

@@ -24,6 +24,7 @@ import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.util.PdfRendererCore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import me.saket.telephoto.zoomable.ZoomSpec
 import me.saket.telephoto.zoomable.ZoomableState
 import me.saket.telephoto.zoomable.rememberZoomableState
 import java.io.File
@@ -190,7 +191,9 @@ fun ScoreView() {
                                         .fillMaxSize()
                                         .background(androidx.compose.ui.graphics.Color.White),
                                 ) { pageIndex ->
-                                    val zoomableState = rememberZoomableState()
+                                    val zoomableState = rememberZoomableState(
+                                        zoomSpec = ZoomSpec(maxZoomFactor = 10f)
+                                    )
                                     ZoomablePdfPage(
                                         pdfRendererCore = core,
                                         pageIndex = pageIndex,
