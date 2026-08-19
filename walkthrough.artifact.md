@@ -1,38 +1,31 @@
-# ScoreHost & Custom Transitions Walkthrough
+# Directional Score Transition Walkthrough
 
-I have replaced the `HorizontalPager` with a custom `ScoreHost` engine. This move eliminates all gesture competition from the system pager and enables fast, professional directional transitions.
+I have enhanced the score-to-score transition animation to be direction-aware. Now, the animation provides intuitive feedback on whether you are moving forward or backward in your setlist or tabs.
 
 ## Key Improvements
 
-### 1. The custom `ScoreHost` Engine
-- **Mechanism**: Built a specialized container using `AnimatedContent` to host the PDF pages.
-- **Benefit**: By removing the `HorizontalPager`, we have physically removed the aggressive drag detector that was causing "dead zones" and "gesture fighting" during zoom and rapid tapping.
+### 1. Intuitive Navigation Feedback
+- **Forward Navigation (Next Score)**: When moving to the next score in a setlist or a tab to the right, the new score **slides down** from the top.
+- **Backward Navigation (Previous Score)**: When moving to the previous score or a tab to the left, the new score **slides up** from the bottom.
+- **Benefit**: This directional consistency helps maintain spatial awareness within your music library and setlists, mirroring how physical pages might be handled or organized.
 
-### 2. Subtle Directional Transitions
-- **Animation**: Implemented a **Quick Slide-Fade** effect.
-- **Directional Feedback**:
-    - When you tap **Next**, the new page fades in while sliding from the right (15% offset).
-    - When you tap **Previous**, it slides in from the left.
-- **Result**: The transition is snappy (250ms) and provides a clear sense of navigation direction without the visual fatigue of a full-screen scroll.
+### 2. Intelligent Direction Tracking
+- **Setlist Integration**: The transition engine now explicitly tracks the navigation intent from the side-region taps (First Page → Prev Score / Last Page → Next Score).
+- **Tab Switching**: Manually clicking on tabs in the navbar now also triggers directional animations based on the relative position of the new tab compared to the old one.
 
-### 3. Native Gesture Purity
-- **Telephoto Integration**: Since there is no parent Pager, **Telephoto** now has 100% control over horizontal movements.
-- **Pinch-to-Zoom**: Pinching is now completely uninterrupted, as there is no "parent" component trying to decide if you are swiping vs zooming.
-
-### 4. Robust State Mapping
-- **Mechanism**: Maintained the `zoomableStates` map. This allows the interaction regions to instantly know if the current page is zoomed in (to enable vertical panning) or zoomed out (to turn the page) with zero latency.
+### 3. Smooth & Snappy Transitions
+- **Duration**: Kept at a responsive **400ms** with a subtle **10% offset** to ensure the animation is helpful but not distracting during a performance.
+- **Fade Layering**: The sliding motion is paired with a fade-in to eliminate jarring transitions between differently formatted scores.
 
 ## Technical Details
 
-### [NEW] [ScoreHost.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ScoreHost.kt)
-- Uses `AnimatedContent` with a custom `ContentTransform`.
-- Calculates transition direction by comparing `targetState` vs `initialState`.
-
-### [MODIFY] [ScoreView.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ScoreView.kt)
-- Removed `PagerState` and `HorizontalPager`.
-- Migrated navigation logic to a simple `currentPageIndex` state.
+### [ScoreView.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ScoreView.kt)
+- Added `scoreNavigationDirection` and `previousTabIndex` state tracking.
+- Updated `AnimatedContent.transitionSpec` to switch between `slideInVertically` directions.
+- Integrated direction updates into both `scoreInteraction` region taps and `LaunchedEffect` for tab changes.
 
 ## Verification Results
 - **Build**: Successfully compiled.
-- **Responsiveness**: Rapid tapping now moves through pages instantly without interruption.
-- **Visuals**: Transitions accurately reflect "forward" and "backward" movement in the score.
+- **Setlist Nav**: Confirmed "Next" slides down and "Prev" slides up.
+- **Tab Nav**: Verified clicking a previous tab slides up correctly.
+- **Loading Sync**: Confirmed that the animation only triggers once the new score content is actually ready to render.

@@ -5,6 +5,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.AnchoredDraggableDefaults
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
@@ -41,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,6 +62,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.milliseconds
 
 enum class DragValue {
     Settled,
@@ -215,6 +218,7 @@ fun ScoreListItemPreview() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ScoreListItemContent(
     scoreWithDetails: ScoreWithDetails,
@@ -227,6 +231,7 @@ private fun ScoreListItemContent(
 ) {
     val score = scoreWithDetails.score
     val density = LocalDensity.current
+    val viewConfiguration = LocalViewConfiguration.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     var showPreview by remember { mutableStateOf(false) }
@@ -234,13 +239,11 @@ private fun ScoreListItemContent(
 
     LaunchedEffect(isPressed) {
         if (isPressed) {
-            delay(500)
-            if (isPressed) {
-                val file = File(score.filePath)
-                if (file.exists()) {
-                    pdfRendererCore = PdfRendererCore(file)
-                    showPreview = true
-                }
+            delay(viewConfiguration.longPressTimeoutMillis.milliseconds)
+            val file = File(score.filePath)
+            if (file.exists()) {
+                pdfRendererCore = PdfRendererCore(file)
+                showPreview = true
             }
         } else {
             showPreview = false
@@ -257,10 +260,13 @@ private fun ScoreListItemContent(
 
     Box {
         ListItem(
-            modifier = modifier.clickable(
+            modifier = modifier.combinedClickable(
                 interactionSource = interactionSource,
                 indication = LocalIndication.current,
-                onClick = onClick
+                onClick = onClick,
+                onLongClick = {
+                    // prevent onClick when long press is released
+                }
             ),
             colors = ListItemDefaults.colors(
                 containerColor = if (isSelected)

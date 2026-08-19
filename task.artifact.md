@@ -1,16 +1,12 @@
-# ScoreHost Migration Task List
+# Directional Score Transition Task List
 
-- [x] **Core Architecture**
-    - [x] Create `ScoreHost.kt` with `AnimatedContent` logic
-    - [x] Implement directional slide-fade transition
-- [x] **ScoreView Migration**
-    - [x] Remove `PagerState` and `HorizontalPager`
-    - [x] Implement `currentPageIndex` state tracking
-    - [x] Integrate `ScoreHost` as the primary content viewer
-- [x] **Gesture & State Refinement**
-    - [x] Ensure `ScoreInteractionOverlay` updates the new index state
-    - [x] Fix navbar visibility logic to work with the new index
+- [x] **State Management**
+    - [x] Add `scoreNavigationDirection` state to `ScoreView.kt`
+    - [x] Add `previousTabIndex` tracking
+- [x] **Transition Refinement**
+    - [x] Update `transitionSpec` in `AnimatedContent` to use directional vertical slides
+    - [x] Update `scoreInteraction` logic to set the correct direction
 - [x] **Verification**
-    - [x] Verify transition direction (Next vs Prev)
-    - [x] Verify rapid tapping performance
-    - [x] Verify Telephoto stability in the new host
+    - [x] Verify "Down" animation for Next Score
+    - [x] Verify "Up" animation for Previous Score
+    - [x] Verify tab switching animation direction
