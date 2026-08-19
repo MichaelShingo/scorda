@@ -1,17 +1,35 @@
 package com.example.scorda.ui.components.organisms.scoreView
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -50,7 +68,8 @@ fun ScoreView() {
     // When tab index changes manually, update direction
     LaunchedEffect(scoreUiState.selectedTabIndex) {
         if (scoreUiState.selectedTabIndex != previousTabIndex) {
-            scoreNavigationDirection = if (scoreUiState.selectedTabIndex > previousTabIndex) 1 else -1
+            scoreNavigationDirection =
+                if (scoreUiState.selectedTabIndex > previousTabIndex) 1 else -1
             previousTabIndex = scoreUiState.selectedTabIndex
         }
     }
@@ -88,172 +107,186 @@ fun ScoreView() {
             .fillMaxSize()
             .background(androidx.compose.ui.graphics.Color.White)
     ) {
-        AnimatedContent(
-            targetState = selectedScore?.score?.id,
-            transitionSpec = {
-                if (scoreNavigationDirection >= 0) {
-                    // Slide Down + Fade In (for Next)
-                    (slideInVertically(animationSpec = tween(400)) { -it / 15 } + fadeIn(animationSpec = tween(400)))
-                        .togetherWith(fadeOut(animationSpec = tween(200)))
-                } else {
-                    // Slide Up + Fade In (for Previous)
-                    (slideInVertically(animationSpec = tween(400)) { it / 15 } + fadeIn(animationSpec = tween(400)))
-                        .togetherWith(fadeOut(animationSpec = tween(200)))
-                }
-            },
-            label = "ScoreToScoreTransition",
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) { targetScoreId ->
-            val core = pdfRendererCore
-            // We only show the score in this transition slot if it's the correct one and ready
-            if (selectedScore != null && targetScoreId == selectedScore.score.id &&
-                core != null && core.path == selectedScore.score.filePath
+        if (scoreUiState.isInitialLoad) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            AnimatedContent(
+                targetState = selectedScore?.score?.id,
+                transitionSpec = {
+                    if (scoreNavigationDirection >= 0) {
+                        // Slide Down + Fade In (for Next)
+                        (slideInVertically(animationSpec = tween(150)) { -it / 25 } + fadeIn(
+                            animationSpec = tween(150)
+                        ))
+                            .togetherWith(fadeOut(animationSpec = tween(100)))
+                    } else {
+                        // Slide Up + Fade In (for Previous)
+                        (slideInVertically(animationSpec = tween(150)) { it / 25 } + fadeIn(
+                            animationSpec = tween(150)
+                        ))
+                            .togetherWith(fadeOut(animationSpec = tween(100)))
+                    }
+                },
+                label = "ScoreToScoreTransition",
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) { targetScoreId ->
+                val core = pdfRendererCore
+                // We only show the score in this transition slot if it's the correct one and ready
+                if (selectedScore != null && targetScoreId == selectedScore.score.id &&
+                    core != null && core.path == selectedScore.score.filePath
+                ) {
 
-                Box(modifier = Modifier.fillMaxSize()) {
-                    key(selectedScore.score.id) {
-                        var currentPageIndex by remember(selectedScore.score.id) {
-                            val lastPage = selectedTab?.lastOpenPage ?: 0
-                            val initial =
-                                if (lastPage == -1) (core.pageCount - 1).coerceAtLeast(0) else lastPage
-                            mutableIntStateOf(initial)
-                        }
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        key(selectedScore.score.id) {
+                            var currentPageIndex by remember(selectedScore.score.id) {
+                                val lastPage = selectedTab?.lastOpenPage ?: 0
+                                val initial =
+                                    if (lastPage == -1) (core.pageCount - 1).coerceAtLeast(0) else lastPage
+                                mutableIntStateOf(initial)
+                            }
 
-                        // Track states in a map for zero-latency lookups
-                        val zoomableStates = remember(core) { mutableStateMapOf<Int, ZoomableState>() }
+                            // Track states in a map for zero-latency lookups
+                            val zoomableStates =
+                                remember(core) { mutableStateMapOf<Int, ZoomableState>() }
 
-                        LaunchedEffect(currentPageIndex) {
-                            delay(300.milliseconds)
-                            scoreViewModel.updateLastOpenPage(
-                                selectedScore.score.id,
-                                currentPageIndex
-                            )
-                        }
+                            LaunchedEffect(currentPageIndex) {
+                                delay(300.milliseconds)
+                                scoreViewModel.updateLastOpenPage(
+                                    selectedScore.score.id,
+                                    currentPageIndex
+                                )
+                            }
 
-                        BoxWithConstraints(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            val viewportHeightPx =
-                                with(androidx.compose.ui.platform.LocalDensity.current) { maxHeight.toPx() }
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .then(
-                                        if (!annotationUiState.isDrawingMode) {
-                                            Modifier.scoreInteraction(
-                                                onToggleNavbar = { scoreViewModel.toggleNavbar() },
-                                                onPreviousPage = {
-                                                    scope.launch {
-                                                        val currentState =
-                                                            zoomableStates[currentPageIndex]
-                                                        if (currentState != null) {
-                                                            val transform =
-                                                                currentState.contentTransformation
-                                                            // If zoomed and not at top, pan up first
-                                                            if (transform.scale.scaleY > 1.05f && transform.offset.y < -10f) {
-                                                                currentState.panBy(
-                                                                    Offset(
-                                                                        0f,
-                                                                        viewportHeightPx * 0.8f
-                                                                    )
-                                                                )
-                                                                return@launch
-                                                            }
-                                                        }
-                                                        if (currentPageIndex > 0) {
-                                                            currentPageIndex--
-                                                        } else {
-                                                            scoreNavigationDirection = -1
-                                                            scoreViewModel.navigateToPreviousScoreInSetlist()
-                                                        }
-                                                    }
-                                                },
-                                                onNextPage = {
-                                                    scope.launch {
-                                                        if (currentPageIndex < core.pageCount - 1) {
-                                                            currentPageIndex++
-                                                        } else {
-                                                            scoreNavigationDirection = 1
-                                                            scoreViewModel.navigateToNextScoreInSetlist()
-                                                        }
-                                                    }
-                                                }
-                                            )
-                                        } else Modifier
-                                    )
+                            BoxWithConstraints(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
                             ) {
-                                ScoreHost(
-                                    currentPageIndex = currentPageIndex,
+                                val viewportHeightPx =
+                                    with(androidx.compose.ui.platform.LocalDensity.current) { maxHeight.toPx() }
+
+                                Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .background(androidx.compose.ui.graphics.Color.White),
-                                ) { pageIndex ->
-                                    val zoomableState = rememberZoomableState(
-                                        zoomSpec = ZoomSpec(maxZoomFactor = 10f)
-                                    )
-                                    ZoomablePdfPage(
-                                        pdfRendererCore = core,
-                                        pageIndex = pageIndex,
-                                        annotationUiState = annotationUiState,
+                                        .then(
+                                            if (!annotationUiState.isDrawingMode) {
+                                                Modifier.scoreInteraction(
+                                                    onToggleNavbar = { scoreViewModel.toggleNavbar() },
+                                                    onPreviousPage = {
+                                                        scope.launch {
+                                                            val currentState =
+                                                                zoomableStates[currentPageIndex]
+                                                            if (currentState != null) {
+                                                                val transform =
+                                                                    currentState.contentTransformation
+                                                                // If zoomed and not at top, pan up first
+                                                                if (transform.scale.scaleY > 1.05f && transform.offset.y < -10f) {
+                                                                    currentState.panBy(
+                                                                        Offset(
+                                                                            0f,
+                                                                            viewportHeightPx * 0.8f
+                                                                        )
+                                                                    )
+                                                                    return@launch
+                                                                }
+                                                            }
+                                                            if (currentPageIndex > 0) {
+                                                                currentPageIndex--
+                                                            } else {
+                                                                scoreNavigationDirection = -1
+                                                                scoreViewModel.navigateToPreviousScoreInSetlist()
+                                                            }
+                                                        }
+                                                    },
+                                                    onNextPage = {
+                                                        scope.launch {
+                                                            if (currentPageIndex < core.pageCount - 1) {
+                                                                currentPageIndex++
+                                                            } else {
+                                                                scoreNavigationDirection = 1
+                                                                scoreViewModel.navigateToNextScoreInSetlist()
+                                                            }
+                                                        }
+                                                    }
+                                                )
+                                            } else Modifier
+                                        )
+                                ) {
+                                    ScoreHost(
+                                        currentPageIndex = currentPageIndex,
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .padding(top = topPadding, bottom = bottomPadding),
-                                        zoomableState = zoomableState,
-                                        onStateChange = { zoomableStates[pageIndex] = it }
-                                    )
-                                }
+                                            .background(androidx.compose.ui.graphics.Color.White),
+                                    ) { pageIndex ->
+                                        val zoomableState = rememberZoomableState(
+                                            zoomSpec = ZoomSpec(maxZoomFactor = 10f)
+                                        )
+                                        ZoomablePdfPage(
+                                            pdfRendererCore = core,
+                                            pageIndex = pageIndex,
+                                            annotationUiState = annotationUiState,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(top = topPadding, bottom = bottomPadding),
+                                            zoomableState = zoomableState,
+                                            onStateChange = { zoomableStates[pageIndex] = it }
+                                        )
+                                    }
 
-                                // Layers Panel Overlay
-                                AnimatedVisibility(
-                                    visible = annotationUiState.isLayersPanelOpen,
-                                    enter = slideInHorizontally { it } + fadeIn(),
-                                    exit = slideOutHorizontally { it } + fadeOut(),
-                                    modifier = Modifier
-                                        .align(Alignment.CenterEnd)
-                                        .zIndex(2f)
-                                ) {
-                                    LayersPanel(
-                                        pageIndex = currentPageIndex,
-                                        onClose = { annotationViewModel.toggleLayersPanel() }
-                                    )
+                                    // Layers Panel Overlay
+                                    AnimatedVisibility(
+                                        visible = annotationUiState.isLayersPanelOpen,
+                                        enter = slideInHorizontally { it } + fadeIn(),
+                                        exit = slideOutHorizontally { it } + fadeOut(),
+                                        modifier = Modifier
+                                            .align(Alignment.CenterEnd)
+                                            .zIndex(2f)
+                                    ) {
+                                        LayersPanel(
+                                            pageIndex = currentPageIndex,
+                                            onClose = { annotationViewModel.toggleLayersPanel() }
+                                        )
+                                    }
                                 }
                             }
-                        }
 
-                        // Page Preview Slider at the bottom (as an overlay)
-                        AnimatedVisibility(
-                            visible = scoreUiState.isNavbarVisible,
-                            enter = slideInVertically { it } + expandVertically() + fadeIn(),
-                            exit = slideOutVertically { it } + shrinkVertically() + fadeOut(),
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .navigationBarsPadding()
-                        ) {
-                            PagePreviewSlider(
-                                pdfRendererCore = core,
-                                currentPage = currentPageIndex,
-                                onPageSelected = { page ->
-                                    currentPageIndex = page
-                                }
-                            )
+                            // Page Preview Slider at the bottom (as an overlay)
+                            AnimatedVisibility(
+                                visible = scoreUiState.isNavbarVisible,
+                                enter = slideInVertically { it } + expandVertically() + fadeIn(),
+                                exit = slideOutVertically { it } + shrinkVertically() + fadeOut(),
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .navigationBarsPadding()
+                            ) {
+                                PagePreviewSlider(
+                                    pdfRendererCore = core,
+                                    currentPage = currentPageIndex,
+                                    onPageSelected = { page ->
+                                        currentPageIndex = page
+                                    }
+                                )
+                            }
                         }
                     }
+                } else if (selectedScore != null) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    EmptyScoreView(
+                        onDocumentPicked = scoreViewModel::onDocumentPicked,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
-            } else if (selectedScore != null) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                EmptyScoreView(
-                    onDocumentPicked = scoreViewModel::onDocumentPicked,
-                    modifier = Modifier.fillMaxSize()
-                )
             }
         }
     }

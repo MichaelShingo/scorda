@@ -1,14 +1,9 @@
-# Dynamic Resolution Zooming Task List
+# Double-Tap Conflict Task List
 
-- [x] **High-Res Rendering Logic**
-    - [x] Add `highResBitmap` state to `ZoomablePdfPage.kt`
-    - [x] Implement `LaunchedEffect` to detect zoom "settle" events (stable scale + no animation)
-    - [x] Calculate target resolution based on current zoom level (with a safe cap)
-    - [x] Request high-res render from `PdfRendererCore`
-- [x] **UI Overlay & Transition**
-    - [x] Overlay `highResBitmap` on top of the base bitmap when ready
-    - [x] Clear `highResBitmap` when zooming back out or turning page
+- [ ] **Telephoto Configuration**
+    - [ ] Disable double-tap-to-zoom in `ZoomablePdfPage.kt`
+- [ ] **Interaction Refinement**
+    - [ ] Verify `ScoreInteractionOverlay` tap sensitivity
 - [ ] **Verification**
-    - [ ] Verify sharpness after zooming
-    - [ ] Verify memory usage stability
-    - [ ] Verify no "flashes" during the bitmap swap
+    - [ ] Build and stress-test rapid tapping
+    - [ ] Confirm pinch-to-zoom remains unaffected

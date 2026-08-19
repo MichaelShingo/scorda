@@ -41,7 +41,8 @@ data class ScoreUiState(
     val openTabs: List<OpenScoreTab> = emptyList(),
     val selectedTabIndex: Int = 0,
     val selectedScore: ScoreWithDetails? = null,
-    val isNavbarVisible: Boolean = true
+    val isNavbarVisible: Boolean = true,
+    val isInitialLoad: Boolean = true
 )
 
 class ScoreViewModel(
@@ -80,7 +81,8 @@ class ScoreViewModel(
             openTabs = openTabs,
             selectedTabIndex = safeTabIndex,
             selectedScore = openTabs.getOrNull(safeTabIndex)?.scoreDetails,
-            isNavbarVisible = isNavbarVisible
+            isNavbarVisible = isNavbarVisible,
+            isInitialLoad = false
         )
     }.stateIn(
         scope = viewModelScope,

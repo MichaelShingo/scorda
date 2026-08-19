@@ -151,7 +151,8 @@ fun ZoomablePdfPage(
                 .fillMaxSize()
                 .zoomable(
                     state = zoomableState,
-                    enabled = !annotationUiState.isDrawingMode
+                    enabled = !annotationUiState.isDrawingMode,
+                    onDoubleClick = null
                 ),
             contentAlignment = Alignment.Center
         ) {
