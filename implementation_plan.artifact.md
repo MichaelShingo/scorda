@@ -1,47 +1,44 @@
-# Telephoto Library Integration Plan
+# Score Navigation Architecture Overhaul
 
-This plan aims to simplify the gesture and zooming logic by integrating the `Telephoto` library, which is a highly-optimized solution for zoomable content in Jetpack Compose.
+This plan proposes replacing the `HorizontalPager` with a custom **Score Host** to eliminate gesture conflicts and enable future animation flexibility (like page curls or quick fades).
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **New External Dependency**: I will add `me.saket.telephoto:zoomable:0.19.0` to the project.
-> - **Code Simplification**: This will allow us to remove about 100 lines of custom gesture handling code, significantly reducing the surface area for bugs.
-> - **Standardized Interaction**: Telephoto provides industry-standard behaviors like flings, double-tap-to-zoom, and smooth transition between panning and paging.
+> - **Removing HorizontalPager**: We will move away from the standard pager. This means built-in horizontal swiping will be replaced by our custom region-based taps and a custom swipe detector (if desired).
+> - **Custom Animation Host**: I will use `AnimatedContent` as the primary host. This allows us to define the exact entry/exit animations (e.g., a "Slide in" that can later be changed to a "Fade").
+> - **Pre-loading Strategy**: I will implement a manual pre-cache logic to ensure that turning to the next page remains instant, maintaining the performance of the native `PdfRenderer`.
 
 ## Proposed Changes
 
-### 1. Build Configuration
+### 1. The custom `ScoreHost` Component
 
-#### [MODIFY] [libs.versions.toml](file:///D:/apps/scorda/gradle/libs.versions.toml)
-- Add `telephoto` version (`0.19.0`).
-- Add `telephoto-zoomable` library definition.
+#### [NEW] [ScoreHost.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ScoreHost.kt)
+- A specialized container that uses `AnimatedContent` to switch between pages.
+- It will track the `currentPageIndex` and manage the transition state.
+- It will handle the "edge-to-edge" layout and coordinate mapping without a parent Pager's interference.
 
-#### [MODIFY] [app/build.gradle.kts](file:///D:/apps/scorda/app/build.gradle.kts)
-- Add `implementation(libs.telephoto.zoomable)` dependency.
-
----
-
-### 2. Zoomable Page Refactor
-
-#### [MODIFY] [ZoomablePdfPage.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ZoomablePdfPage.kt)
-- **State Management**: Replace the custom `PageState` class with `rememberZoomableState()`.
-- **Gesture Handling**: Remove the complex `awaitEachGesture` block and the `transformable` modifier.
-- **Layout**: Apply the `Modifier.zoomable(state)` to the parent container.
-- **Coordinate Mapping**: Update the `PageTransform` implementation to use `zoomableState.contentTransformation` to map screen coordinates to PDF points.
-
----
-
-### 3. ScoreView Integration
+### 2. Gesture Separation
 
 #### [MODIFY] [ScoreView.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ScoreView.kt)
-- Re-enable `userScrollEnabled = true` for the `HorizontalPager`.
-- Telephoto handles the "gesture handover" automatically: it will pan the PDF when zoomed in and swipe to the next page when the user drags past the edge of a page.
+- Remove `HorizontalPager`.
+- Use the new `ScoreHost` instead.
+- Since there is no parent Pager, the `userScrollEnabled` conflict is physically removed from the UI tree.
+- All horizontal movement will belong exclusively to **Telephoto** (for panning) or our **Region Taps** (for turning).
+
+### 3. Rendering Stability
+
+#### [MODIFY] [ZoomablePdfPage.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ZoomablePdfPage.kt)
+- Keep Telephoto integration.
+- Ensure the bitmap loading logic is optimized for the non-Pager lifecycle.
 
 ## Verification Plan
 
 ### Manual Verification
-- **Zooming**: Verify that pinch-to-zoom and double-tap-to-zoom work smoothly.
-- **Paging Handover**: Verify that when zoomed in, you can pan to the edge of a page and then "pull" to swipe to the next page in the `HorizontalPager`.
-- **Annotation Alignment**: Draw on the score, zoom/pan extensively, and verify the drawing stays exactly where it was placed.
-- **Stability**: Rapidly switch tabs and zoom to ensure no `IllegalStateException` or crashes occur.
+- **Rapid Tapping**: Spam the "Next" region and verify the page turns are instantaneous and queued correctly via `AnimatedContent`.
+- **Gesture Purity**: Verify that pinching and panning are 100% reliable and never "stick" or "jitter" due to parent scroll logic.
+- **Animation Testing**: Verify the transition feels professional (e.g., a smooth slide or fade).
+- **Annotation Persistence**: Confirm drawings remain perfectly aligned during and after the custom page transition.
+
+### Automated Tests
+- Build and run unit tests for the index management logic.

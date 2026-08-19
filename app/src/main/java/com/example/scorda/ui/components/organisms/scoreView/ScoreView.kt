@@ -22,11 +22,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -34,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.scorda.ui.components.organisms.drawing.LayersPanel
-import com.example.scorda.ui.theme.LocalWindowSizeClass
 import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.util.PdfRendererCore
@@ -48,9 +46,6 @@ import kotlin.time.Duration.Companion.milliseconds
 @Composable
 fun ScoreView() {
     val scope = rememberCoroutineScope()
-    val windowSizeClass = LocalWindowSizeClass.current
-    val isCompactWidth =
-        windowSizeClass.widthSizeClass == androidx.compose.material3.windowsizeclass.WindowWidthSizeClass.Compact
 
     val scoreViewModel = LocalScoreViewModel.current
     val annotationViewModel = LocalAnnotationViewModel.current
@@ -106,7 +101,8 @@ fun ScoreView() {
                     pageCount = { core.pageCount }
                 )
 
-                var activeZoomableState by remember { mutableStateOf<ZoomableState?>(null) }
+                // Track states in a map for zero-latency lookups
+                val zoomableStates = remember(core) { mutableStateMapOf<Int, ZoomableState>() }
 
                 LaunchedEffect(pagerState.currentPage) {
                     delay(300.milliseconds)
@@ -132,12 +128,14 @@ fun ScoreView() {
                                         onToggleNavbar = { scoreViewModel.toggleNavbar() },
                                         onPreviousPage = {
                                             scope.launch {
-                                                val zoomState = activeZoomableState
-                                                if (!isCompactWidth && zoomState != null) {
-                                                    val transform = zoomState.contentTransformation
-                                                    // If zoomed and not at top, pan up
-                                                    if (transform.scale.scaleY > 1.01f && transform.offset.y < -10f) {
-                                                        zoomState.panBy(
+                                                val currentState =
+                                                    zoomableStates[pagerState.currentPage]
+                                                if (currentState != null) {
+                                                    val transform =
+                                                        currentState.contentTransformation
+                                                    // If zoomed and not at top, pan up first
+                                                    if (transform.scale.scaleY > 1.05f && transform.offset.y < -10f) {
+                                                        currentState.panBy(
                                                             Offset(
                                                                 0f,
                                                                 viewportHeightPx * 0.8f
@@ -155,14 +153,6 @@ fun ScoreView() {
                                         },
                                         onNextPage = {
                                             scope.launch {
-                                                val zoomState = activeZoomableState
-                                                if (!isCompactWidth && zoomState != null) {
-                                                    val transform = zoomState.contentTransformation
-                                                    // We need to know content height to check if we can scroll down more
-                                                    // This is slightly complex in Telephoto without internal bounds check
-                                                    // For now, let's stick to simple paging if the tap handler is used.
-                                                }
-
                                                 if (pagerState.currentPage < core.pageCount - 1) {
                                                     pagerState.animateScrollToPage(pagerState.currentPage + 1)
                                                 } else {
@@ -183,7 +173,7 @@ fun ScoreView() {
                                 top = topPadding,
                                 bottom = bottomPadding
                             ),
-                            userScrollEnabled = !annotationUiState.isDrawingMode
+                            userScrollEnabled = false,
                         ) { pageIndex ->
                             val zoomableState = rememberZoomableState()
                             ZoomablePdfPage(
@@ -192,10 +182,7 @@ fun ScoreView() {
                                 annotationUiState = annotationUiState,
                                 modifier = Modifier.fillMaxSize(),
                                 zoomableState = zoomableState,
-                                onStateChange = {
-                                    if (pagerState.currentPage == pageIndex) activeZoomableState =
-                                        it
-                                }
+                                onStateChange = { zoomableStates[pageIndex] = it }
                             )
                         }
 
