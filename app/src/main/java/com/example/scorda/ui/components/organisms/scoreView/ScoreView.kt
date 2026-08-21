@@ -28,11 +28,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,7 +40,6 @@ import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.util.PdfRendererCore
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import me.saket.telephoto.zoomable.ZoomSpec
 import me.saket.telephoto.zoomable.ZoomableState
 import me.saket.telephoto.zoomable.rememberZoomableState
@@ -50,8 +48,6 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun ScoreView() {
-    val scope = rememberCoroutineScope()
-
     val scoreViewModel = LocalScoreViewModel.current
     val annotationViewModel = LocalAnnotationViewModel.current
 
@@ -155,6 +151,13 @@ fun ScoreView() {
                             val zoomableStates =
                                 remember(core) { mutableStateMapOf<Int, ZoomableState>() }
 
+                            val focusRequester = remember { FocusRequester() }
+
+                            // Request focus whenever this score is active
+                            LaunchedEffect(selectedScore.score.id) {
+                                focusRequester.requestFocus()
+                            }
+
                             LaunchedEffect(currentPageIndex) {
                                 delay(300.milliseconds)
                                 scoreViewModel.updateLastOpenPage(
@@ -167,54 +170,20 @@ fun ScoreView() {
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                val viewportHeightPx =
-                                    with(androidx.compose.ui.platform.LocalDensity.current) { maxHeight.toPx() }
-
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .then(
-                                            if (!annotationUiState.isDrawingMode) {
-                                                Modifier.scoreInteraction(
-                                                    onToggleNavbar = { scoreViewModel.toggleNavbar() },
-                                                    onPreviousPage = {
-                                                        scope.launch {
-                                                            val currentState =
-                                                                zoomableStates[currentPageIndex]
-                                                            if (currentState != null) {
-                                                                val transform =
-                                                                    currentState.contentTransformation
-                                                                // If zoomed and not at top, pan up first
-                                                                if (transform.scale.scaleY > 1.05f && transform.offset.y < -10f) {
-                                                                    currentState.panBy(
-                                                                        Offset(
-                                                                            0f,
-                                                                            viewportHeightPx * 0.8f
-                                                                        )
-                                                                    )
-                                                                    return@launch
-                                                                }
-                                                            }
-                                                            if (currentPageIndex > 0) {
-                                                                currentPageIndex--
-                                                            } else {
-                                                                scoreNavigationDirection = -1
-                                                                scoreViewModel.navigateToPreviousScoreInSetlist()
-                                                            }
-                                                        }
-                                                    },
-                                                    onNextPage = {
-                                                        scope.launch {
-                                                            if (currentPageIndex < core.pageCount - 1) {
-                                                                currentPageIndex++
-                                                            } else {
-                                                                scoreNavigationDirection = 1
-                                                                scoreViewModel.navigateToNextScoreInSetlist()
-                                                            }
-                                                        }
-                                                    }
-                                                )
-                                            } else Modifier
+                                        .scoreNavigationHandler(
+                                            enabled = !annotationUiState.isDrawingMode,
+                                            currentPageIndex = currentPageIndex,
+                                            pageCount = core.pageCount,
+                                            viewportHeight = maxHeight,
+                                            zoomableState = zoomableStates[currentPageIndex],
+                                            focusRequester = focusRequester,
+                                            onPageChange = { currentPageIndex = it },
+                                            onNextScore = scoreViewModel::navigateToNextScoreInSetlist,
+                                            onPreviousScore = scoreViewModel::navigateToPreviousScoreInSetlist,
+                                            onToggleNavbar = scoreViewModel::toggleNavbar
                                         )
                                 ) {
                                     ScoreHost(
