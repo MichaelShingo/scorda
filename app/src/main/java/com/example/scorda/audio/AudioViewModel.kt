@@ -121,9 +121,14 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
     }
 
     fun initialize(activity: Activity) {
-        if (isInitialized) return
-
+        /*
+        the MainActivity is recreated on orientation change
+        single optimizePerformance is passed the activity, it should run again on orientation change
+        without reinitializing the entire engine, which survives along with the ViewModel
+         */
         MWEngine.optimizePerformance(activity)
+
+        if (isInitialized) return
 
         val context = getApplication<Application>().applicationContext
         val sampleRate = MWEngine.getRecommendedSampleRate(context)
@@ -199,7 +204,9 @@ class AudioViewModel(application: Application) : AndroidViewModel(application),
         mwEngine?.stop()
     }
 
-    override fun onDestroy(owner: LifecycleOwner) {
+    // onCleared is used instead of onDestroy, because it doesn't run on screen orientation changes
+    // prevents application crash on screen orientation
+    override fun onCleared() {
         // cleanup drone
         droneToneEvent?.delete()
         droneToneEvent = null

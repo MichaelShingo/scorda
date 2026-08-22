@@ -5,12 +5,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
@@ -22,7 +19,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.example.scorda.audio.AudioViewModel
 import com.example.scorda.audio.LocalAudioViewModel
-import com.example.scorda.data.SettingsRepository
 import com.example.scorda.ui.components.organisms.navbar.Navbar
 import com.example.scorda.ui.navigation.LocalNavController
 import com.example.scorda.ui.navigation.ScordaNavHost
@@ -53,6 +49,10 @@ class MainActivity : FragmentActivity() {
 
     private val audioViewModel: AudioViewModel by viewModels()
 
+    private val themeViewModel: ThemeViewModel by viewModels {
+        ThemeViewModel.Factory
+    }
+
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,9 +61,6 @@ class MainActivity : FragmentActivity() {
 
         lifecycle.addObserver(audioViewModel)
         audioViewModel.initialize(this)
-
-        val settingsRepository = SettingsRepository(applicationContext)
-        val themeViewModel = ThemeViewModel(settingsRepository)
 
         setContent {
             val navController = rememberNavController()
@@ -84,19 +81,19 @@ class MainActivity : FragmentActivity() {
                     val scoreUiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
 
                     Box(modifier = Modifier.fillMaxSize()) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        ScordaNavHost(
-                            navController = navController
-                        )
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            ScordaNavHost(
+                                navController = navController
+                            )
 
-                        AnimatedVisibility(
-                            visible = scoreUiState.isNavbarVisible,
-                            enter = slideInVertically { -it },
-                            exit = slideOutVertically { -it }
-                        ) {
-                            Navbar()
+                            AnimatedVisibility(
+                                visible = scoreUiState.isNavbarVisible,
+                                enter = slideInVertically { -it },
+                                exit = slideOutVertically { -it }
+                            ) {
+                                Navbar()
+                            }
                         }
-                    }
                     }
                 }
             }

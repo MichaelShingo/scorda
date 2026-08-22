@@ -22,12 +22,17 @@ class PdfRendererCore(private val file: File) : AutoCloseable {
         ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
     private val renderer: PdfRenderer = PdfRenderer(pfd)
     private val mutex = Mutex()
+
+    // Ensures that isClosed is read from the main RAM, and not local cache in a different CPU core
+    // Guards against screen orientation change crashes by preventing
+    // pageCount from calling renderer.pageCount on a closed object
+    @Volatile
     private var isClosed = false
 
     val pageCount: Int
-        get() = if (isClosed) 0 else try {
-            renderer.pageCount
-        } catch (e: IllegalStateException) {
+        get() = try {
+            if (isClosed) 0 else renderer.pageCount
+        } catch (e: Exception) {
             0
         }
 
@@ -86,12 +91,17 @@ class PdfRendererCore(private val file: File) : AutoCloseable {
     }
 
     override fun close() {
+        if (isClosed) return
         isClosed = true
         try {
             renderer.close()
+        } catch (e: Exception) {
+            // Ignore
+        }
+        try {
             pfd.close()
         } catch (e: Exception) {
-            // Already closed
+            // Ignore
         }
     }
 }
