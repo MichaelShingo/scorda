@@ -25,7 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -147,9 +147,12 @@ fun ScoreView() {
                                 mutableIntStateOf(initial)
                             }
 
-                            // Track states in a map for zero-latency lookups
-                            val zoomableStates =
-                                remember(core) { mutableStateMapOf<Int, ZoomableState>() }
+                            // Track the active zoomable state for the current page
+                            var currentZoomableState by remember {
+                                mutableStateOf<ZoomableState?>(
+                                    null
+                                )
+                            }
 
                             val focusRequester = remember { FocusRequester() }
 
@@ -178,7 +181,7 @@ fun ScoreView() {
                                             currentPageIndex = currentPageIndex,
                                             pageCount = core.pageCount,
                                             viewportHeight = maxHeight,
-                                            zoomableState = zoomableStates[currentPageIndex],
+                                            zoomableState = currentZoomableState,
                                             focusRequester = focusRequester,
                                             onPageChange = { currentPageIndex = it },
                                             onNextScore = scoreViewModel::navigateToNextScoreInSetlist,
@@ -195,6 +198,14 @@ fun ScoreView() {
                                         val zoomableState = rememberZoomableState(
                                             zoomSpec = ZoomSpec(maxZoomFactor = 10f)
                                         )
+
+                                        // Sync this page's zoomable state with the handler if it's the active page
+                                        LaunchedEffect(pageIndex, currentPageIndex, zoomableState) {
+                                            if (pageIndex == currentPageIndex) {
+                                                currentZoomableState = zoomableState
+                                            }
+                                        }
+
                                         ZoomablePdfPage(
                                             pdfRendererCore = core,
                                             pageIndex = pageIndex,
@@ -202,8 +213,7 @@ fun ScoreView() {
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .padding(top = topPadding, bottom = bottomPadding),
-                                            zoomableState = zoomableState,
-                                            onStateChange = { zoomableStates[pageIndex] = it }
+                                            zoomableState = zoomableState
                                         )
                                     }
 

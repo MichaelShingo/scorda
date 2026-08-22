@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import com.example.scorda.ui.viewmodel.AnnotationUiState
 import com.example.scorda.util.PdfRendererCore
@@ -37,12 +38,11 @@ fun ZoomablePdfPage(
     pageIndex: Int,
     annotationUiState: AnnotationUiState,
     modifier: Modifier = Modifier,
-    zoomableState: ZoomableState = rememberZoomableState(),
-    onStateChange: (ZoomableState) -> Unit = {}
+    zoomableState: ZoomableState = rememberZoomableState()
 ) {
-    LaunchedEffect(zoomableState) {
-        onStateChange(zoomableState)
-    }
+    val configuration = LocalConfiguration.current.orientation
+
+    zoomableState.contentAlignment = Alignment.Center
 
     var highResBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
@@ -146,7 +146,7 @@ fun ZoomablePdfPage(
             }
         }
 
-        Box(
+        Box( // takes up entire screen space, no overflow
             modifier = Modifier
                 .fillMaxSize()
                 .zoomable(
@@ -161,11 +161,10 @@ fun ZoomablePdfPage(
                 Image(
                     bitmap = bitmap!!.asImageBitmap(),
                     contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.background(Color.White)
+                    contentScale = ContentScale.FillWidth, // is this overwritten by telephoto's positioning?
                 )
 
-                // Overlay high-res bitmap if available
+//                 Overlay high-res bitmap if available
                 if (highResBitmap != null) {
                     Image(
                         bitmap = highResBitmap!!.asImageBitmap(),
