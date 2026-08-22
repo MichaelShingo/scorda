@@ -1,7 +1,9 @@
 package com.example.scorda.ui.components.organisms.scoreView
 
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -13,8 +15,10 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.launch
 import me.saket.telephoto.zoomable.ZoomableState
@@ -42,6 +46,7 @@ fun Modifier.scoreNavigationHandler(
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val viewportHeightPx = with(density) { viewportHeight.toPx() }
+    val viewConfiguration = LocalViewConfiguration.current
 
     val handlePrevious = {
         scope.launch {
@@ -108,33 +113,47 @@ fun Modifier.scoreNavigationHandler(
                 }
             }
             .pointerInput(enabled, currentPageIndex, pageCount) {
-                detectTapGestures { offset ->
-                    // Always try to regain focus on tap
+                awaitEachGesture {
+                    // Peek at events before children (Initial pass)
+                    val down = awaitFirstDown(pass = PointerEventPass.Initial)
+
+                    // Always try to regain focus on interaction
                     focusRequester.requestFocus()
 
-                    if (!enabled) return@detectTapGestures
+                    if (!enabled) return@awaitEachGesture
 
-                    val x = offset.x
-                    val y = offset.y
-                    val width = size.width
-                    val height = size.height
+                    val up = waitForUpOrCancellation(pass = PointerEventPass.Initial)
 
-                    val column1Width = width * 0.25f
-                    val column2Width = width * 0.50f
-                    val topRegionHeight = height * 0.15f
+                    if (up != null) {
+                        val distance = (up.position - down.position).getDistance()
 
-                    when {
-                        // Left column
-                        x < column1Width -> {
-                            if (y < topRegionHeight) onToggleNavbar() else handlePrevious()
-                        }
-                        // Middle column
-                        x < (column1Width + column2Width) -> {
-                            onToggleNavbar()
-                        }
-                        // Right column
-                        else -> {
-                            if (y < topRegionHeight) onToggleNavbar() else handleNext()
+                        // Only trigger if it was a clean tap (minimal movement)
+                        if (distance < viewConfiguration.touchSlop) {
+                            val x = up.position.x
+                            val y = up.position.y
+                            val width = size.width
+                            val height = size.height
+
+                            val column1Width = width * 0.25f
+                            val column2Width = width * 0.50f
+                            val topRegionHeight = height * 0.15f
+
+                            when {
+                                // Left column
+                                x < column1Width -> {
+                                    if (y < topRegionHeight) onToggleNavbar() else handlePrevious()
+                                }
+                                // Middle column
+                                x < (column1Width + column2Width) -> {
+                                    onToggleNavbar()
+                                }
+                                // Right column
+                                else -> {
+                                    if (y < topRegionHeight) onToggleNavbar() else handleNext()
+                                }
+                            }
+                            // Consume to prevent further processing as a tap by children
+                            up.consume()
                         }
                     }
                 }
