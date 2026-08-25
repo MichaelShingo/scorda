@@ -3,8 +3,6 @@ package com.example.scorda.ui.components.organisms.scoreView
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,12 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
 import com.example.scorda.ui.viewmodel.AnnotationUiState
 import com.example.scorda.util.PdfRendererCore
 import kotlinx.coroutines.delay
@@ -182,21 +178,19 @@ fun ZoomablePdfPage(
         }
 
         Box(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Gray)
                 .zoomable(
                     state = zoomableState,
                     enabled = !annotationUiState.isDrawingMode,
                     onDoubleClick = null
                 ),
-            contentAlignment = if (isLandscape) Alignment.TopCenter else Alignment.Center
+            contentAlignment = Alignment.Center
         ) {
             Box(
                 modifier = Modifier
                     .offset(y = with(LocalDensity.current) { centeringOffset.toDp() })
-                    .requiredSize(with(LocalDensity.current) { contentSize.toDpSize() })
-                    .border(2.dp, Color.Green),
+                    .requiredSize(with(LocalDensity.current) { contentSize.toDpSize() }),
                 contentAlignment = Alignment.Center
             ) {
                 if (bitmap != null) {

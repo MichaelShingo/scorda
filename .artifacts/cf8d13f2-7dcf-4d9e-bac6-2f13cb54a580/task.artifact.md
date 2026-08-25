@@ -1,5 +1,5 @@
-- [x] Calculate vertical centering offset
-- [x] Apply dynamic offset and synchronize alignment in `ZoomablePdfPage.kt`
-- [x] Restore `DrawingCanvas`
-- [x] Verify landscape panning bounds
-- [x] Verify drawing alignment
+- [x] Restore `centeringOffset` and `.offset()` logic
+- [x] Fix double padding by removing external `modifier` from inner Box
+- [x] Restore `DrawingCanvas` and high-res display
+- [x] Verify landscape panning and bounds
+- [x] Verify visibility when navbar toggles

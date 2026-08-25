@@ -1,8 +1,8 @@
-# Implementation Plan - Fix Landscape Panning via Offset Synchronization
+# Implementation Plan - Restore Landscape Fix and Resolve Visibility
 
-The goal is to fix the unreachable top edge of the PDF in landscape mode. The current `Box(contentAlignment = Alignment.Center)` centers the PDF, which pushes its top boundary into negative Y space relative to the viewport. Since `telephoto` is configured to align to the top, it treats `Y=0` as the limit, locking the "top" half of the page out of reach.
+The user identified the `centeringOffset` as the critical fix for landscape panning. I will restore this logic while resolving the visibility issue caused by "double padding."
 
-We will calculate the exact vertical offset caused by the centering and apply it as a correction, ensuring the PDF's top edge starts exactly at the viewport's top edge.
+The visibility issue occurred because the external `modifier` (containing navbar padding) was applied to both the root `BoxWithConstraints` and the inner `zoomable` `Box`. This caused the content to be pushed twice as far as intended, often hiding it.
 
 ## Proposed Changes
 
@@ -10,21 +10,21 @@ We will calculate the exact vertical offset caused by the centering and apply it
 
 #### [MODIFY] [ZoomablePdfPage.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/ZoomablePdfPage.kt)
 
-- **Calculate Dynamic Offset**: Compute the vertical centering offset: `(contentHeight - viewportHeight) / 2`.
-- **Apply Correction Offset**: Use `.offset(y = centeringOffset)` on the inner content `Box` to shift the page down so its top aligns with the viewport's top.
-- **Synchronize Alignment**: Set the root `Box`'s `contentAlignment` and `zoomableState.contentAlignment` both to `Alignment.TopCenter` in landscape.
-- **Restore DrawingCanvas**: Uncomment the `DrawingCanvas` and ensure it uses the updated `pageTransform`.
-- **Cleanup**: Remove hardcoded trial offsets (like `250.dp`) and the redundant `modifier` on the inner `Box`.
+- **Restore `centeringOffset`**: Recalculate the vertical shift: `(contentHeight - viewportHeight) / 2`.
+- **Apply Correct Offset**: Restore the `.offset(y = ...)` on the inner PDF `Box`.
+- **Remove Double Padding**: Ensure the external `modifier` is ONLY applied to the root `BoxWithConstraints`.
+- **Alignment Consistency**: Use `Alignment.Center` for the layout, with the offset providing the specific top-alignment needed for `telephoto` in landscape.
+- **Maintain Overlays**: Ensure the high-res bitmap and `DrawingCanvas` remain correctly layered within the offset container.
 
 ## Verification Plan
 
 ### Manual Verification
-- **Landscape View**:
-    - Rotate to landscape. The PDF should fill the width and start exactly at the top edge.
-    - Verify you can pan all the way down to the bottom.
-    - Verify you can pan all the way back up to the top.
-    - Verify there is no excessive gray overscroll at either end.
-- **Drawing**:
-    - Verify that drawing alignment remains accurate even with the new offset.
-- **Portrait View**:
-    - Verify the PDF remains centered and fits the screen.
+- **Landscape Panning**:
+    - Rotate to landscape. Verify the PDF starts at the top.
+    - Verify you can pan all the way down and back up.
+- **Navbar Visibility**:
+    - Toggle the navbar and slider. Verify the PDF remains visible in the padded viewport and isn't "pushed" out of the screen.
+- **Drawing Alignment**:
+    - Verify that ink remains aligned with the PDF content.
+- **High-Res Display**:
+    - Verify that high-res bitmaps still load and overlay correctly when zoomed.
