@@ -20,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -50,6 +49,8 @@ fun ZoomablePdfPage(
 ) {
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
+    // Landscape: allows starts PDF at top of the page
+    // Portrait: centers PDF in viewport
     LaunchedEffect(isLandscape) {
         zoomableState.contentAlignment = if (isLandscape) Alignment.TopCenter else Alignment.Center
         zoomableState.contentScale = if (isLandscape) ContentScale.FillWidth else ContentScale.Fit
@@ -59,8 +60,7 @@ fun ZoomablePdfPage(
 
     BoxWithConstraints(
         modifier = modifier
-            .fillMaxSize()
-            .background(Color.Gray),
+            .fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         val viewWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
@@ -69,7 +69,6 @@ fun ZoomablePdfPage(
         val pdfPageDimensions by produceState<Pair<Int, Int>?>(null, pdfRendererCore, pageIndex) {
             value = pdfRendererCore.getPageDimensions(pageIndex)
         }
-
 
         val fitScale = remember(pdfPageDimensions, viewWidthPx, viewHeightPx, isLandscape) {
             val (w, h) = pdfPageDimensions ?: return@remember 1f
@@ -96,8 +95,8 @@ fun ZoomablePdfPage(
         LaunchedEffect(pdfPageDimensions, isLandscape, bitmap) {
             bitmap?.let { bitmap ->
                 val size = Size(
-                    bitmap.width.toFloat(), // what is the correct multiplier, it's about 4x the raw w and h...
-                    bitmap.height.toFloat() // should it be the bitmap dimensions?
+                    bitmap.width.toFloat(),
+                    bitmap.height.toFloat()
                 )
                 zoomableState.setContentLocation(
                     if (isLandscape) {
@@ -107,8 +106,6 @@ fun ZoomablePdfPage(
                     }
                 )
             }
-//            zoomableState.panBy(Offset(y = -1000f, x = 0f))
-//            zoomableState.zoomBy(4f, animationSpec = androidx.compose.animation.core.AnimationSpec())
         }
 
         // Logic to load high-resolution bitmap when zoom settles
@@ -210,9 +207,16 @@ fun ZoomablePdfPage(
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.Blue)
-                            .alpha(0.5f)
                     )
+
+                    if (highResBitmap != null) {
+                        Image(
+                            bitmap = highResBitmap!!.asImageBitmap(),
+                            contentDescription = "Page ${pageIndex + 1} High Res",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 } else {
                     CircularProgressIndicator()
                 }
