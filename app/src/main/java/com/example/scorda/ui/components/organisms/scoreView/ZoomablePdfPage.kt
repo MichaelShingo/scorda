@@ -1,11 +1,15 @@
 package com.example.scorda.ui.components.organisms.scoreView
 
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -16,15 +20,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import com.example.scorda.ui.viewmodel.AnnotationUiState
 import com.example.scorda.util.PdfRendererCore
 import kotlinx.coroutines.delay
+import me.saket.telephoto.zoomable.ZoomableContentLocation
 import me.saket.telephoto.zoomable.ZoomableState
 import me.saket.telephoto.zoomable.rememberZoomableState
 import me.saket.telephoto.zoomable.zoomable
@@ -40,41 +48,67 @@ fun ZoomablePdfPage(
     modifier: Modifier = Modifier,
     zoomableState: ZoomableState = rememberZoomableState()
 ) {
-    val configuration = LocalConfiguration.current.orientation
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    zoomableState.contentAlignment = Alignment.Center
+    LaunchedEffect(isLandscape) {
+        zoomableState.contentAlignment = if (isLandscape) Alignment.TopCenter else Alignment.Center
+        zoomableState.contentScale = if (isLandscape) ContentScale.FillWidth else ContentScale.Fit
+    }
 
     var highResBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(Color.Gray),
         contentAlignment = Alignment.Center
     ) {
         val viewWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
         val viewHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
 
-        val dimensions by produceState<Pair<Int, Int>?>(null, pdfRendererCore, pageIndex) {
+        val pdfPageDimensions by produceState<Pair<Int, Int>?>(null, pdfRendererCore, pageIndex) {
             value = pdfRendererCore.getPageDimensions(pageIndex)
         }
 
-        val fitScale = remember(dimensions, viewWidthPx, viewHeightPx) {
-            val (w, h) = dimensions ?: return@remember 1f
-            min(viewWidthPx / w, viewHeightPx / h)
+
+        val fitScale = remember(pdfPageDimensions, viewWidthPx, viewHeightPx, isLandscape) {
+            val (w, h) = pdfPageDimensions ?: return@remember 1f
+            if (isLandscape) {
+                viewWidthPx / w
+            } else {
+                min(viewWidthPx / w, viewHeightPx / h)
+            }
         }
 
         val bitmap by produceState<Bitmap?>(
             null,
             pdfRendererCore,
             pageIndex,
-            dimensions,
+            pdfPageDimensions,
             fitScale
         ) {
-            val (w, h) = dimensions ?: return@produceState
+            val (w, h) = pdfPageDimensions ?: return@produceState
             val targetWidth = (w * fitScale).toInt()
             val targetHeight = (h * fitScale).toInt()
             value = pdfRendererCore.renderPage(pageIndex, targetWidth, targetHeight)
+        }
+
+        LaunchedEffect(pdfPageDimensions, isLandscape, bitmap) {
+            bitmap?.let { bitmap ->
+                val size = Size(
+                    bitmap.width.toFloat(), // what is the correct multiplier, it's about 4x the raw w and h...
+                    bitmap.height.toFloat() // should it be the bitmap dimensions?
+                )
+                zoomableState.setContentLocation(
+                    if (isLandscape) {
+                        ZoomableContentLocation.unscaledAndTopLeftAligned(size)
+                    } else {
+                        ZoomableContentLocation.scaledInsideAndCenterAligned(size)
+                    }
+                )
+            }
+//            zoomableState.panBy(Offset(y = -1000f, x = 0f))
+//            zoomableState.zoomBy(4f, animationSpec = androidx.compose.animation.core.AnimationSpec())
         }
 
         // Logic to load high-resolution bitmap when zoom settles
@@ -83,7 +117,7 @@ fun ZoomablePdfPage(
             zoomableState.isAnimationRunning,
             pdfRendererCore,
             pageIndex,
-            dimensions,
+            pdfPageDimensions,
             fitScale
         ) {
             val transform = zoomableState.contentTransformation
@@ -99,7 +133,7 @@ fun ZoomablePdfPage(
                 // Wait a small bit to ensure it's truly settled
                 delay(300.milliseconds)
 
-                val (w, h) = dimensions ?: return@LaunchedEffect
+                val (w, h) = pdfPageDimensions ?: return@LaunchedEffect
                 val targetScale = currentScale * fitScale
 
                 // Limit resolution to avoid OOM (max 5000px on longest side)
@@ -120,69 +154,76 @@ fun ZoomablePdfPage(
             }
         }
 
-        val pageTransform = remember(zoomableState.contentTransformation, fitScale, dimensions) {
-            val transform = zoomableState.contentTransformation
-            object : PageTransform {
-                override val zoom: Float = transform.scale.scaleX * fitScale
+        val pageTransform =
+            remember(fitScale, pdfPageDimensions) {
+                object : PageTransform {
+                    override val zoom: Float = fitScale
 
-                override fun screenToPdf(offset: Offset): Offset? {
-                    val (w, _) = dimensions ?: return null
-                    // content space (0..w*fitScale) -> screen
-                    val localX = (offset.x - transform.offset.x) / transform.scale.scaleX
-                    val localY = (offset.y - transform.offset.y) / transform.scale.scaleY
+                    override fun screenToPdf(offset: Offset): Offset? {
+                        // In local space of the DrawingCanvas (0..w*fitScale)
+                        return Offset(offset.x / fitScale, offset.y / fitScale)
+                    }
 
-                    // content space (0..w*fitScale) -> PDF point (0..w)
-                    return Offset(localX / fitScale, localY / fitScale)
+                    override fun pdfToScreen(pdfOffset: Offset): Offset? {
+                        // To local space of the DrawingCanvas (0..w*fitScale)
+                        return Offset(pdfOffset.x * fitScale, pdfOffset.y * fitScale)
+                    }
                 }
+            }
 
-                override fun pdfToScreen(pdfOffset: Offset): Offset {
-                    val localX = pdfOffset.x * fitScale
-                    val localY = pdfOffset.y * fitScale
+        val contentSize = remember(pdfPageDimensions, fitScale) {
+            val (w, h) = pdfPageDimensions ?: return@remember Size.Zero
+            Size(w * fitScale, h * fitScale)
+        }
 
-                    val screenX = localX * transform.scale.scaleX + transform.offset.x
-                    val screenY = localY * transform.scale.scaleY + transform.offset.y
-                    return Offset(screenX, screenY)
-                }
+        val centeringOffset = remember(contentSize, viewHeightPx, isLandscape) {
+            if (isLandscape && contentSize.height > viewHeightPx) {
+                ((contentSize.height - viewHeightPx) / 2)
+            } else {
+                0f
             }
         }
 
-        Box( // takes up entire screen space, no overflow
-            modifier = Modifier
+        Box(
+            modifier = modifier
                 .fillMaxSize()
+                .background(Color.Gray)
                 .zoomable(
                     state = zoomableState,
                     enabled = !annotationUiState.isDrawingMode,
                     onDoubleClick = null
                 ),
-            contentAlignment = Alignment.Center
+            contentAlignment = if (isLandscape) Alignment.TopCenter else Alignment.Center
         ) {
-            if (bitmap != null) {
-                // Show base bitmap always as a background
-                Image(
-                    bitmap = bitmap!!.asImageBitmap(),
-                    contentDescription = null,
-                    contentScale = ContentScale.FillWidth, // is this overwritten by telephoto's positioning?
-                )
-
-//                 Overlay high-res bitmap if available
-                if (highResBitmap != null) {
+            Box(
+                modifier = Modifier
+                    .offset(y = with(LocalDensity.current) { centeringOffset.toDp() })
+                    .requiredSize(with(LocalDensity.current) { contentSize.toDpSize() })
+                    .border(2.dp, Color.Green),
+                contentAlignment = Alignment.Center
+            ) {
+                if (bitmap != null) {
+                    // Show base bitmap always as a background
                     Image(
-                        bitmap = highResBitmap!!.asImageBitmap(),
-                        contentDescription = "Page ${pageIndex + 1} High Res",
+                        bitmap = bitmap!!.asImageBitmap(),
+                        contentDescription = null,
                         contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Blue)
+                            .alpha(0.5f)
                     )
+                } else {
+                    CircularProgressIndicator()
                 }
-            } else {
-                CircularProgressIndicator()
-            }
 
-            DrawingCanvas(
-                pageTransform = pageTransform,
-                pageIndex = pageIndex,
-                isDrawingMode = annotationUiState.isDrawingMode,
-                modifier = Modifier.fillMaxSize()
-            )
+                DrawingCanvas(
+                    pageTransform = pageTransform,
+                    pageIndex = pageIndex,
+                    isDrawingMode = annotationUiState.isDrawingMode,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
     }
 }
