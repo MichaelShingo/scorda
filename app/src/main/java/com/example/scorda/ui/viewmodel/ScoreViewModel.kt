@@ -42,6 +42,7 @@ data class ScoreUiState(
     val selectedTabIndex: Int = 0,
     val selectedScore: ScoreWithDetails? = null,
     val isNavbarVisible: Boolean = true,
+    val isTabsVisible: Boolean = true,
     val isInitialLoad: Boolean = true
 )
 
@@ -64,8 +65,9 @@ class ScoreViewModel(
         repository.observeScores(),
         settingsRepository.openScores,
         settingsRepository.currentTabIndex,
+        settingsRepository.isTabsVisible,
         _isNavbarVisible
-    ) { allScores, openScoreSettings, tabIndex, isNavbarVisible ->
+    ) { allScores, openScoreSettings, tabIndex, isTabsVisible, isNavbarVisible ->
         val openTabs = openScoreSettings.mapNotNull { openSetting ->
             allScores.find { it.score.id == openSetting.scoreId }?.let { details ->
                 OpenScoreTab(
@@ -82,6 +84,7 @@ class ScoreViewModel(
             selectedTabIndex = safeTabIndex,
             selectedScore = openTabs.getOrNull(safeTabIndex)?.scoreDetails,
             isNavbarVisible = isNavbarVisible,
+            isTabsVisible = isTabsVisible,
             isInitialLoad = false
         )
     }.stateIn(
@@ -96,6 +99,13 @@ class ScoreViewModel(
 
     fun setNavbarVisible(isVisible: Boolean) {
         _isNavbarVisible.value = isVisible
+    }
+
+    fun toggleTabsVisibility() {
+        viewModelScope.launch {
+            val current = scoreUiState.value.isTabsVisible
+            settingsRepository.saveTabsVisible(!current)
+        }
     }
 
     fun navigateToNextScoreInSetlist() {

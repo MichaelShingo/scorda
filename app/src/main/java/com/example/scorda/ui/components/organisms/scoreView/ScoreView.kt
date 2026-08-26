@@ -1,5 +1,6 @@
 package com.example.scorda.ui.components.organisms.scoreView
 
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
@@ -32,6 +33,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,6 +51,8 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun ScoreView() {
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     val scoreViewModel = LocalScoreViewModel.current
     val annotationViewModel = LocalAnnotationViewModel.current
 
@@ -94,14 +99,14 @@ fun ScoreView() {
     )
 
     val bottomPadding by animateDpAsState(
-        targetValue = if (scoreUiState.isNavbarVisible) 80.dp else 0.dp,
+        targetValue = if (scoreUiState.isNavbarVisible && !isLandscape) 80.dp else 0.dp,
         label = "BottomPadding"
     )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(androidx.compose.ui.graphics.Color.White)
+            .background(Color.White)
     ) {
         if (scoreUiState.isInitialLoad) {
             Box(
@@ -193,7 +198,6 @@ fun ScoreView() {
                                         currentPageIndex = currentPageIndex,
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .background(androidx.compose.ui.graphics.Color.White),
                                     ) { pageIndex ->
                                         val zoomableState = rememberZoomableState(
                                             zoomSpec = ZoomSpec(maxZoomFactor = 10f)
@@ -212,6 +216,7 @@ fun ScoreView() {
                                             annotationUiState = annotationUiState,
                                             modifier = Modifier
                                                 .fillMaxSize()
+                                                .background(Color.Transparent)
                                                 .padding(top = topPadding, bottom = bottomPadding),
                                             zoomableState = zoomableState
                                         )

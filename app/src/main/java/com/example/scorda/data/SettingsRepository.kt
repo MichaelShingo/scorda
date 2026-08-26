@@ -33,6 +33,7 @@ class SettingsRepository(private val context: Context) {
     private val _currentTabIndex = longPreferencesKey("current_tab_index")
     private val _openScores = stringPreferencesKey("open_scores")
     private val _eraserThickness = floatPreferencesKey("eraser_thickness")
+    private val _isTabsVisible = booleanPreferencesKey("is_tabs_visible")
 
     val openScores: Flow<List<OpenScore>> = context.dataStore.data
         .catch { exception ->
@@ -99,6 +100,18 @@ class SettingsRepository(private val context: Context) {
             preferences[_eraserThickness] ?: 20f
         }
 
+    val isTabsVisible: Flow<Boolean> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            preferences[_isTabsVisible] ?: true
+        }
+
     suspend fun updateOpenScores(transform: (List<OpenScore>) -> List<OpenScore>) {
         context.dataStore.edit { preferences ->
             val json = preferences[_openScores] ?: "[]"
@@ -137,6 +150,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun saveEraserThickness(thickness: Float) {
         context.dataStore.edit { preferences ->
             preferences[_eraserThickness] = thickness
+        }
+    }
+
+    suspend fun saveTabsVisible(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[_isTabsVisible] = enabled
         }
     }
 }

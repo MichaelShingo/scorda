@@ -192,7 +192,7 @@ fun Navbar(modifier: Modifier = Modifier) {
             },
         )
 
-        if (scoreUiState.openTabs.isNotEmpty()) {
+        if (scoreUiState.openTabs.isNotEmpty() && scoreUiState.isTabsVisible) {
             ScoreTabs(
                 openTabs = scoreUiState.openTabs,
                 selectedTabIndex = scoreUiState.selectedTabIndex,

@@ -44,6 +44,7 @@ fun ZoomablePdfPage(
     zoomableState: ZoomableState = rememberZoomableState()
 ) {
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val bitmapVerticalMargin = 150
 
     // Landscape: allows starts PDF at top of the page
     // Portrait: centers PDF in viewport
@@ -92,7 +93,7 @@ fun ZoomablePdfPage(
             bitmap?.let { bitmap ->
                 val size = Size(
                     bitmap.width.toFloat(),
-                    bitmap.height.toFloat()
+                    bitmap.height.toFloat() + bitmapVerticalMargin * 2
                 )
                 zoomableState.setContentLocation(
                     if (isLandscape) {
@@ -171,7 +172,7 @@ fun ZoomablePdfPage(
 
         val centeringOffset = remember(contentSize, viewHeightPx, isLandscape) {
             if (isLandscape && contentSize.height > viewHeightPx) {
-                ((contentSize.height - viewHeightPx) / 2)
+                ((contentSize.height - viewHeightPx) / 2) + bitmapVerticalMargin
             } else {
                 0f
             }
