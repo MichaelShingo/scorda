@@ -2,6 +2,7 @@ package com.example.scorda.ui.components.organisms.scoreView
 
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import androidx.compose.animation.core.SnapSpec
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -41,17 +42,34 @@ fun ZoomablePdfPage(
     pageIndex: Int,
     annotationUiState: AnnotationUiState,
     modifier: Modifier = Modifier,
-    zoomableState: ZoomableState = rememberZoomableState()
+    zoomableState: ZoomableState = rememberZoomableState(),
+    initialScrollToBottom: Boolean = false,
+    isTabsVisible: Boolean,
+    isNavbarVisible: Boolean
 ) {
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
-    val bitmapVerticalMargin = 150
+    val bitmapVerticalMargin = if (isTabsVisible) { // TODO conditional values are not reflected
+        150
+    } else if (isNavbarVisible) {
+        100
+    } else {
+        0
+    }
 
     // Landscape: allows starts PDF at top of the page
     // Portrait: centers PDF in viewport
     LaunchedEffect(isLandscape) {
-        zoomableState.contentAlignment = if (isLandscape) Alignment.TopCenter else Alignment.Center
+        zoomableState.contentAlignment =
+            if (isLandscape) {
+                if (initialScrollToBottom) {
+                    Alignment.BottomCenter
+                } else {
+                    Alignment.TopCenter
+                }
+            } else Alignment.Center
         zoomableState.contentScale = if (isLandscape) ContentScale.FillWidth else ContentScale.Fit
     }
+
 
     var highResBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
@@ -89,7 +107,7 @@ fun ZoomablePdfPage(
             value = pdfRendererCore.renderPage(pageIndex, targetWidth, targetHeight)
         }
 
-        LaunchedEffect(pdfPageDimensions, isLandscape, bitmap) {
+        LaunchedEffect(pdfPageDimensions, isLandscape, bitmap, bitmapVerticalMargin) {
             bitmap?.let { bitmap ->
                 val size = Size(
                     bitmap.width.toFloat(),
@@ -170,11 +188,34 @@ fun ZoomablePdfPage(
             Size(w * fitScale, h * fitScale)
         }
 
-        val centeringOffset = remember(contentSize, viewHeightPx, isLandscape) {
-            if (isLandscape && contentSize.height > viewHeightPx) {
-                ((contentSize.height - viewHeightPx) / 2) + bitmapVerticalMargin
-            } else {
-                0f
+        val centeringOffset =
+            remember(contentSize, viewHeightPx, isLandscape, bitmapVerticalMargin) {
+                if (isLandscape && contentSize.height > viewHeightPx) {
+                    ((contentSize.height - viewHeightPx) / 2) + bitmapVerticalMargin
+                } else {
+                    0f
+                }
+            }
+
+        // Handle initial scroll to bottom in landscape if requested (navigating backwards)
+        var hasAppliedInitialScroll by remember(pageIndex) { mutableStateOf(false) }
+        LaunchedEffect(
+            zoomableState.contentTransformation.isSpecified,
+            isLandscape,
+            initialScrollToBottom
+        ) {
+            if (isLandscape && initialScrollToBottom && !hasAppliedInitialScroll && zoomableState.contentTransformation.isSpecified) {
+                val transform = zoomableState.contentTransformation
+
+                @Suppress("DEPRECATION")
+                val scaledContentHeight = transform.contentSize.height * transform.scale.scaleY
+                // Viewport size can be obtained from the BoxWithConstraints viewHeightPx
+                val maxScrollOffset = scaledContentHeight - viewHeightPx
+
+                if (maxScrollOffset > 0f) {
+                    zoomableState.panBy(Offset(0f, -maxScrollOffset), animationSpec = SnapSpec())
+                }
+                hasAppliedInitialScroll = true
             }
         }
 

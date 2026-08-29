@@ -29,6 +29,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +44,7 @@ import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 import com.example.scorda.util.PdfRendererCore
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import me.saket.telephoto.zoomable.ZoomSpec
 import me.saket.telephoto.zoomable.ZoomableState
 import me.saket.telephoto.zoomable.rememberZoomableState
@@ -52,6 +54,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @Composable
 fun ScoreView() {
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val scope = rememberCoroutineScope()
 
     val scoreViewModel = LocalScoreViewModel.current
     val annotationViewModel = LocalAnnotationViewModel.current
@@ -65,6 +68,10 @@ fun ScoreView() {
     // Track navigation direction for animations
     var scoreNavigationDirection by remember { mutableIntStateOf(1) } // 1 for Next, -1 for Previous
     var previousTabIndex by remember { mutableIntStateOf(scoreUiState.selectedTabIndex) }
+
+    var pageNavigationDirection by remember {
+        mutableIntStateOf(0) // 1 for Next, -1 for Previous
+    }
 
     // When tab index changes manually, update direction
     LaunchedEffect(scoreUiState.selectedTabIndex) {
@@ -188,9 +195,33 @@ fun ScoreView() {
                                             viewportHeight = maxHeight,
                                             zoomableState = currentZoomableState,
                                             focusRequester = focusRequester,
-                                            onPageChange = { currentPageIndex = it },
-                                            onNextScore = scoreViewModel::navigateToNextScoreInSetlist,
-                                            onPreviousScore = scoreViewModel::navigateToPreviousScoreInSetlist,
+                                            onPageChange = {
+                                                pageNavigationDirection =
+                                                    if (it > currentPageIndex) 1 else -1
+                                                currentPageIndex = it
+                                                scope.launch {
+                                                    delay(500.milliseconds)
+                                                    pageNavigationDirection = 0
+                                                }
+                                            },
+                                            onNextScore = {
+                                                pageNavigationDirection = 1
+                                                scoreNavigationDirection = 1
+                                                scoreViewModel.navigateToNextScoreInSetlist()
+                                                scope.launch {
+                                                    delay(500.milliseconds)
+                                                    pageNavigationDirection = 0
+                                                }
+                                            },
+                                            onPreviousScore = {
+                                                scoreNavigationDirection = -1
+                                                scoreViewModel.navigateToPreviousScoreInSetlist()
+                                                pageNavigationDirection = -1
+                                                scope.launch {
+                                                    delay(500.milliseconds)
+                                                    pageNavigationDirection = 0
+                                                }
+                                            },
                                             onToggleNavbar = scoreViewModel::toggleNavbar
                                         )
                                 ) {
@@ -218,7 +249,10 @@ fun ScoreView() {
                                                 .fillMaxSize()
                                                 .background(Color.Transparent)
                                                 .padding(top = topPadding, bottom = bottomPadding),
-                                            zoomableState = zoomableState
+                                            zoomableState = zoomableState,
+                                            initialScrollToBottom = (pageNavigationDirection == -1),
+                                            isTabsVisible = scoreUiState.isTabsVisible,
+                                            isNavbarVisible = scoreUiState.isNavbarVisible
                                         )
                                     }
 
@@ -252,7 +286,13 @@ fun ScoreView() {
                                     pdfRendererCore = core,
                                     currentPage = currentPageIndex,
                                     onPageSelected = { page ->
+                                        pageNavigationDirection =
+                                            if (page > currentPageIndex) 1 else -1
                                         currentPageIndex = page
+                                        scope.launch {
+                                            delay(500.milliseconds)
+                                            pageNavigationDirection = 0
+                                        }
                                     }
                                 )
                             }
