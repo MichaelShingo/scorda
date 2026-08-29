@@ -56,12 +56,19 @@ fun ZoomablePdfPage(
         0
     }
 
+    // capture this value once at initialization so currentPage
+    // doesn't scroll to bottom when turning to previous page
+    var startAtBottom = false
+    LaunchedEffect(Unit) {
+        startAtBottom = initialScrollToBottom
+    }
+
     // Landscape: allows starts PDF at top of the page
     // Portrait: centers PDF in viewport
     LaunchedEffect(isLandscape) {
         zoomableState.contentAlignment =
             if (isLandscape) {
-                if (initialScrollToBottom) {
+                if (startAtBottom) {
                     Alignment.BottomCenter
                 } else {
                     Alignment.TopCenter
@@ -69,7 +76,6 @@ fun ZoomablePdfPage(
             } else Alignment.Center
         zoomableState.contentScale = if (isLandscape) ContentScale.FillWidth else ContentScale.Fit
     }
-
 
     var highResBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
@@ -202,9 +208,9 @@ fun ZoomablePdfPage(
         LaunchedEffect(
             zoomableState.contentTransformation.isSpecified,
             isLandscape,
-            initialScrollToBottom
+            startAtBottom
         ) {
-            if (isLandscape && initialScrollToBottom && !hasAppliedInitialScroll && zoomableState.contentTransformation.isSpecified) {
+            if (isLandscape && startAtBottom && !hasAppliedInitialScroll && zoomableState.contentTransformation.isSpecified) {
                 val transform = zoomableState.contentTransformation
 
                 @Suppress("DEPRECATION")
