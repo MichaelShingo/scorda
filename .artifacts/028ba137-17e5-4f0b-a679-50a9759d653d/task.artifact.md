@@ -1,0 +1,2 @@
+- [x] Apply horizontal safe drawing padding to `ScoreTabs` Row (after background)
+- [x] Apply horizontal safe drawing padding to `ScoreView` content area
