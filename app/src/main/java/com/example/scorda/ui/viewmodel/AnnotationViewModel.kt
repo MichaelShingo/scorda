@@ -35,7 +35,8 @@ data class AnnotationUiState(
     val isEraserMode: Boolean = false,
     val isLayersPanelOpen: Boolean = false,
     val activeLayerId: Long? = null,
-    val layers: List<AnnotationLayer> = emptyList()
+    val layers: List<AnnotationLayer> = emptyList(),
+    val strokesByPage: Map<Int, List<Stroke>> = emptyMap()
 ) {
     val selectedBrush: Brush? = brushes.find { it.id == selectedBrushId } ?: brushes.firstOrNull()
 }
@@ -68,8 +69,17 @@ class AnnotationViewModel(
             } else {
                 flowOf(emptyList())
             }
+        },
+        scoreViewModel.scoreUiState.flatMapLatest { state ->
+            val scoreId = state.selectedScore?.score?.id
+            if (scoreId != null) {
+                annotationRepository.observeVisibleStrokesForScore(scoreId)
+            } else {
+                flowOf(emptyList())
+            }
         }
     ) { arr ->
+        val strokes = arr[8] as List<Stroke>
         AnnotationUiState(
             brushes = arr[0] as List<Brush>,
             eraserThickness = arr[1] as Float,
@@ -78,7 +88,8 @@ class AnnotationViewModel(
             isEraserMode = arr[4] as Boolean,
             isLayersPanelOpen = arr[5] as Boolean,
             activeLayerId = arr[6] as Long?,
-            layers = arr[7] as List<AnnotationLayer>
+            layers = arr[7] as List<AnnotationLayer>,
+            strokesByPage = strokes.groupBy { it.pageIndex }
         )
     }.stateIn(
         scope = viewModelScope,

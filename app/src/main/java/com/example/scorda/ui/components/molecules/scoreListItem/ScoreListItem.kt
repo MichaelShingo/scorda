@@ -2,14 +2,18 @@ package com.example.scorda.ui.components.molecules.scoreListItem
 
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.AnchoredDraggableDefaults
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.animateTo
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +30,8 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,20 +42,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
 import com.example.scorda.R
 import com.example.scorda.data.database.entities.Composer
 import com.example.scorda.data.database.entities.Score
 import com.example.scorda.data.database.relations.ScoreWithDetails
+import com.example.scorda.ui.components.molecules.PagePreviewTooltip
 import com.example.scorda.ui.components.organisms.scoreDetailDialog.ScoreDetailDialog
 import com.example.scorda.ui.theme.WarningYellow
+import com.example.scorda.util.PdfRendererCore
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.milliseconds
 
 enum class DragValue {
     Settled,
@@ -205,6 +218,7 @@ fun ScoreListItemPreview() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ScoreListItemContent(
     scoreWithDetails: ScoreWithDetails,
@@ -216,47 +230,95 @@ private fun ScoreListItemContent(
     onShowInfo: () -> Unit = {},
 ) {
     val score = scoreWithDetails.score
+    val density = LocalDensity.current
+    val viewConfiguration = LocalViewConfiguration.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    var showPreview by remember { mutableStateOf(false) }
+    var pdfRendererCore by remember { mutableStateOf<PdfRendererCore?>(null) }
 
-    ListItem(
-        modifier = modifier.clickable(onClick = onClick),
-        colors = ListItemDefaults.colors(
-            containerColor = if (isSelected)
-                MaterialTheme.colorScheme.secondaryContainer
-            else
-                Color.Transparent
-        ),
-        leadingContent = leadingContent,
-        headlineContent = {
-            Text(
-                text = score.title,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-            )
-        },
-        supportingContent = {
-            val composer = scoreWithDetails.composer
-            val fullName = "${composer?.firstName} ${composer?.lastName}".trim()
-            Text(
-                text = fullName,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isSelected)
-                    MaterialTheme.colorScheme.onSecondaryContainer
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            delay(viewConfiguration.longPressTimeoutMillis.milliseconds)
+            val file = File(score.filePath)
+            if (file.exists()) {
+                pdfRendererCore = PdfRendererCore(file)
+                showPreview = true
+            }
+        } else {
+            showPreview = false
+            pdfRendererCore?.close()
+            pdfRendererCore = null
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            pdfRendererCore?.close()
+        }
+    }
+
+    Box {
+        ListItem(
+            modifier = modifier.combinedClickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = onClick,
+                onLongClick = {
+                    // prevent onClick when long press is released
+                }
+            ),
+            colors = ListItemDefaults.colors(
+                containerColor = if (isSelected)
+                    MaterialTheme.colorScheme.secondaryContainer
                 else
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
-        trailingContent = trailingContent ?: {
-            IconButton(
-                onClick = onShowInfo
+                    Color.Transparent
+            ),
+            leadingContent = leadingContent,
+            headlineContent = {
+                Text(
+                    text = score.title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                )
+            },
+            supportingContent = {
+                val composer = scoreWithDetails.composer
+                val fullName = "${composer?.firstName} ${composer?.lastName}".trim()
+                Text(
+                    text = fullName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+            trailingContent = trailingContent ?: {
+                IconButton(
+                    onClick = onShowInfo
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Info,
+                        contentDescription = stringResource(R.string.search_scores_info),
+                        tint = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            },
+        )
+
+        if (showPreview && pdfRendererCore != null) {
+            Popup(
+                alignment = Alignment.TopCenter,
+                offset = IntOffset(0, with(density) { -180.dp.roundToPx() })
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Info,
-                    contentDescription = stringResource(R.string.search_scores_info),
-                    tint = MaterialTheme.colorScheme.outline,
+                PagePreviewTooltip(
+                    pdfRendererCore = pdfRendererCore!!,
+                    pageIndex = null
                 )
             }
-        },
-    )
+        }
+    }
 }

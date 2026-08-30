@@ -1,11 +1,17 @@
 package com.example.scorda.ui.components.molecules.scoreTabs
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -18,12 +24,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.scorda.ui.components.organisms.navbar.AnchoredPopup
+import com.example.scorda.ui.components.organisms.navbar.CustomAnchoredPopupSize
+import com.example.scorda.ui.components.organisms.searchScores.SearchScores
 import com.example.scorda.ui.viewmodel.OpenScoreTab
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,21 +44,24 @@ fun ScoreTabs(
     selectedTabIndex: Int,
     onTabSelected: (Int) -> Unit,
     onTabClosed: (Int) -> Unit,
-    onAddTabClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val safeTabIndex =
         if (openTabs.isEmpty()) 0 else selectedTabIndex.coerceIn(0, openTabs.size - 1)
     Column(modifier = modifier) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
+
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SecondaryScrollableTabRow(
                 selectedTabIndex = safeTabIndex,
                 modifier = Modifier.weight(1f),
                 edgePadding = 0.dp,
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                containerColor = Color.Transparent,
                 divider = {},
             ) {
                 openTabs.forEachIndexed { index, tab ->
@@ -89,13 +103,26 @@ fun ScoreTabs(
                     }
                 }
             }
-            IconButton(
-                onClick = onAddTabClick,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add New Tab"
+
+            AnchoredPopup(
+                size = CustomAnchoredPopupSize.Large,
+                anchor = { onOpen, isExpanded ->
+                    IconButton(
+                        onClick = onOpen,
+                        modifier = Modifier
+                            .minimumInteractiveComponentSize()
+                            .padding(horizontal = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add New Tab",
+                            tint = if (isExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            ) { onDismiss ->
+                SearchScores(
+                    onScoreClick = { onDismiss() }
                 )
             }
         }

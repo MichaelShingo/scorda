@@ -15,8 +15,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,13 +49,20 @@ fun SearchScores(
     val scoreUiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
     val currentScoreId = scoreUiState.selectedScore?.score?.id
 
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
     Column(modifier = modifier) {
         OutlinedTextField(
             value = query,
             onValueChange = vm::onQueryChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(16.dp)
+                .focusRequester(focusRequester),
             placeholder = { Text(stringResource(R.string.search_scores_placeholder)) },
             leadingIcon = {
                 Icon(Icons.Rounded.Search, contentDescription = null)

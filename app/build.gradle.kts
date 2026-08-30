@@ -66,6 +66,7 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material3.windowSizeClass)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -94,6 +95,7 @@ dependencies {
     implementation(libs.androidx.pdf.viewer.fragment)
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.reorderable)
+    implementation(libs.telephoto.zoomable)
     implementation(libs.androidx.compose.foundation)
     implementation(files("libs/mwengine-release.aar"))
 

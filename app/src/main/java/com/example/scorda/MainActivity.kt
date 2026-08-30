@@ -5,13 +5,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -20,11 +19,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.example.scorda.audio.AudioViewModel
 import com.example.scorda.audio.LocalAudioViewModel
-import com.example.scorda.data.SettingsRepository
 import com.example.scorda.ui.components.organisms.navbar.Navbar
 import com.example.scorda.ui.navigation.LocalNavController
 import com.example.scorda.ui.navigation.ScordaNavHost
 import com.example.scorda.ui.theme.LocalThemeViewModel
+import com.example.scorda.ui.theme.LocalWindowSizeClass
 import com.example.scorda.ui.theme.ScordaTheme
 import com.example.scorda.ui.theme.ThemeViewModel
 import com.example.scorda.ui.viewmodel.AnnotationViewModel
@@ -50,7 +49,12 @@ class MainActivity : FragmentActivity() {
 
     private val audioViewModel: AudioViewModel by viewModels()
 
+    private val themeViewModel: ThemeViewModel by viewModels {
+        ThemeViewModel.Factory
+    }
 
+
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -58,11 +62,9 @@ class MainActivity : FragmentActivity() {
         lifecycle.addObserver(audioViewModel)
         audioViewModel.initialize(this)
 
-        val settingsRepository = SettingsRepository(applicationContext)
-        val themeViewModel = ThemeViewModel(settingsRepository)
-
         setContent {
             val navController = rememberNavController()
+            val windowSizeClass = calculateWindowSizeClass(this)
 
             CompositionLocalProvider(
                 LocalThemeViewModel provides themeViewModel,
@@ -70,7 +72,8 @@ class MainActivity : FragmentActivity() {
                 LocalNavController provides navController,
                 LocalScoreViewModel provides scoreViewModel,
                 LocalAnnotationViewModel provides annotationViewModel,
-                LocalAudioViewModel provides audioViewModel
+                LocalAudioViewModel provides audioViewModel,
+                LocalWindowSizeClass provides windowSizeClass
             ) {
                 val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
 
@@ -78,19 +81,17 @@ class MainActivity : FragmentActivity() {
                     val scoreUiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
 
                     Box(modifier = Modifier.fillMaxSize()) {
-                        Column(modifier = Modifier.fillMaxSize()) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            ScordaNavHost(
+                                navController = navController
+                            )
+
                             AnimatedVisibility(
                                 visible = scoreUiState.isNavbarVisible,
-                                enter = slideInVertically { -it } + expandVertically(),
-                                exit = slideOutVertically { -it } + shrinkVertically()
+                                enter = slideInVertically { -it },
+                                exit = slideOutVertically { -it }
                             ) {
                                 Navbar()
-                            }
-
-                            Box(modifier = Modifier.weight(1f)) {
-                                ScordaNavHost(
-                                    navController = navController
-                                )
                             }
                         }
                     }

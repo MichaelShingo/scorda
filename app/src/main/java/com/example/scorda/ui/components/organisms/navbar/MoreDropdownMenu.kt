@@ -7,6 +7,7 @@ import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.DashboardCustomize
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Pages
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Support
@@ -25,12 +26,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.scorda.R
 import com.example.scorda.ui.theme.LocalThemeViewModel
+import com.example.scorda.ui.viewmodel.LocalScoreViewModel
 
 @Composable
 fun MoreDropdownMenu() {
     var expanded by remember { mutableStateOf(false) }
     val viewModel = LocalThemeViewModel.current
+    val scoreViewModel = LocalScoreViewModel.current
     val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
+    val scoreUiState by scoreViewModel.scoreUiState.collectAsStateWithLifecycle()
 
 
     Box(
@@ -86,6 +90,24 @@ fun MoreDropdownMenu() {
                 },
                 onClick = {
                     viewModel.toggleDarkMode()
+                    expanded = false
+                }
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        if (scoreUiState.isTabsVisible) stringResource(R.string.nav_hide_tabs)
+                        else stringResource(R.string.nav_show_tabs)
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Rounded.Pages,
+                        contentDescription = null
+                    )
+                },
+                onClick = {
+                    scoreViewModel.toggleTabsVisibility()
                     expanded = false
                 }
             )

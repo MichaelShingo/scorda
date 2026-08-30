@@ -1,0 +1,5 @@
+- [x] Move `PdfRendererCore` to `util` package
+- [x] Create shared `PagePreviewTooltip` molecule
+- [x] Update `PagePreviewSlider` to use shared components
+- [x] Implement long-press preview in `ScoreListItem`
+- [x] Verify functionality and cleanup

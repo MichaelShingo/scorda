@@ -41,7 +41,9 @@ data class ScoreUiState(
     val openTabs: List<OpenScoreTab> = emptyList(),
     val selectedTabIndex: Int = 0,
     val selectedScore: ScoreWithDetails? = null,
-    val isNavbarVisible: Boolean = true
+    val isNavbarVisible: Boolean = true,
+    val isTabsVisible: Boolean = true,
+    val isInitialLoad: Boolean = true
 )
 
 class ScoreViewModel(
@@ -63,8 +65,9 @@ class ScoreViewModel(
         repository.observeScores(),
         settingsRepository.openScores,
         settingsRepository.currentTabIndex,
+        settingsRepository.isTabsVisible,
         _isNavbarVisible
-    ) { allScores, openScoreSettings, tabIndex, isNavbarVisible ->
+    ) { allScores, openScoreSettings, tabIndex, isTabsVisible, isNavbarVisible ->
         val openTabs = openScoreSettings.mapNotNull { openSetting ->
             allScores.find { it.score.id == openSetting.scoreId }?.let { details ->
                 OpenScoreTab(
@@ -80,7 +83,9 @@ class ScoreViewModel(
             openTabs = openTabs,
             selectedTabIndex = safeTabIndex,
             selectedScore = openTabs.getOrNull(safeTabIndex)?.scoreDetails,
-            isNavbarVisible = isNavbarVisible
+            isNavbarVisible = isNavbarVisible,
+            isTabsVisible = isTabsVisible,
+            isInitialLoad = false
         )
     }.stateIn(
         scope = viewModelScope,
@@ -94,6 +99,13 @@ class ScoreViewModel(
 
     fun setNavbarVisible(isVisible: Boolean) {
         _isNavbarVisible.value = isVisible
+    }
+
+    fun toggleTabsVisibility() {
+        viewModelScope.launch {
+            val current = scoreUiState.value.isTabsVisible
+            settingsRepository.saveTabsVisible(!current)
+        }
     }
 
     fun navigateToNextScoreInSetlist() {
@@ -125,7 +137,7 @@ class ScoreViewModel(
                         mutable[state.selectedTabIndex] = OpenScore(
                             scoreId = targetScore.score.id,
                             setlistId = setlistId,
-                            lastOpenPage = 0
+                            lastOpenPage = if (direction < 0) -1 else 0
                         )
                     }
                     mutable
