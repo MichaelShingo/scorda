@@ -18,6 +18,9 @@ class AnnotationRepository(private val db: AppDatabase) {
     fun observeVisibleStrokesForPage(scoreId: Long, pageIndex: Int): Flow<List<Stroke>> =
         annotationDao.getVisibleStrokesForPage(scoreId, pageIndex)
 
+    fun observeVisibleStrokesForPages(scoreId: Long, pageIndices: List<Int>): Flow<List<Stroke>> =
+        annotationDao.getVisibleStrokesForPages(scoreId, pageIndices)
+
     fun observeVisibleStrokesForScore(scoreId: Long): Flow<List<Stroke>> =
         annotationDao.getVisibleStrokesForScore(scoreId)
 

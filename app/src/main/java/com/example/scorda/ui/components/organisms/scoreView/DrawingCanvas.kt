@@ -4,7 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
@@ -94,8 +93,11 @@ fun DrawingCanvas(
                     },
                     onDragEnd = {
                         if (!isEraserMode && currentStrokePoints.isNotEmpty() && selectedBrush != null) {
+                            val scoreId = annotationUiState.layers.firstOrNull()?.scoreId
+                                ?: return@detectDragGestures // avoid prop drilling
                             annotationViewModel.addStroke(
                                 Stroke(
+                                    scoreId = scoreId,
                                     layerId = activeLayerId,
                                     pageIndex = pageIndex,
                                     points = currentStrokePoints.toList(),
@@ -147,9 +149,12 @@ fun DrawingCanvas(
             }
             drawPath(
                 path = path,
-                color = if (isEraserMode) Color.Gray.copy(alpha = 0.3f) else Color(selectedBrush?.color ?: 0),
+                color = if (isEraserMode) Color.Gray.copy(alpha = 0.3f) else Color(
+                    selectedBrush?.color ?: 0
+                ),
                 style = DrawStroke(
-                    width = (if (isEraserMode) eraserRadiusPx * 2 else (selectedBrush?.thickness ?: 5f)) * pageTransform.zoom,
+                    width = (if (isEraserMode) eraserRadiusPx * 2 else (selectedBrush?.thickness
+                        ?: 5f)) * pageTransform.zoom,
                     cap = StrokeCap.Round,
                     join = StrokeJoin.Round
                 )

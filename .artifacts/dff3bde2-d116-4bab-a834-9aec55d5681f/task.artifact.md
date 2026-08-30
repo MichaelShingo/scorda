@@ -1,0 +1,6 @@
+- [x] Update `Stroke` entity with `scoreId` and optimized indices
+- [x] Implement binary serialization for `AnnotationPoint` list
+- [x] Update `AnnotationDao` with optimized and windowed queries
+- [x] Refactor `AnnotationRepository` to support new schema and windowed loading
+- [x] Refactor `AnnotationViewModel` for lazy/windowed stroke observation
+- [x] Verify functionality and performance

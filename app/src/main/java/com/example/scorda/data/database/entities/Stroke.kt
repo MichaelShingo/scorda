@@ -14,15 +14,23 @@ import kotlinx.serialization.Serializable
             parentColumns = ["id"],
             childColumns = ["layerId"],
             onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = Score::class,
+            parentColumns = ["id"],
+            childColumns = ["scoreId"],
+            onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [
         Index("layerId"),
+        Index("scoreId", "pageIndex"),
         Index("pageIndex")
     ]
 )
 data class Stroke(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val scoreId: Long,
     val layerId: Long,
     val pageIndex: Int,
     val points: List<AnnotationPoint>,

@@ -51,6 +51,7 @@ class AnnotationViewModel(
     private val _isDrawingMode = MutableStateFlow(false)
     private val _isEraserMode = MutableStateFlow(false)
     private val _isLayersPanelOpen = MutableStateFlow(false)
+    private val _targetPage = MutableStateFlow(0)
     private val _activeLayerId = MutableStateFlow<Long?>(null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -62,6 +63,7 @@ class AnnotationViewModel(
         _isEraserMode,
         _isLayersPanelOpen,
         _activeLayerId,
+        _targetPage,
         scoreViewModel.scoreUiState.flatMapLatest { state ->
             val scoreId = state.selectedScore?.score?.id
             if (scoreId != null) {
@@ -70,16 +72,24 @@ class AnnotationViewModel(
                 flowOf(emptyList())
             }
         },
-        scoreViewModel.scoreUiState.flatMapLatest { state ->
+        combine(
+            scoreViewModel.scoreUiState,
+            _targetPage
+        ) { state, targetPage ->
             val scoreId = state.selectedScore?.score?.id
+            scoreId to targetPage
+        }.flatMapLatest { (scoreId, targetPage) ->
             if (scoreId != null) {
-                annotationRepository.observeVisibleStrokesForScore(scoreId)
+                // Observe current page and adjacent pages for smooth transitions
+                val pages = listOf(targetPage - 1, targetPage, targetPage + 1)
+                    .filter { it >= 0 }
+                annotationRepository.observeVisibleStrokesForPages(scoreId, pages)
             } else {
                 flowOf(emptyList())
             }
         }
     ) { arr ->
-        val strokes = arr[8] as List<Stroke>
+        val strokes = arr[9] as List<Stroke>
         AnnotationUiState(
             brushes = arr[0] as List<Brush>,
             eraserThickness = arr[1] as Float,
@@ -88,7 +98,7 @@ class AnnotationViewModel(
             isEraserMode = arr[4] as Boolean,
             isLayersPanelOpen = arr[5] as Boolean,
             activeLayerId = arr[6] as Long?,
-            layers = arr[7] as List<AnnotationLayer>,
+            layers = arr[8] as List<AnnotationLayer>,
             strokesByPage = strokes.groupBy { it.pageIndex }
         )
     }.stateIn(
@@ -218,8 +228,9 @@ class AnnotationViewModel(
     }
 
     fun addStroke(stroke: Stroke) {
+        val scoreId = scoreViewModel.scoreUiState.value.selectedScore?.score?.id ?: return
         viewModelScope.launch {
-            annotationRepository.insertStroke(stroke)
+            annotationRepository.insertStroke(stroke.copy(scoreId = scoreId))
         }
     }
 
@@ -241,6 +252,10 @@ class AnnotationViewModel(
         val scoreId =
             scoreViewModel.scoreUiState.value.selectedScore?.score?.id ?: return flowOf(emptyList())
         return annotationRepository.observeVisibleStrokesForPage(scoreId, pageIndex)
+    }
+
+    fun setTargetPage(pageIndex: Int) {
+        _targetPage.value = pageIndex
     }
 
     fun selectLayer(layerId: Long) {
