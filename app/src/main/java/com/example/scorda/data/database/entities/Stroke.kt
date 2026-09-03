@@ -35,7 +35,7 @@ data class Stroke(
     val inputs: ByteArray,
     val color: Int,
     val thickness: Float,
-    val brushFamily: String = "PRESSURE_PEN",
+    val brushFamily: BrushFamilyType = BrushFamilyType.PRESSURE_PEN,
     val createdAt: Long = System.currentTimeMillis()
 ) {
     override fun equals(other: Any?): Boolean {

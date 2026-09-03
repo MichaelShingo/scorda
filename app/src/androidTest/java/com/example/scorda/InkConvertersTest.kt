@@ -4,6 +4,7 @@ import androidx.ink.brush.StockBrushes
 import androidx.ink.strokes.MutableStrokeInputBatch
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.scorda.data.database.InkConverters
+import com.example.scorda.data.database.entities.BrushFamilyType
 import com.example.scorda.data.database.entities.Stroke
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -15,10 +16,10 @@ class InkConvertersTest {
 
     @Test
     fun testBrushFamilyMapping() {
-        val pen = InkConverters.getBrushFamily("PRESSURE_PEN")
-        val marker = InkConverters.getBrushFamily("MARKER")
-        val highlighter = InkConverters.getBrushFamily("HIGHLIGHTER")
-        val dashed = InkConverters.getBrushFamily("DASHED_LINE")
+        val pen = BrushFamilyType.PRESSURE_PEN.toInkBrushFamily()
+        val marker = BrushFamilyType.MARKER.toInkBrushFamily()
+        val highlighter = BrushFamilyType.HIGHLIGHTER.toInkBrushFamily()
+        val dashed = BrushFamilyType.DASHED_LINE.toInkBrushFamily()
 
         assertEquals(StockBrushes.pressurePen(), pen)
         assertEquals(StockBrushes.marker(), marker)
@@ -66,7 +67,7 @@ class InkConvertersTest {
             inputs = encodedInputs,
             color = 0xFF00FF00.toInt(),
             thickness = 8f,
-            brushFamily = "MARKER"
+            brushFamily = BrushFamilyType.MARKER
         )
 
         val inkStroke = InkConverters.toInkStroke(entityStroke)

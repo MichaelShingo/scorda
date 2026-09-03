@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import com.example.scorda.data.database.entities.Brush
+import com.example.scorda.data.database.entities.BrushFamilyType
 import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
 
 @Composable
@@ -109,18 +110,12 @@ fun BrushSettingsPopup(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            val families = listOf(
-                "PRESSURE_PEN" to "Pen",
-                "MARKER" to "Marker",
-                "HIGHLIGHTER" to "Highlighter",
-                "DASHED_LINE" to "Dashed"
-            )
-            families.forEach { (familyKey, label) ->
-                val isSelected = brush.brushFamily.equals(familyKey, ignoreCase = true)
+            BrushFamilyType.entries.forEach { family ->
+                val isSelected = brush.brushFamily == family
                 FilterChip(
                     selected = isSelected,
-                    onClick = { viewModel.updateBrush(brush.copy(brushFamily = familyKey)) },
-                    label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                    onClick = { viewModel.updateBrush(brush.copy(brushFamily = family)) },
+                    label = { Text(family.uiLabel, style = MaterialTheme.typography.labelSmall) }
                 )
             }
         }

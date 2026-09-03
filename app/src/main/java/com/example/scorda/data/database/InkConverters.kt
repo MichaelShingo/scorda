@@ -1,11 +1,10 @@
 package com.example.scorda.data.database
 
 import androidx.compose.ui.graphics.Color
-import androidx.ink.brush.BrushFamily
-import androidx.ink.brush.StockBrushes
 import androidx.ink.storage.decode
 import androidx.ink.storage.encode
 import androidx.ink.strokes.StrokeInputBatch
+import com.example.scorda.data.database.entities.BrushFamilyType
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import androidx.ink.brush.Brush as InkBrush
@@ -15,20 +14,11 @@ import com.example.scorda.data.database.entities.Stroke as EntityStroke
 
 object InkConverters {
 
-    fun getBrushFamily(familyString: String): BrushFamily {
-        return when (familyString.uppercase()) {
-            "MARKER" -> StockBrushes.marker()
-            "HIGHLIGHTER" -> StockBrushes.highlighter()
-            "DASHED_LINE", "DASHEDLINE" -> StockBrushes.dashedLine()
-            else -> StockBrushes.pressurePen()
-        }
-    }
-
-    fun toInkBrush(colorInt: Int, thickness: Float, familyString: String): InkBrush {
-        val family = getBrushFamily(familyString)
+    fun toInkBrush(colorInt: Int, thickness: Float, family: BrushFamilyType): InkBrush {
+        val inkFamily = family.toInkBrushFamily()
         val colorLong = Color(colorInt).value.toLong()
         return InkBrush.createWithColorLong(
-            family = family,
+            family = inkFamily,
             colorLong = colorLong,
             size = thickness,
             epsilon = 0.1f // sets visual fidelity when zooming
@@ -39,7 +29,7 @@ object InkConverters {
         return toInkBrush(
             colorInt = entityBrush.color,
             thickness = entityBrush.thickness,
-            familyString = entityBrush.brushFamily
+            family = entityBrush.brushFamily
         )
     }
 
@@ -58,7 +48,7 @@ object InkConverters {
         val inkBrush = toInkBrush(
             colorInt = entityStroke.color,
             thickness = entityStroke.thickness,
-            familyString = entityStroke.brushFamily
+            family = entityStroke.brushFamily
         )
         val inputs = decodeStrokeInputs(entityStroke.inputs)
         return InkStroke(brush = inkBrush, inputs = inputs)

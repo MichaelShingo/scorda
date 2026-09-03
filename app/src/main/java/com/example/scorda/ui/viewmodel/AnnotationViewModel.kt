@@ -12,6 +12,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.scorda.ScordaApplication
 import com.example.scorda.data.database.entities.AnnotationLayer
 import com.example.scorda.data.database.entities.Brush
+import com.example.scorda.data.database.entities.BrushFamilyType
 import com.example.scorda.data.database.entities.LayerType
 import com.example.scorda.data.database.entities.Stroke
 import com.example.scorda.data.repository.AnnotationRepository
@@ -184,19 +185,14 @@ class AnnotationViewModel(
         }
     }
 
-    fun addBrush(familyString: String = "PRESSURE_PEN") {
+    fun addBrush(family: BrushFamilyType = BrushFamilyType.PRESSURE_PEN) {
         viewModelScope.launch {
             val nextOrder = annotationRepository.getNextBrushOrder()
             val newBrush = Brush(
-                name = when(familyString.uppercase()) {
-                    "MARKER" -> "Marker"
-                    "HIGHLIGHTER" -> "Highlighter"
-                    "DASHED_LINE" -> "Dashed Line"
-                    else -> "Pressure Pen"
-                },
+                name = family.defaultName,
                 color = Color.Black.toArgb(),
                 thickness = 5f,
-                brushFamily = familyString,
+                brushFamily = family,
                 order = nextOrder
             )
             val id = annotationRepository.insertBrush(newBrush)

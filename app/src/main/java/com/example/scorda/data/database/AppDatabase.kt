@@ -18,6 +18,7 @@ import com.example.scorda.data.database.dao.SetlistDao
 import com.example.scorda.data.database.dao.TagDao
 import com.example.scorda.data.database.entities.AnnotationLayer
 import com.example.scorda.data.database.entities.Brush
+import com.example.scorda.data.database.entities.BrushFamilyType
 import com.example.scorda.data.database.entities.Composer
 import com.example.scorda.data.database.entities.Genre
 import com.example.scorda.data.database.entities.Instrument
@@ -93,13 +94,32 @@ abstract class AppDatabase : RoomDatabase() {
 
         private suspend fun seedDefaultBrushes(brushDao: BrushDao) {
             val defaults = listOf(
-                Brush(name = "Thin Black", color = Color.Black.toArgb(), thickness = 2f, order = 0),
-                Brush(name = "Thin Red", color = Color.Red.toArgb(), thickness = 2f, order = 1),
-                Brush(name = "Thin Blue", color = Color.Blue.toArgb(), thickness = 2f, order = 2),
+                Brush(
+                    name = "Thin Black",
+                    color = Color.Black.toArgb(),
+                    thickness = 2f,
+                    brushFamily = BrushFamilyType.PRESSURE_PEN,
+                    order = 0
+                ),
+                Brush(
+                    name = "Thin Red",
+                    color = Color.Red.toArgb(),
+                    thickness = 2f,
+                    brushFamily = BrushFamilyType.PRESSURE_PEN,
+                    order = 1
+                ),
+                Brush(
+                    name = "Thin Blue",
+                    color = Color.Blue.toArgb(),
+                    thickness = 2f,
+                    brushFamily = BrushFamilyType.PRESSURE_PEN,
+                    order = 2
+                ),
                 Brush(
                     name = "Highlighter",
                     color = Color.Yellow.copy(alpha = 0.3f).toArgb(),
                     thickness = 20f,
+                    brushFamily = BrushFamilyType.HIGHLIGHTER,
                     order = 3
                 )
             )
