@@ -1,6 +1,7 @@
-- [x] Update `Stroke` entity with `scoreId` and optimized indices
-- [x] Implement binary serialization for `AnnotationPoint` list
-- [x] Update `AnnotationDao` with optimized and windowed queries
-- [x] Refactor `AnnotationRepository` to support new schema and windowed loading
-- [x] Refactor `AnnotationViewModel` for lazy/windowed stroke observation
-- [x] Verify functionality and performance
+- [x] Add `androidx.ink` dependencies to `libs.versions.toml` and `app/build.gradle.kts`
+- [x] Update `Stroke` entity and Room schema to store `StrokeInputBatch` bytes and brush metadata
+- [x] Create `InkConverters` and update Room `Converters` using `ink-storage`
+- [x] Update `Brush` domain model to support Ink brush family types (Pressure Pen, Marker, Highlighter)
+- [x] Refactor `DrawingCanvas.kt` to use `CanvasStrokeRenderer`, `InProgressStrokes`, and `ink-geometry` intersection testing for eraser
+- [x] Refactor `AnnotationViewModel` and `AnnotationRepository` for Ink stroke creation and rendering
+- [x] Build and verify implementation

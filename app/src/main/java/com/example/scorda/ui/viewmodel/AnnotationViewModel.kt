@@ -184,13 +184,19 @@ class AnnotationViewModel(
         }
     }
 
-    fun addBrush() {
+    fun addBrush(familyString: String = "PRESSURE_PEN") {
         viewModelScope.launch {
             val nextOrder = annotationRepository.getNextBrushOrder()
             val newBrush = Brush(
-                name = "New Brush",
+                name = when(familyString.uppercase()) {
+                    "MARKER" -> "Marker"
+                    "HIGHLIGHTER" -> "Highlighter"
+                    "DASHED_LINE" -> "Dashed Line"
+                    else -> "Pressure Pen"
+                },
                 color = Color.Black.toArgb(),
                 thickness = 5f,
+                brushFamily = familyString,
                 order = nextOrder
             )
             val id = annotationRepository.insertBrush(newBrush)

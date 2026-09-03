@@ -99,4 +99,15 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(files("libs/mwengine-release.aar"))
 
+    // AndroidX Ink API
+    implementation(libs.androidx.ink.geometry)
+    implementation(libs.androidx.ink.geometry.compose)
+    implementation(libs.androidx.ink.strokes)
+    implementation(libs.androidx.ink.brush)
+    implementation(libs.androidx.ink.brush.compose)
+    implementation(libs.androidx.ink.rendering)
+    implementation(libs.androidx.ink.authoring.compose)
+    implementation(libs.androidx.ink.storage)
+    implementation(libs.androidx.ink.nativeloader)
+
 }

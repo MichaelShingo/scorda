@@ -22,6 +22,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -96,6 +97,31 @@ fun BrushSettingsPopup(
                         leadingIcon = { Icon(Icons.Rounded.Delete, null) }
                     )
                 }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Brush Style
+        Text("Brush Style", style = MaterialTheme.typography.bodySmall)
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            val families = listOf(
+                "PRESSURE_PEN" to "Pen",
+                "MARKER" to "Marker",
+                "HIGHLIGHTER" to "Highlighter",
+                "DASHED_LINE" to "Dashed"
+            )
+            families.forEach { (familyKey, label) ->
+                val isSelected = brush.brushFamily.equals(familyKey, ignoreCase = true)
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { viewModel.updateBrush(brush.copy(brushFamily = familyKey)) },
+                    label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                )
             }
         }
 

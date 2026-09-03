@@ -42,4 +42,7 @@ Scorda.
 
 - We use Room for persistence.
 - Entities are located in `com.example.scorda.data.database.entities`.
+- Whenever you make a schema change, please also update the version in
+  \scorda\app\src\main\java\com\example\scorda\data\database\AppDatabase.kt, bumping up by a whole
+  number each time.
 

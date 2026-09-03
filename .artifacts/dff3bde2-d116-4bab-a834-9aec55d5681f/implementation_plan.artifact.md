@@ -1,57 +1,108 @@
-# Performance Optimization for Annotations
+# Implementation Plan: Integrating AndroidX Ink API (`ink-geometry`, `ink-strokes`, `ink-rendering`, etc.)
 
-This plan aims to optimize the annotation system (strokes) to handle large datasets (10M+ total strokes, 1000+ per score) efficiently. The current implementation suffers from CPU-intensive JSON serialization and memory pressure due to eager loading of all strokes in a score.
+Upgrade Scorda's annotation system from basic Compose `Path` drawing to Google's official **AndroidX Ink API**. This will enable **stylus pressure sensitivity**, realistic brush engines (Pressure Pen, Marker, Highlighter), hardware-accelerated smooth rendering, high-precision geometric intersection testing for erasers, and compact protobuf-based binary stroke storage.
+
+---
 
 ## User Review Required
 
 > [!IMPORTANT]
-> This optimization involves a database schema change. While we will aim for a clean migration, it's a significant change to the persistence layer.
+> **Dependency Additions**: We will add the `androidx.ink` suite (`ink-geometry`, `ink-strokes`, `ink-brush`, `ink-rendering`, `ink-authoring`, `ink-storage`) to `libs.versions.toml` and `app/build.gradle.kts`.
 
 > [!NOTE]
-> We will switch from JSON serialization to a compact binary format for stroke points. This will break compatibility with existing data unless a migration script is implemented to convert old JSON strings to the new binary format.
+> **Database Entity Update**: `Stroke` will be updated to store `inputs` (`ByteArray` representing encoded `StrokeInputBatch` from `ink-storage`) along with brush metadata (color, size, stock brush type). This natively supports pressure, speed, tilt, and high-resolution input coordinates.
 
-## Open Questions
+---
 
-1. Do we need to preserve existing annotations during this migration? If so, I will include a data migration script. Given "production quality", I assume YES.
+## Proposed Architectural Changes
 
-## Proposed Changes
+```
++-------------------------------------------------------------------------+
+|                              DrawingCanvas                              |
+|  +-------------------------------+   +-------------------------------+  |
+|  |     Dry Ink Canvas            |   |     InProgressStrokes (Wet)   |  |
+|  |  (CanvasStrokeRenderer.draw)  |   |  (Real-time stylus/touch input)  |  |
+|  +-------------------------------+   +-------------------------------+  |
++-------------------------------------------------------------------------+
+                                    |
+                                    v
++-------------------------------------------------------------------------+
+|                          AnnotationViewModel                            |
+|             (Manages Brushes, Active Layer, Target Pages)               |
++-------------------------------------------------------------------------+
+                                    |
+                                    v
++-------------------------------------------------------------------------+
+|                  Room Database / Storage (`ink-storage`)                 |
+|   `StrokeInputBatch.encode()` / `decode()` <--> `ByteArray` in SQLite   |
++-------------------------------------------------------------------------+
+```
 
-### Data Layer
+### 1. Dependencies & Version Catalog
+
+#### [MODIFY] [libs.versions.toml](file:///D:/apps/scorda/gradle/libs.versions.toml)
+- Add version `androidx-ink = "1.0.0"` (or `1.1.0-alpha07`).
+- Define libraries:
+  - `androidx-ink-geometry = { group = "androidx.ink", name = "ink-geometry", version.ref = "androidx-ink" }`
+  - `androidx-ink-strokes = { group = "androidx.ink", name = "ink-strokes", version.ref = "androidx-ink" }`
+  - `androidx-ink-brush = { group = "androidx.ink", name = "ink-brush", version.ref = "androidx-ink" }`
+  - `androidx-ink-rendering = { group = "androidx.ink", name = "ink-rendering", version.ref = "androidx-ink" }`
+  - `androidx-ink-authoring = { group = "androidx.ink", name = "ink-authoring-compose", version.ref = "androidx-ink" }`
+  - `androidx-ink-storage = { group = "androidx.ink", name = "ink-storage", version.ref = "androidx-ink" }`
+
+#### [MODIFY] [build.gradle.kts](file:///D:/apps/scorda/app/build.gradle.kts)
+- Include the new `androidx.ink` dependencies.
+
+---
+
+### 2. Data Models & Database Migration
 
 #### [MODIFY] [Stroke.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/data/database/entities/Stroke.kt)
-- Add `scoreId: Long` field for direct querying.
-- Update indices to include `(scoreId, pageIndex)` for optimized per-page lookups.
-
-#### [NEW] [PointConverter.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/data/database/PointConverter.kt)
-- Implement a binary `TypeConverter` for `List<AnnotationPoint>`.
-- Use `ByteBuffer` to store coordinates as floats, significantly reducing parsing time and string overhead.
+- Update `Stroke` to store `inputs: ByteArray` (encoded `StrokeInputBatch`) instead of `List<AnnotationPoint>`.
+- Add brush metadata fields: `brushFamily` (e.g. `PRESSURE_PEN`, `MARKER`, `HIGHLIGHTER`), `color: Long`, `size: Float`, `epsilon: Float`.
+- Retain `id`, `scoreId`, `layerId`, `pageIndex`, `createdAt`.
 
 #### [MODIFY] [Converters.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/data/database/Converters.kt)
-- Remove `fromPoints` and `toPoints` JSON converters (or keep them as fallback if migrating).
+- Remove manual `AnnotationPoint` byte buffer serialization.
+- Add serialization helpers using `ink-storage` (`StrokeInputBatch.encode()` / `StrokeInputBatch.decode()`) and `Brush` mapping.
 
-#### [MODIFY] [AnnotationDao.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/data/database/dao/AnnotationDao.kt)
-- Update queries to use the new `scoreId` column.
-- Optimize `getVisibleStrokesForScore` and `getVisibleStrokesForPage` to use direct joins instead of subqueries with `IN`.
+#### [NEW] [InkConverters.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/data/database/InkConverters.kt)
+- Provide utility extensions to convert between Ink API `Stroke` / `Brush` objects and Room `Stroke` entity DTOs.
 
-### Repository & ViewModel Layer
+---
+
+### 3. Rendering & Drawing Component Integration
+
+#### [MODIFY] [DrawingCanvas.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/scoreView/DrawingCanvas.kt)
+- **Dry Ink Layer**: Use `CanvasStrokeRenderer.create()` to render completed `androidx.ink.strokes.Stroke` objects onto the Compose `Canvas` with high visual fidelity and antialiasing.
+- **Wet Ink Layer**: Integrate `InProgressStrokes` for real-time stroke authoring with ultra-low latency and full pressure/stylus support.
+- **Coordinate Transformation**: Use `pointerEventToWorldTransform` matrix to map screen touch/stylus inputs to normalized PDF page coordinates.
+- **Eraser Logic using `ink-geometry`**:
+  - Replace point distance threshold loops with `ink-geometry` intersection testing (`stroke.shape.intersects(parallelogram, AffineTransform.IDENTITY)` or `Segment`).
+
+#### [MODIFY] [Brush.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/data/database/entities/Brush.kt)
+- Map internal `Brush` domain model to `androidx.ink.brush.StockBrushes` (`pressurePen()`, `marker()`, `highlighter()`, `dashedLine()`).
+
+---
+
+### 4. ViewModel & Repository Updates
 
 #### [MODIFY] [AnnotationRepository.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/data/repository/AnnotationRepository.kt)
-- Update `insertStroke` and observation methods to support `scoreId`.
+- Adapt repository methods to pass `StrokeInputBatch` or Ink `Stroke` objects seamlessly.
 
 #### [MODIFY] [AnnotationViewModel.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/viewmodel/AnnotationViewModel.kt)
-- **Lazy Loading**: Refactor `uiState` to observe only the currently visible pages rather than the entire score.
-- **Grouping Optimization**: Move `groupBy { it.pageIndex }` logic to a background thread or optimize it to run only on the relevant "window" of pages.
+- Expose `BrushFamily` options (Pressure Pen, Marker, Highlighter) to the UI toolbar.
+- Maintain cached/deserialized `androidx.ink.strokes.Stroke` objects for active pages to keep rendering ultra-fast.
 
 ---
 
 ## Verification Plan
 
-### Automated Tests
-- **Benchmark**: Create a test that compares JSON vs Binary serialization for 10,000 points.
-- **Migration Test**: Verify that existing JSON-based strokes are correctly converted to the new format.
-- **DAO Test**: Verify that per-page stroke retrieval is fast even with 100k total rows.
+### Automated Build & Compilation
+- Run `./gradlew assembleDebug` to verify dependency resolution and Kotlin build success.
 
-### Manual Verification
-- Stress test with 1,000 strokes on a single page.
-- Monitor memory usage and "jank" using the Android Studio Profiler during drawing and page flipping.
-- Verify that "Undo" and "Clear Layer" still work correctly with the new schema.
+### Manual & Visual Verification
+1. **Stylus Pressure Testing**: Test drawing with varying pressure on a stylus (or simulated input) to verify line width changes dynamically.
+2. **Brush Types**: Verify Pressure Pen, Marker, and Highlighter rendering styles.
+3. **Eraser Accuracy**: Test eraser stroke removal using `ink-geometry` intersection testing.
+4. **Persistence Test**: Draw strokes, change scores, reopen the score, and verify strokes render identically with exact pressure profiles restored from SQLite (`ink-storage`).

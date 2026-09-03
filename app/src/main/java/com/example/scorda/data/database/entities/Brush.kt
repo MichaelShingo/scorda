@@ -9,6 +9,7 @@ data class Brush(
     val name: String,
     val color: Int, // ARGB
     val thickness: Float,
+    val brushFamily: String = "PRESSURE_PEN",
     val order: Int,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
