@@ -46,3 +46,8 @@ Scorda.
   \scorda\app\src\main\java\com\example\scorda\data\database\AppDatabase.kt, bumping up by a whole
   number each time.
 
+## Code Style
+
+- Sometimes I will write comments to add additional explanation to code, please don't delete these.
+  If anything is incorrect, you can suggest a fix.
+

@@ -6,8 +6,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -54,6 +56,14 @@ fun DrawingCanvas(
         strokes.map { entityStroke ->
             entityStroke.id to InkConverters.toInkStroke(entityStroke)
         }
+    }
+
+    // Pending optimistic Ink Strokes waiting for Room DB persistence
+    val pendingStrokes = remember { mutableStateListOf<InkStroke>() }
+
+    // Clear local optimistic pending strokes once Room DB updates
+    LaunchedEffect(strokes) {
+        pendingStrokes.clear()
     }
 
     // Matrix to transform PDF stroke coordinates to screen canvas space
@@ -133,7 +143,6 @@ fun DrawingCanvas(
                             }
                         }
 
-                        // Process current pointer change point
                         val pdfPoint = pageTransform.screenToPdf(change.position)
                         if (pdfPoint != null) {
                             addPointSafely(
@@ -153,6 +162,12 @@ fun DrawingCanvas(
                         if (!isEraserMode && currentInputBatch.size > 0 && selectedBrush != null) {
                             val scoreId = annotationUiState.layers.firstOrNull()?.scoreId
                                 ?: return@detectDragGestures
+
+                            // Optimistically cache finished stroke until DB updates
+                            val activeBrush = InkConverters.toInkBrush(selectedBrush)
+                            val finishedInkStroke =
+                                InkStroke(brush = activeBrush, inputs = currentInputBatch)
+                            pendingStrokes.add(finishedInkStroke)
 
                             val encodedInputs = InkConverters.encodeStrokeInputs(currentInputBatch)
                             annotationViewModel.addStroke(
@@ -185,7 +200,7 @@ fun DrawingCanvas(
             val nativeCanvas = composeCanvas.nativeCanvas
 
             nativeCanvas.withMatrix(transformMatrix) {
-                // Draw finalized dry strokes using CanvasStrokeRenderer
+                // 1. Draw finalized dry strokes from Room DB
                 inkStrokes.forEach { (_, inkStroke) ->
                     canvasStrokeRenderer.draw(
                         canvas = nativeCanvas,
@@ -194,7 +209,16 @@ fun DrawingCanvas(
                     )
                 }
 
-                // Draw active in-progress (wet) stroke in real time
+                // 2. Draw optimistic pending strokes (waiting for DB write to complete)
+                pendingStrokes.forEach { pendingStroke ->
+                    canvasStrokeRenderer.draw(
+                        canvas = nativeCanvas,
+                        stroke = pendingStroke,
+                        strokeToScreenTransform = transformMatrix
+                    )
+                }
+
+                // 3. Draw active in-progress (wet) stroke in real time
                 if (!isEraserMode && currentInputBatch.size > 0 && selectedBrush != null) {
                     val activeBrush = InkConverters.toInkBrush(selectedBrush)
                     val inProgressStroke =
