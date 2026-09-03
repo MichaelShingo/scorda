@@ -38,6 +38,11 @@ data class Stroke(
     val brushFamily: BrushFamilyType = BrushFamilyType.PRESSURE_PEN,
     val createdAt: Long = System.currentTimeMillis()
 ) {
+    /**
+     * override default equals function used by StateFlow to determine if state has changed
+     * checks the byte content so that Compose doesn't think every stroke changed on every frame
+     * see DrawingCanvas.kt remember(strokes) for implicit usage
+     */
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

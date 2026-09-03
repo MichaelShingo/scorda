@@ -109,7 +109,7 @@ fun DrawingCanvas(
                                 batch = currentInputBatch,
                                 x = pdfPoint.x,
                                 y = pdfPoint.y,
-                                elapsedTimeMillis = SystemClock.elapsedRealtime()
+                                elapsedTimeMillis = SystemClock.uptimeMillis()
                             )
                             drawTrigger++
                         }
@@ -118,6 +118,22 @@ fun DrawingCanvas(
                         }
                     },
                     onDrag = { change, _ ->
+                        // Historical points are captured for high-frequency areas like quick drags and sharp turns
+                        // Must be captured before change.position, otherwise we will miss points
+                        change.historical.forEach { historical ->
+                            val histPdfPoint = pageTransform.screenToPdf(historical.position)
+                            if (histPdfPoint != null) {
+                                addPointSafely(
+                                    batch = currentInputBatch,
+                                    x = histPdfPoint.x,
+                                    y = histPdfPoint.y,
+                                    elapsedTimeMillis = historical.uptimeMillis,
+                                    pressure = change.pressure
+                                )
+                            }
+                        }
+
+                        // Process current pointer change point
                         val pdfPoint = pageTransform.screenToPdf(change.position)
                         if (pdfPoint != null) {
                             addPointSafely(
@@ -161,7 +177,7 @@ fun DrawingCanvas(
                 )
             }
     ) {
-        // Canvas will only re-execute if a State is read inside its lamba body
+        // Canvas will only re-execute if a State is read inside its lambda body
         @Suppress("UNUSED_VARIABLE")
         val trigger = drawTrigger
 
@@ -228,4 +244,3 @@ private fun addPointSafely(
         )
     }
 }
-
