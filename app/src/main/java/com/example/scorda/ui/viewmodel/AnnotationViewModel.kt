@@ -132,6 +132,18 @@ class AnnotationViewModel(
         _isEraserMode.value = false
     }
 
+    fun selectTool(family: BrushFamilyType) {
+        viewModelScope.launch {
+            val brushes = annotationRepository.observeBrushes().first()
+            val existing = brushes.find { it.brushFamily == family }
+            if (existing != null) {
+                selectBrush(existing.id)
+            } else {
+                addBrush(family)
+            }
+        }
+    }
+
     fun toggleEraserMode() {
         _isEraserMode.value = !_isEraserMode.value
     }
