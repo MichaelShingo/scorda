@@ -34,7 +34,8 @@ import com.example.scorda.ui.viewmodel.ToolType
 fun BrushSettingsPopup() {
     val viewModel = LocalAnnotationViewModel.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val tool = if (uiState.isEraserMode) ToolType.ERASER else uiState.selectedTool
+    val tool = uiState.selectedTool
+    val isEraser = tool == ToolType.ERASER
     val color = Color(uiState.currentColor)
     val thickness = uiState.currentThickness
 
@@ -60,7 +61,7 @@ fun BrushSettingsPopup() {
         Slider(
             value = thickness,
             onValueChange = {
-                if (uiState.isEraserMode) {
+                if (isEraser) {
                     viewModel.updateEraserThickness(it)
                 } else {
                     viewModel.updateToolThickness(tool, it)
@@ -69,13 +70,10 @@ fun BrushSettingsPopup() {
             valueRange = 1f..50f
         )
 
-        if (!uiState.isEraserMode) {
+        if (!isEraser) {
             // Transparency
             val alpha = color.alpha
-            Text(
-                "Transparency: ${(alpha * 100).toInt()}%",
-                style = MaterialTheme.typography.bodySmall
-            )
+            Text("Transparency: ${(alpha * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
             Slider(
                 value = alpha,
                 onValueChange = {

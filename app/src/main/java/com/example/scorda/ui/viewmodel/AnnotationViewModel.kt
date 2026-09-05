@@ -64,7 +64,6 @@ data class AnnotationUiState(
     val toolThicknesses: Map<ToolType, Float> = emptyMap(),
     val eraserThickness: Float = 20f,
     val isDrawingMode: Boolean = false,
-    val isEraserMode: Boolean = false,
     val isLayersPanelOpen: Boolean = false,
     val activeLayerId: Long? = null,
     val layers: List<AnnotationLayer> = emptyList(),
@@ -74,7 +73,7 @@ data class AnnotationUiState(
         get() = toolColors[selectedTool] ?: Color.Black.toArgb()
 
     val currentThickness: Float
-        get() = if (isEraserMode) eraserThickness else toolThicknesses[selectedTool] ?: 5f
+        get() = if (selectedTool == ToolType.ERASER) eraserThickness else toolThicknesses[selectedTool] ?: 5f
 }
 
 class AnnotationViewModel(
@@ -85,7 +84,6 @@ class AnnotationViewModel(
 
     private val _selectedTool = MutableStateFlow(ToolType.PEN)
     private val _isDrawingMode = MutableStateFlow(false)
-    private val _isEraserMode = MutableStateFlow(false)
     private val _isLayersPanelOpen = MutableStateFlow(false)
     private val _targetPage = MutableStateFlow(0)
     private val _activeLayerId = MutableStateFlow<Long?>(null)
@@ -121,7 +119,6 @@ class AnnotationViewModel(
         },
         settingsRepository.eraserThickness,
         _isDrawingMode,
-        _isEraserMode,
         _isLayersPanelOpen,
         _activeLayerId,
         _targetPage,
@@ -148,17 +145,16 @@ class AnnotationViewModel(
             }
         }
     ) { arr ->
-        val strokes = arr[10] as List<Stroke>
+        val strokes = arr[9] as List<Stroke>
         AnnotationUiState(
             selectedTool = arr[0] as ToolType,
             toolColors = arr[1] as Map<ToolType, Int>,
             toolThicknesses = arr[2] as Map<ToolType, Float>,
             eraserThickness = arr[3] as Float,
             isDrawingMode = arr[4] as Boolean,
-            isEraserMode = arr[5] as Boolean,
-            isLayersPanelOpen = arr[6] as Boolean,
-            activeLayerId = arr[7] as Long?,
-            layers = arr[9] as List<AnnotationLayer>,
+            isLayersPanelOpen = arr[5] as Boolean,
+            activeLayerId = arr[6] as Long?,
+            layers = arr[8] as List<AnnotationLayer>,
             strokesByPage = strokes.groupBy { it.pageIndex }
         )
     }.stateIn(
@@ -170,7 +166,6 @@ class AnnotationViewModel(
     fun toggleDrawingMode() {
         _isDrawingMode.value = !_isDrawingMode.value
         if (!_isDrawingMode.value) {
-            _isEraserMode.value = false
             _isLayersPanelOpen.value = false
         }
         if (_isDrawingMode.value) {
@@ -187,12 +182,7 @@ class AnnotationViewModel(
     }
 
     fun selectTool(tool: ToolType) {
-        if (tool == ToolType.ERASER) {
-            _isEraserMode.value = true
-        } else {
-            _selectedTool.value = tool
-            _isEraserMode.value = false
-        }
+        _selectedTool.value = tool
     }
 
     fun updateToolColor(tool: ToolType, color: Int) {
@@ -210,7 +200,11 @@ class AnnotationViewModel(
     }
 
     fun toggleEraserMode() {
-        _isEraserMode.value = !_isEraserMode.value
+        if (_selectedTool.value == ToolType.ERASER) {
+            _selectedTool.value = ToolType.PEN
+        } else {
+            _selectedTool.value = ToolType.ERASER
+        }
     }
 
     fun toggleLayersPanel() {

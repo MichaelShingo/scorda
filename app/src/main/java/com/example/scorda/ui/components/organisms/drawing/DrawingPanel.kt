@@ -49,7 +49,7 @@ fun DrawingPanel(
     ) {
         // Tools Button
         ToolsButton(
-            selectedTool = if (annotationUiState.isEraserMode) ToolType.ERASER else annotationUiState.selectedTool,
+            selectedTool = annotationUiState.selectedTool,
             onToolSelect = { tool ->
                 annotationViewModel.selectTool(tool)
             }
@@ -59,9 +59,11 @@ fun DrawingPanel(
 
         // Color Button
         AnchoredPopup(
-            anchor = { onOpen, isExpanded ->
+            anchor = { onOpen, _ ->
+                val isEraser = annotationUiState.selectedTool == ToolType.ERASER
                 ColorButton(
-                    color = if (annotationUiState.isEraserMode) Color.Transparent else Color(annotationUiState.currentColor),
+                    color = if (isEraser) Color.Transparent else Color(annotationUiState.currentColor),
+                    enabled = !isEraser,
                     onClick = onOpen
                 )
             },
@@ -128,7 +130,7 @@ fun ToolsButton(
 ) {
     AnchoredPopup(
         size = CustomAnchoredPopupSize.Thin,
-        anchor = { onOpen, isExpanded ->
+        anchor = { onOpen, _ ->
             IconButton(onClick = onOpen) {
                 Icon(
                     imageVector = selectedTool.icon,
@@ -170,6 +172,7 @@ fun ToolsButton(
 @Composable
 fun ColorButton(
     color: Color,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     Box(
@@ -177,7 +180,11 @@ fun ColorButton(
             .size(32.dp)
             .clip(CircleShape)
             .background(color)
-            .border(1.dp, Color.LightGray, CircleShape)
-            .clickable { onClick() }
+            .border(
+                width = 1.dp,
+                color = if (enabled) Color.LightGray else Color.LightGray.copy(alpha = 0.3f),
+                shape = CircleShape
+            )
+            .clickable(enabled = enabled) { onClick() }
     )
 }

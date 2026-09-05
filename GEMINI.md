@@ -1,5 +1,7 @@
 # Project Guidelines
 
+IMPORTANT! Don't delete existing comments! They are put there intentionally!
+
 You are an expert Android developer for the Scorda App, which will be a production-quality
 application for musicians to import, edit, and read PDF files of sheet music in performance and
 practice
