@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 13,
-    "identityHash": "def381cde8f2138461d72fc403fc52e5",
+    "version": 14,
+    "identityHash": "0e5656751ce95e0e7eae3ab31cd6c3b3",
     "entities": [
       {
         "tableName": "scores",
@@ -636,7 +636,7 @@
       },
       {
         "tableName": "strokes",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `scoreId` INTEGER NOT NULL, `layerId` INTEGER NOT NULL, `pageIndex` INTEGER NOT NULL, `points` BLOB NOT NULL, `color` INTEGER NOT NULL, `thickness` REAL NOT NULL, `createdAt` INTEGER NOT NULL, FOREIGN KEY(`layerId`) REFERENCES `annotation_layers`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`scoreId`) REFERENCES `scores`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `scoreId` INTEGER NOT NULL, `layerId` INTEGER NOT NULL, `pageIndex` INTEGER NOT NULL, `inputs` BLOB NOT NULL, `color` INTEGER NOT NULL, `thickness` REAL NOT NULL, `brushFamily` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, FOREIGN KEY(`layerId`) REFERENCES `annotation_layers`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`scoreId`) REFERENCES `scores`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -663,8 +663,8 @@
             "notNull": true
           },
           {
-            "fieldPath": "points",
-            "columnName": "points",
+            "fieldPath": "inputs",
+            "columnName": "inputs",
             "affinity": "BLOB",
             "notNull": true
           },
@@ -678,6 +678,12 @@
             "fieldPath": "thickness",
             "columnName": "thickness",
             "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "brushFamily",
+            "columnName": "brushFamily",
+            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -750,7 +756,7 @@
       },
       {
         "tableName": "brushes",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `color` INTEGER NOT NULL, `thickness` REAL NOT NULL, `order` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `color` INTEGER NOT NULL, `thickness` REAL NOT NULL, `brushFamily` TEXT NOT NULL, `order` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -774,6 +780,12 @@
             "fieldPath": "thickness",
             "columnName": "thickness",
             "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "brushFamily",
+            "columnName": "brushFamily",
+            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -805,7 +817,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'def381cde8f2138461d72fc403fc52e5')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0e5656751ce95e0e7eae3ab31cd6c3b3')"
     ]
   }
 }

@@ -3,7 +3,6 @@ package com.example.scorda.data.database.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
-import androidx.room.Transaction
 import com.example.scorda.data.database.entities.AnnotationLayer
 import com.example.scorda.data.database.entities.Stroke
 import kotlinx.coroutines.flow.Flow
@@ -54,12 +53,28 @@ interface AnnotationDao {
     @Query("DELETE FROM strokes WHERE layerId = :layerId")
     suspend fun clearLayer(layerId: Long)
 
-    @Transaction
-    @Query("SELECT * FROM strokes WHERE layerId IN (SELECT id FROM annotation_layers WHERE scoreId = :scoreId AND isVisible = 1) AND pageIndex = :pageIndex ORDER BY createdAt ASC")
+    @Query("""
+        SELECT s.* FROM strokes s
+        JOIN annotation_layers l ON s.layerId = l.id
+        WHERE s.scoreId = :scoreId AND s.pageIndex = :pageIndex AND l.isVisible = 1
+        ORDER BY s.createdAt ASC
+    """)
     fun getVisibleStrokesForPage(scoreId: Long, pageIndex: Int): Flow<List<Stroke>>
 
-    @Transaction
-    @Query("SELECT * FROM strokes WHERE layerId IN (SELECT id FROM annotation_layers WHERE scoreId = :scoreId AND isVisible = 1) ORDER BY pageIndex ASC, createdAt ASC")
+    @Query("""
+        SELECT s.* FROM strokes s
+        JOIN annotation_layers l ON s.layerId = l.id
+        WHERE s.scoreId = :scoreId AND s.pageIndex IN (:pageIndices) AND l.isVisible = 1
+        ORDER BY s.pageIndex ASC, s.createdAt ASC
+    """)
+    fun getVisibleStrokesForPages(scoreId: Long, pageIndices: List<Int>): Flow<List<Stroke>>
+
+    @Query("""
+        SELECT s.* FROM strokes s
+        JOIN annotation_layers l ON s.layerId = l.id
+        WHERE s.scoreId = :scoreId AND l.isVisible = 1
+        ORDER BY s.pageIndex ASC, s.createdAt ASC
+    """)
     fun getVisibleStrokesForScore(scoreId: Long): Flow<List<Stroke>>
 
     @Query("DELETE FROM strokes WHERE id IN (:strokeIds)")

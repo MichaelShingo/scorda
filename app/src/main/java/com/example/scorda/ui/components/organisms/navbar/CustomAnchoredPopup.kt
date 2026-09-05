@@ -46,6 +46,11 @@ sealed interface CustomAnchoredPopupSize {
         override val maxHeight = 280.dp
     }
 
+    data object Thin : CustomAnchoredPopupSize {
+        override val width = 56.dp
+        override val maxHeight = 300.dp
+    }
+
     data object Medium : CustomAnchoredPopupSize {
         override val width = 300.dp
         override val maxHeight = 400.dp
