@@ -40,9 +40,11 @@ fun DrawingCanvas(
     val strokes = annotationUiState.strokesByPage[pageIndex] ?: emptyList()
 
     val activeLayerId = annotationUiState.activeLayerId
-    val selectedBrush = annotationUiState.selectedBrush
     val isEraserMode = annotationUiState.isEraserMode
     val eraserThickness = annotationUiState.eraserThickness
+    val currentColor = annotationUiState.currentColor
+    val currentThickness = annotationUiState.currentThickness
+    val selectedBrushFamily = annotationUiState.selectedTool.brushFamily
 
     val density = LocalDensity.current
     val eraserRadiusPx = remember(density, eraserThickness) {
@@ -81,9 +83,15 @@ fun DrawingCanvas(
     Canvas(
         modifier = modifier
             .fillMaxSize()
-            .pointerInput(isDrawingMode, activeLayerId, selectedBrush, isEraserMode) {
+            .pointerInput(
+                isDrawingMode,
+                activeLayerId,
+                isEraserMode,
+                currentColor,
+                currentThickness,
+                selectedBrushFamily
+            ) {
                 if (!isDrawingMode || activeLayerId == null) return@pointerInput
-                if (!isEraserMode && selectedBrush == null) return@pointerInput
 
                 fun eraseAt(offset: Offset) {
                     val pdfPoint = pageTransform.screenToPdf(offset) ?: return
@@ -159,12 +167,16 @@ fun DrawingCanvas(
                         }
                     },
                     onDragEnd = {
-                        if (!isEraserMode && currentInputBatch.size > 0 && selectedBrush != null) {
+                        if (!isEraserMode && currentInputBatch.size > 0 && selectedBrushFamily != null) {
                             val scoreId = annotationUiState.layers.firstOrNull()?.scoreId
                                 ?: return@detectDragGestures
 
                             // Optimistically cache finished stroke until DB updates
-                            val activeBrush = InkConverters.toInkBrush(selectedBrush)
+                            val activeBrush = InkConverters.toInkBrush(
+                                currentColor,
+                                currentThickness,
+                                selectedBrushFamily
+                            )
                             val finishedInkStroke =
                                 InkStroke(brush = activeBrush, inputs = currentInputBatch)
                             pendingStrokes.add(finishedInkStroke)
@@ -176,9 +188,9 @@ fun DrawingCanvas(
                                     layerId = activeLayerId,
                                     pageIndex = pageIndex,
                                     inputs = encodedInputs,
-                                    color = selectedBrush.color,
-                                    thickness = selectedBrush.thickness,
-                                    brushFamily = selectedBrush.brushFamily
+                                    color = currentColor,
+                                    thickness = currentThickness,
+                                    brushFamily = selectedBrushFamily
                                 )
                             )
                         }
@@ -219,8 +231,12 @@ fun DrawingCanvas(
                 }
 
                 // 3. Draw active in-progress (wet) stroke in real time
-                if (!isEraserMode && currentInputBatch.size > 0 && selectedBrush != null) {
-                    val activeBrush = InkConverters.toInkBrush(selectedBrush)
+                if (!isEraserMode && currentInputBatch.size > 0 && selectedBrushFamily != null) {
+                    val activeBrush = InkConverters.toInkBrush(
+                        currentColor,
+                        currentThickness,
+                        selectedBrushFamily
+                    )
                     val inProgressStroke =
                         InkStroke(brush = activeBrush, inputs = currentInputBatch)
                     canvasStrokeRenderer.draw(

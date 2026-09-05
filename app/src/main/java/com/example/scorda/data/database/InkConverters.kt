@@ -9,7 +9,6 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import androidx.ink.brush.Brush as InkBrush
 import androidx.ink.strokes.Stroke as InkStroke
-import com.example.scorda.data.database.entities.Brush as EntityBrush
 import com.example.scorda.data.database.entities.Stroke as EntityStroke
 
 object InkConverters {
@@ -22,14 +21,6 @@ object InkConverters {
             colorLong = colorLong,
             size = thickness,
             epsilon = 0.1f // sets visual fidelity when zooming
-        )
-    }
-
-    fun toInkBrush(entityBrush: EntityBrush): InkBrush {
-        return toInkBrush(
-            colorInt = entityBrush.color,
-            thickness = entityBrush.thickness,
-            family = entityBrush.brushFamily
         )
     }
 

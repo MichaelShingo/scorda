@@ -15,13 +15,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Redo
 import androidx.compose.material.icons.automirrored.rounded.Undo
-import androidx.compose.material.icons.rounded.AutoFixNormal
-import androidx.compose.material.icons.rounded.Brush
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Highlight
-import androidx.compose.material.icons.rounded.HistoryEdu
 import androidx.compose.material.icons.rounded.Layers
-import androidx.compose.material.icons.rounded.LinearScale
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,14 +26,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.scorda.data.database.entities.BrushFamilyType
 import com.example.scorda.ui.components.organisms.navbar.AnchoredPopup
 import com.example.scorda.ui.components.organisms.navbar.CustomAnchoredPopupSize
 import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
 import com.example.scorda.ui.viewmodel.LocalScoreViewModel
+import com.example.scorda.ui.viewmodel.ToolType
 
 @Composable
 fun DrawingPanel(
@@ -55,34 +49,32 @@ fun DrawingPanel(
     ) {
         // Tools Button
         ToolsButton(
-            selectedTool = if (annotationUiState.isEraserMode) ToolType.ERASER else ToolType.fromBrushFamily(
-                annotationUiState.selectedBrush?.brushFamily
-            ),
+            selectedTool = if (annotationUiState.isEraserMode) ToolType.ERASER else annotationUiState.selectedTool,
             onToolSelect = { tool ->
-                if (tool == ToolType.ERASER) {
-                    if (!annotationUiState.isEraserMode) annotationViewModel.toggleEraserMode()
-                } else {
-                    annotationViewModel.selectTool(tool.brushFamily!!)
-                }
+                annotationViewModel.selectTool(tool)
             }
         )
 
         Spacer(modifier = Modifier.width(8.dp))
 
         // Color Button
-        ColorButton(
-            color = if (annotationUiState.isEraserMode) Color.Transparent else Color(
-                annotationUiState.selectedBrush?.color ?: Color.Black.toArgb()
-            ),
-            onClick = { /* TODO: Color Palette */ }
+        AnchoredPopup(
+            anchor = { onOpen, isExpanded ->
+                ColorButton(
+                    color = if (annotationUiState.isEraserMode) Color.Transparent else Color(annotationUiState.currentColor),
+                    onClick = onOpen
+                )
+            },
+            content = { _ ->
+                BrushSettingsPopup()
+            }
         )
 
         Spacer(modifier = Modifier.width(8.dp))
 
         // Undo
         IconButton(onClick = {
-            val currentPage =
-                scoreUiState.openTabs.getOrNull(scoreUiState.selectedTabIndex)?.lastOpenPage ?: 0
+            val currentPage = scoreUiState.openTabs.getOrNull(scoreUiState.selectedTabIndex)?.lastOpenPage ?: 0
             annotationViewModel.undoLastStroke(currentPage)
         }) {
             Icon(
@@ -125,30 +117,6 @@ fun DrawingPanel(
                 imageVector = Icons.Rounded.Check,
                 contentDescription = "Done"
             )
-        }
-    }
-}
-
-enum class ToolType(
-    val brushFamily: BrushFamilyType?,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val label: String
-) {
-    PEN(BrushFamilyType.PRESSURE_PEN, Icons.Rounded.Brush, "Pen"),
-    MARKER(BrushFamilyType.MARKER, Icons.Rounded.HistoryEdu, "Marker"),
-    HIGHLIGHTER(BrushFamilyType.HIGHLIGHTER, Icons.Rounded.Highlight, "Highlighter"),
-    DASHED(BrushFamilyType.DASHED_LINE, Icons.Rounded.LinearScale, "Dashed"),
-    ERASER(null, Icons.Rounded.AutoFixNormal, "Eraser");
-
-    companion object {
-        fun fromBrushFamily(family: BrushFamilyType?): ToolType {
-            return when (family) {
-                BrushFamilyType.PRESSURE_PEN -> PEN
-                BrushFamilyType.MARKER -> MARKER
-                BrushFamilyType.HIGHLIGHTER -> HIGHLIGHTER
-                BrushFamilyType.DASHED_LINE -> DASHED
-                else -> PEN
-            }
         }
     }
 }

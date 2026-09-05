@@ -50,4 +50,7 @@ Scorda.
 
 - Sometimes I will write comments to add additional explanation to code, please don't delete these.
   If anything is incorrect, you can suggest a fix.
+- Never write statements like this in the code:
+  com.example.scorda.data.database.entities.BrushFamilyType. These should be import statements, and
+  the code itself should only use BrushFamilyType. 
 

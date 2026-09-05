@@ -1,13 +1,16 @@
 package com.example.scorda.data
 
 import android.content.Context
+import android.graphics.Color
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.scorda.data.database.entities.BrushFamilyType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -34,6 +37,16 @@ class SettingsRepository(private val context: Context) {
     private val _openScores = stringPreferencesKey("open_scores")
     private val _eraserThickness = floatPreferencesKey("eraser_thickness")
     private val _isTabsVisible = booleanPreferencesKey("is_tabs_visible")
+
+    // Tool Settings
+    private val _penColor = intPreferencesKey("pen_color")
+    private val _penThickness = floatPreferencesKey("pen_thickness")
+    private val _markerColor = intPreferencesKey("marker_color")
+    private val _markerThickness = floatPreferencesKey("marker_thickness")
+    private val _highlighterColor = intPreferencesKey("highlighter_color")
+    private val _highlighterThickness = floatPreferencesKey("highlighter_thickness")
+    private val _dashedColor = intPreferencesKey("dashed_color")
+    private val _dashedThickness = floatPreferencesKey("dashed_thickness")
 
     val openScores: Flow<List<OpenScore>> = context.dataStore.data
         .catch { exception ->
@@ -100,6 +113,26 @@ class SettingsRepository(private val context: Context) {
             preferences[_eraserThickness] ?: 20f
         }
 
+    fun toolColor(family: BrushFamilyType): Flow<Int> = context.dataStore.data
+        .map { preferences ->
+            when (family) {
+                BrushFamilyType.PRESSURE_PEN -> preferences[_penColor] ?: Color.BLACK
+                BrushFamilyType.MARKER -> preferences[_markerColor] ?: Color.BLUE
+                BrushFamilyType.HIGHLIGHTER -> preferences[_highlighterColor] ?: Color.YELLOW
+                BrushFamilyType.DASHED_LINE -> preferences[_dashedColor] ?: Color.GRAY
+            }
+        }
+
+    fun toolThickness(family: BrushFamilyType): Flow<Float> = context.dataStore.data
+        .map { preferences ->
+            when (family) {
+                BrushFamilyType.PRESSURE_PEN -> preferences[_penThickness] ?: 5f
+                BrushFamilyType.MARKER -> preferences[_markerThickness] ?: 10f
+                BrushFamilyType.HIGHLIGHTER -> preferences[_highlighterThickness] ?: 20f
+                BrushFamilyType.DASHED_LINE -> preferences[_dashedThickness] ?: 5f
+            }
+        }
+
     val isTabsVisible: Flow<Boolean> = context.dataStore.data
         .catch { exception ->
             if (exception is IOException) {
@@ -150,6 +183,28 @@ class SettingsRepository(private val context: Context) {
     suspend fun saveEraserThickness(thickness: Float) {
         context.dataStore.edit { preferences ->
             preferences[_eraserThickness] = thickness
+        }
+    }
+
+    suspend fun saveToolColor(family: BrushFamilyType, color: Int) {
+        context.dataStore.edit { preferences ->
+            when (family) {
+                BrushFamilyType.PRESSURE_PEN -> preferences[_penColor] = color
+                BrushFamilyType.MARKER -> preferences[_markerColor] = color
+                BrushFamilyType.HIGHLIGHTER -> preferences[_highlighterColor] = color
+                BrushFamilyType.DASHED_LINE -> preferences[_dashedColor] = color
+            }
+        }
+    }
+
+    suspend fun saveToolThickness(family: BrushFamilyType, thickness: Float) {
+        context.dataStore.edit { preferences ->
+            when (family) {
+                BrushFamilyType.PRESSURE_PEN -> preferences[_penThickness] = thickness
+                BrushFamilyType.MARKER -> preferences[_markerThickness] = thickness
+                BrushFamilyType.HIGHLIGHTER -> preferences[_highlighterThickness] = thickness
+                BrushFamilyType.DASHED_LINE -> preferences[_dashedThickness] = thickness
+            }
         }
     }
 
