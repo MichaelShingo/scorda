@@ -104,7 +104,7 @@ fun BrushSettingsPopup() {
         )
 
         if (!isEraser) {
-            // Transparency
+        // Transparency
             val alpha = color.alpha
             Text(
                 "Transparency: ${(alpha * 100).toInt()}%",

@@ -3,7 +3,8 @@ package com.example.scorda.ui.components.organisms.scoreView
 import android.graphics.Matrix
 import android.os.SystemClock
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -84,7 +85,13 @@ fun DrawingCanvas(
     Canvas(
         modifier = modifier
             .fillMaxSize()
-            .pointerInput(isDrawingMode, activeLayerId, selectedTool, currentColor, currentThickness) {
+            .pointerInput(
+                isDrawingMode,
+                activeLayerId,
+                selectedTool,
+                currentColor,
+                currentThickness
+            ) {
                 if (!isDrawingMode || activeLayerId == null) return@pointerInput
 
                 fun eraseAt(offset: Offset) {
@@ -112,86 +119,101 @@ fun DrawingCanvas(
                     }
                 }
 
-                detectDragGestures(
-                    onDragStart = { offset ->
-                        val pdfPoint = pageTransform.screenToPdf(offset)
-                        if (pdfPoint != null) {
-                            currentInputBatch.clear()
-                            addPointSafely(
-                                batch = currentInputBatch,
-                                x = pdfPoint.x,
-                                y = pdfPoint.y,
-                                elapsedTimeMillis = SystemClock.uptimeMillis()
-                            )
-                            drawTrigger++
-                        }
-                        if (isEraserMode) {
-                            eraseAt(offset)
-                        }
-                    },
-                    onDrag = { change, _ ->
-                        // Historical points are captured for high-frequency areas like quick drags and sharp turns
-                        // Must be captured before change.position, otherwise we will miss points
-                        change.historical.forEach { historical ->
-                            val histPdfPoint = pageTransform.screenToPdf(historical.position)
-                            if (histPdfPoint != null) {
-                                addPointSafely(
-                                    batch = currentInputBatch,
-                                    x = histPdfPoint.x,
-                                    y = histPdfPoint.y,
-                                    elapsedTimeMillis = historical.uptimeMillis,
-                                    pressure = change.pressure
-                                )
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    val firstPdfPoint = pageTransform.screenToPdf(down.position)
+                    if (firstPdfPoint != null) {
+                        currentInputBatch.clear()
+                        addPointSafely(
+                            batch = currentInputBatch,
+                            x = firstPdfPoint.x,
+                            y = firstPdfPoint.y,
+                            elapsedTimeMillis = SystemClock.uptimeMillis(),
+                            pressure = down.pressure
+                        )
+                        drawTrigger++
+                        if (isEraserMode) eraseAt(down.position)
+                    }
+
+                    do {
+                        val event = awaitPointerEvent()
+                        event.changes.forEach { change ->
+                            if (change.pressed) {
+                                // Historical points are captured for high-frequency areas like quick drags and sharp turns
+                                // Must be captured before change.position, otherwise we will miss points
+                                change.historical.forEach { historical ->
+                                    val histPdfPoint =
+                                        pageTransform.screenToPdf(historical.position)
+                                    if (histPdfPoint != null) {
+                                        addPointSafely(
+                                            batch = currentInputBatch,
+                                            x = histPdfPoint.x,
+                                            y = histPdfPoint.y,
+                                            elapsedTimeMillis = historical.uptimeMillis,
+                                            pressure = change.pressure
+                                        )
+                                    }
+                                }
+                                val movePdfPoint = pageTransform.screenToPdf(change.position)
+                                if (movePdfPoint != null) {
+                                    addPointSafely(
+                                        batch = currentInputBatch,
+                                        x = movePdfPoint.x,
+                                        y = movePdfPoint.y,
+                                        elapsedTimeMillis = change.uptimeMillis,
+                                        pressure = change.pressure
+                                    )
+                                    drawTrigger++
+                                    if (isEraserMode) eraseAt(change.position)
+                                }
+                                change.consume()
                             }
                         }
+                    } while (event.changes.any { it.pressed })
 
-                        val pdfPoint = pageTransform.screenToPdf(change.position)
-                        if (pdfPoint != null) {
+                    // Finalize stroke
+                    if (!isEraserMode && currentInputBatch.size > 0 && selectedBrushFamily != null) {
+                        // Handle tap: if only 1 point, add a tiny offset point to form a dot
+                        if (currentInputBatch.size == 1) {
+                            val p = currentInputBatch[0]
                             addPointSafely(
                                 batch = currentInputBatch,
-                                x = pdfPoint.x,
-                                y = pdfPoint.y,
-                                elapsedTimeMillis = change.uptimeMillis,
-                                pressure = change.pressure
-                            )
-                            drawTrigger++
-                        }
-                        if (isEraserMode) {
-                            eraseAt(change.position)
-                        }
-                    },
-                    onDragEnd = {
-                        if (!isEraserMode && currentInputBatch.size > 0 && selectedBrushFamily != null) {
-                            val scoreId = annotationUiState.layers.firstOrNull()?.scoreId
-                                ?: return@detectDragGestures
-
-                            // Optimistically cache finished stroke until DB updates
-                            val activeBrush = InkConverters.toInkBrush(currentColor, currentThickness, selectedBrushFamily)
-                            val finishedInkStroke =
-                                InkStroke(brush = activeBrush, inputs = currentInputBatch)
-                            pendingStrokes.add(finishedInkStroke)
-
-                            val encodedInputs = InkConverters.encodeStrokeInputs(currentInputBatch)
-                            annotationViewModel.addStroke(
-                                Stroke(
-                                    scoreId = scoreId,
-                                    layerId = activeLayerId,
-                                    pageIndex = pageIndex,
-                                    inputs = encodedInputs,
-                                    color = currentColor,
-                                    thickness = currentThickness,
-                                    brushFamily = selectedBrushFamily
-                                )
+                                x = p.x + 0.1f,
+                                y = p.y + 0.1f,
+                                elapsedTimeMillis = p.elapsedTimeMillis + 1L,
+                                pressure = p.pressure
                             )
                         }
-                        currentInputBatch.clear()
-                        drawTrigger++
-                    },
-                    onDragCancel = {
-                        currentInputBatch.clear()
-                        drawTrigger++
+
+                        val scoreId = annotationUiState.layers.firstOrNull()?.scoreId
+                            ?: return@awaitEachGesture
+
+                        // Optimistically cache finished stroke until DB updates
+                        val activeBrush = InkConverters.toInkBrush(
+                            currentColor,
+                            currentThickness,
+                            selectedBrushFamily
+                        )
+                        val finishedInkStroke =
+                            InkStroke(brush = activeBrush, inputs = currentInputBatch)
+                        pendingStrokes.add(finishedInkStroke)
+
+                        val encodedInputs = InkConverters.encodeStrokeInputs(currentInputBatch)
+                        annotationViewModel.addStroke(
+                            Stroke(
+                                scoreId = scoreId,
+                                layerId = activeLayerId,
+                                pageIndex = pageIndex,
+                                inputs = encodedInputs,
+                                color = currentColor,
+                                thickness = currentThickness,
+                                brushFamily = selectedBrushFamily
+                            )
+                        )
                     }
-                )
+                    currentInputBatch.clear()
+                    drawTrigger++
+                }
             }
     ) {
         // Canvas will only re-execute if a State is read inside its lambda body
@@ -222,7 +244,11 @@ fun DrawingCanvas(
 
                 // 3. Draw active in-progress (wet) stroke in real time
                 if (!isEraserMode && currentInputBatch.size > 0 && selectedBrushFamily != null) {
-                    val activeBrush = InkConverters.toInkBrush(currentColor, currentThickness, selectedBrushFamily)
+                    val activeBrush = InkConverters.toInkBrush(
+                        currentColor,
+                        currentThickness,
+                        selectedBrushFamily
+                    )
                     val inProgressStroke =
                         InkStroke(brush = activeBrush, inputs = currentInputBatch)
                     canvasStrokeRenderer.draw(
