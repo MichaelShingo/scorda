@@ -97,9 +97,12 @@ fun DrawingCanvas(
                 fun eraseAt(offset: Offset) {
                     val pdfPoint = pageTransform.screenToPdf(offset) ?: return
                     val eraserRadiusPdf = eraserRadiusPx / pageTransform.zoom
-                    val thresholdSq = eraserRadiusPdf * eraserRadiusPdf
+                    val gracePaddingPdf = with(density) { 2.dp.toPx() } / pageTransform.zoom
 
                     val strokesToDelete = inkStrokes.filter { (_, inkStroke) ->
+                        val strokeRadiusPdf = inkStroke.brush.size / 2f
+                        val thresholdSq = (eraserRadiusPdf + strokeRadiusPdf + gracePaddingPdf).let { it * it }
+
                         val inputs = inkStroke.inputs
                         var isIntersected = false
                         for (i in 0 until inputs.size) {
