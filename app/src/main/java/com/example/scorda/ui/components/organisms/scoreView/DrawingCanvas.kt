@@ -11,10 +11,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
@@ -82,6 +84,9 @@ fun DrawingCanvas(
         remember { MutableStrokeInputBatch() } // mutates in place as user drags, does not trigger recomposition
     var drawTrigger by remember { mutableLongStateOf(0L) } // incrementing this value triggers recomposition to show "wet" stroke in real-time
 
+    // Current pointer position for visual feedback (e.g. eraser circle)
+    var currentPointerPosition by remember { mutableStateOf<Offset?>(null) }
+
     Canvas(
         modifier = modifier
             .fillMaxSize()
@@ -124,6 +129,7 @@ fun DrawingCanvas(
 
                 awaitEachGesture {
                     val down = awaitFirstDown()
+                    currentPointerPosition = down.position
                     val firstPdfPoint = pageTransform.screenToPdf(down.position)
                     if (firstPdfPoint != null) {
                         currentInputBatch.clear()
@@ -142,6 +148,7 @@ fun DrawingCanvas(
                         val event = awaitPointerEvent()
                         event.changes.forEach { change ->
                             if (change.pressed) {
+                                currentPointerPosition = change.position
                                 // Historical points are captured for high-frequency areas like quick drags and sharp turns
                                 // Must be captured before change.position, otherwise we will miss points
                                 change.historical.forEach { historical ->
@@ -173,6 +180,8 @@ fun DrawingCanvas(
                             }
                         }
                     } while (event.changes.any { it.pressed })
+
+                    currentPointerPosition = null
 
                     // Finalize stroke
                     if (!isEraserMode && currentInputBatch.size > 0 && selectedBrushFamily != null) {
@@ -261,6 +270,21 @@ fun DrawingCanvas(
                     )
                 }
             }
+        }
+
+        // 4. Draw eraser visual indicator (in screen coordinates)
+        if (isEraserMode && currentPointerPosition != null) {
+            drawCircle(
+                center = currentPointerPosition!!,
+                radius = eraserRadiusPx,
+                color = Color.LightGray.copy(alpha = 0.4f)
+            )
+            drawCircle(
+                center = currentPointerPosition!!,
+                radius = eraserRadiusPx,
+                color = Color.DarkGray,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+            )
         }
     }
 }

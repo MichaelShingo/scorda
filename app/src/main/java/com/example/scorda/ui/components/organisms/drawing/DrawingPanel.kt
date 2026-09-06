@@ -63,7 +63,6 @@ fun DrawingPanel(
                 val isEraser = annotationUiState.selectedTool == ToolType.ERASER
                 ColorButton(
                     color = if (isEraser) Color.Transparent else Color(annotationUiState.currentColor),
-                    enabled = !isEraser,
                     onClick = onOpen
                 )
             },
@@ -76,7 +75,8 @@ fun DrawingPanel(
 
         // Undo
         IconButton(onClick = {
-            val currentPage = scoreUiState.openTabs.getOrNull(scoreUiState.selectedTabIndex)?.lastOpenPage ?: 0
+            val currentPage =
+                scoreUiState.openTabs.getOrNull(scoreUiState.selectedTabIndex)?.lastOpenPage ?: 0
             annotationViewModel.undoLastStroke(currentPage)
         }) {
             Icon(
