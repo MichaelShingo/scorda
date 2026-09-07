@@ -47,6 +47,38 @@ class SettingsRepository(private val context: Context) {
     private val _highlighterThickness = floatPreferencesKey("highlighter_thickness")
     private val _dashedColor = intPreferencesKey("dashed_color")
     private val _dashedThickness = floatPreferencesKey("dashed_thickness")
+    private val _colorPresets = stringPreferencesKey("color_presets")
+
+    private val defaultColorPresets = listOf(
+        0xFF2C3E50.toInt(), // Charcoal
+        0xFF7F8C8D.toInt(), // Slate
+        0xFFE74C3C.toInt(), // Muted Red
+        0xFFEC407A.toInt(), // Soft Pink
+        0xFFF39C12.toInt(), // Amber
+        0xFF27AE60.toInt(), // Emerald
+        0xFF3498DB.toInt()  // Sky Blue
+    )
+
+    val colorPresets: Flow<List<Int>> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            val json = preferences[_colorPresets] ?: ""
+            if (json.isEmpty()) {
+                defaultColorPresets
+            } else {
+                try {
+                    Json.decodeFromString<List<Int>>(json)
+                } catch (_: Exception) {
+                    defaultColorPresets
+                }
+            }
+        }
 
     val openScores: Flow<List<OpenScore>> = context.dataStore.data
         .catch { exception ->
@@ -211,6 +243,42 @@ class SettingsRepository(private val context: Context) {
     suspend fun saveTabsVisible(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[_isTabsVisible] = enabled
+        }
+    }
+
+    suspend fun saveColorPreset(color: Int) {
+        context.dataStore.edit { preferences ->
+            val json = preferences[_colorPresets] ?: ""
+            val currentPresets = if (json.isEmpty()) {
+                defaultColorPresets
+            } else {
+                try {
+                    Json.decodeFromString<List<Int>>(json)
+                } catch (_: Exception) {
+                    defaultColorPresets
+                }
+            }
+            if (!currentPresets.contains(color)) {
+                val updatedPresets = currentPresets + color
+                preferences[_colorPresets] = Json.encodeToString(updatedPresets)
+            }
+        }
+    }
+
+    suspend fun deleteColorPreset(color: Int) {
+        context.dataStore.edit { preferences ->
+            val json = preferences[_colorPresets] ?: ""
+            val currentPresets = if (json.isEmpty()) {
+                defaultColorPresets
+            } else {
+                try {
+                    Json.decodeFromString<List<Int>>(json)
+                } catch (_: Exception) {
+                    defaultColorPresets
+                }
+            }
+            val updatedPresets = currentPresets.filter { it != color }
+            preferences[_colorPresets] = Json.encodeToString(updatedPresets)
         }
     }
 }

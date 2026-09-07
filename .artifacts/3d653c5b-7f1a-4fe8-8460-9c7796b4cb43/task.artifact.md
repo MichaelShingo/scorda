@@ -1,8 +1,7 @@
-# Tasks: Implement Color Preset System
+# Tasks: Color Preset System & Dynamic Popup Height
 
-- [ ] Add color preset logic to `SettingsRepository.kt`
-- [ ] Update `AnnotationViewModel.kt` to expose presets and management methods
-- [ ] Implement `ColorPresetRow` in `BrushSettingsPopup.kt`
-- [ ] Add "Add Preset" logic to `BrushSettingsPopup.kt`
-- [ ] Add "Delete Preset" long-press menu to `BrushSettingsPopup.kt`
-- [ ] Verify build and functionality
+- [x] Modify `CustomAnchoredPopup.kt` for dynamic height
+- [x] Implement color preset logic in `SettingsRepository.kt`
+- [x] Update `AnnotationViewModel.kt` to manage presets
+- [x] Implement `ColorPresetRow` and logic in `BrushSettingsPopup.kt`
+- [x] Verify build and functionality

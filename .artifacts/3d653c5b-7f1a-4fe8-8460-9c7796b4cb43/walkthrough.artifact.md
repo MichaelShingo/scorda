@@ -1,19 +1,31 @@
-# Walkthrough: Implementation of skydoves/colorpicker-compose
+# Walkthrough: Implementation of Color Preset System & Dynamic Popup Height
 
-I have successfully replaced the custom color picker with the `skydoves/colorpicker-compose` library in the brush settings.
+I have successfully implemented a persistent color preset system and enhanced the `AnchoredPopup` to dynamically scale its height.
 
 ## Changes
 
-### Build Configuration
-- Added `skydoves-colorpicker` dependency to `libs.versions.toml` and `build.gradle.kts`.
-- Set version to `1.1.2` to ensure compatibility with the project's Kotlin version (`2.2.10`).
+### UI Components (Shared)
+- **[CustomAnchoredPopup.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/navbar/CustomAnchoredPopup.kt)**:
+    - Added logic to calculate available vertical space from the popup's top position to the bottom of the screen.
+    - The popup now expands to fit its content up to that bottom edge, improving usability on tablets and in landscape mode.
 
-### UI Components
+### Data Layer
+- **[SettingsRepository.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/data/SettingsRepository.kt)**:
+    - Added persistent storage for color presets using DataStore.
+    - Seeded the app with a modern color palette: Charcoal, Slate, Muted Red, Soft Pink, Amber, Emerald, and Sky Blue.
+    - Implemented methods to add and delete presets.
+
+### ViewModel Layer
+- **[AnnotationViewModel.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/viewmodel/AnnotationViewModel.kt)**:
+    - Integrated `colorPresets` into the `uiState`.
+    - Added methods to manage presets via the repository.
+
+### UI Layer (Brush Settings)
 - **[BrushSettingsPopup.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/drawing/BrushSettingsPopup.kt)**:
-    - Integrated `HsvColorPicker` for intuitive color selection.
-    - Added `AlphaSlider` and `BrightnessSlider` for fine-tuning.
-    - Connected the picker to `LocalAnnotationViewModel` to update tool colors in real-time.
-    - Maintained current thickness controls.
+    - Added a scrollable `LazyRow` to display color presets as circular buttons.
+    - Clicking a preset immediately sets the tool color and updates the HSV wheel.
+    - Long-pressing a preset opens a "Delete" menu.
+    - Added a "+" button to save the current selection from the HSV wheel as a new preset.
 
 ## Verification Results
 
@@ -21,6 +33,5 @@ I have successfully replaced the custom color picker with the `skydoves/colorpic
 - Build successful: `gradlew :app:assembleDebug` completed without errors.
 
 ### Manual Verification
-- The popup now displays a full HSV color wheel instead of a small grid of presets.
-- Alpha and brightness can be adjusted independently.
-- The color state correctly syncs with the drawing tools.
+- **Dynamic Height**: The popup expands to the bottom of the screen and becomes scrollable if content exceeds the space.
+- **Presets**: Modern default colors are visible. New colors can be added from the wheel, and existing ones can be deleted via long-press.

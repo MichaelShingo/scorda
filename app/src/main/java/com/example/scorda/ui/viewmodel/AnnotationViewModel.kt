@@ -67,7 +67,8 @@ data class AnnotationUiState(
     val isLayersPanelOpen: Boolean = false,
     val activeLayerId: Long? = null,
     val layers: List<AnnotationLayer> = emptyList(),
-    val strokesByPage: Map<Int, List<Stroke>> = emptyMap()
+    val strokesByPage: Map<Int, List<Stroke>> = emptyMap(),
+    val colorPresets: List<Int> = emptyList()
 ) {
     val currentColor: Int
         get() = toolColors[selectedTool] ?: Color.Black.toArgb()
@@ -143,7 +144,8 @@ class AnnotationViewModel(
             } else {
                 flowOf(emptyList())
             }
-        }
+        },
+        settingsRepository.colorPresets
     ) { arr ->
         val strokes = arr[9] as List<Stroke>
         AnnotationUiState(
@@ -155,7 +157,8 @@ class AnnotationViewModel(
             isLayersPanelOpen = arr[5] as Boolean,
             activeLayerId = arr[6] as Long?,
             layers = arr[8] as List<AnnotationLayer>,
-            strokesByPage = strokes.groupBy { it.pageIndex }
+            strokesByPage = strokes.groupBy { it.pageIndex },
+            colorPresets = arr[10] as List<Int>
         )
     }.stateIn(
         scope = viewModelScope,
@@ -254,6 +257,18 @@ class AnnotationViewModel(
     fun updateEraserThickness(thickness: Float) {
         viewModelScope.launch {
             settingsRepository.saveEraserThickness(thickness)
+        }
+    }
+
+    fun addColorPreset(color: Int) {
+        viewModelScope.launch {
+            settingsRepository.saveColorPreset(color)
+        }
+    }
+
+    fun deleteColorPreset(color: Int) {
+        viewModelScope.launch {
+            settingsRepository.deleteColorPreset(color)
         }
     }
 

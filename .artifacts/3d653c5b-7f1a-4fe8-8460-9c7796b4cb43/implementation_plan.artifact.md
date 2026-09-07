@@ -1,50 +1,49 @@
-# Color Preset System
+# Color Preset System & Dynamic Popup Height
 
-Implement a persistent color preset system using `SettingsRepository` and `AnnotationViewModel`, featuring a scrollable row of modern color choices with the ability to add and delete presets.
+Implement a persistent color preset system and enhance `AnchoredPopup` to dynamically calculate its maximum height based on available screen space.
 
 ## Proposed Changes
+
+### UI Components (Shared)
+
+#### [MODIFY] [CustomAnchoredPopup.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/navbar/CustomAnchoredPopup.kt)
+- Introduce a `dynamicMaxHeight` state variable using `remember { mutableStateOf(500.dp) }`.
+- Update `PopupPositionProvider.calculatePosition` to calculate the distance from the popup's top position (`y`) to the bottom of the window.
+- Update `dynamicMaxHeight` inside `calculatePosition` using the calculated available space (minus some padding).
+- Apply `dynamicMaxHeight` to the `Surface`'s `heightIn(max = ...)` modifier instead of the static `size.maxHeight`.
 
 ### Data Layer
 
 #### [MODIFY] [SettingsRepository.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/data/SettingsRepository.kt)
 - Add `_colorPresets` as a `stringPreferencesKey`.
-- Define a list of default modern hex colors:
-    - Charcoal: `#2C3E50`
-    - Slate: `#7F8C8D`
-    - Muted Red: `#E74C3C`
-    - Soft Pink: `#EC407A`
-    - Amber: `#F39C12`
-    - Emerald: `#27AE60`
-    - Sky Blue: `#3498DB`
-- Add `colorPresets: Flow<List<Int>>` which parses the stored JSON/String or returns defaults.
-- Add `saveColorPreset(color: Int)` and `deleteColorPreset(color: Int)` methods.
+- Define default modern hex colors (e.g., Charcoal, Slate, Muted Red, Soft Pink, Amber, Emerald, Sky Blue).
+- Add `colorPresets: Flow<List<Int>>` for parsing stored presets.
+- Add `saveColorPreset(color: Int)` and `deleteColorPreset(color: Int)`.
 
 ### ViewModel Layer
 
 #### [MODIFY] [AnnotationViewModel.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/viewmodel/AnnotationViewModel.kt)
-- Expose `colorPresets` from the repository in the `uiState`.
-- Add `addColorPreset(color: Int)` and `deleteColorPreset(color: Int)` wrapper methods.
+- Expose `colorPresets` in `uiState`.
+- Add methods `addColorPreset(color: Int)` and `deleteColorPreset(color: Int)`.
 
-### UI Layer
+### UI Layer (Brush Settings)
 
 #### [MODIFY] [BrushSettingsPopup.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/drawing/BrushSettingsPopup.kt)
-- Add a `ColorPresetRow` component:
-    - Uses `LazyRow` for horizontal scrolling.
-    - Displays each preset as a circular button (reusing/adapting `ColorButton`).
-    - Clicking a preset updates the current tool color and the `ColorPickerController`.
-    - Long-pressing a preset opens a `DropdownMenu` with a "Delete" option.
-    - Add a "+" button at the end of the row that adds the current color from `controller.selectedColor.value` to the presets.
-- Position the `ColorPresetRow` between the thickness controls and the main color picker.
+- Implement `ColorPresetRow`:
+    - `LazyRow` of circular color buttons.
+    - Long-press to show a delete menu.
+    - "+" button to save the current selection from the HSV wheel.
+- Position the row between thickness controls and the HSV picker.
 
 ## Verification Plan
 
 ### Automated Tests
-- Build the project to ensure no regressions.
+- Build successful: `gradlew :app:assembleDebug`.
 
 ### Manual Verification
-- Open the Brush Settings popup.
-- Verify the initial set of modern color presets is visible.
-- Select a color from the wheel and click the "+" button. Verify it appears in the preset row.
-- Long-press a preset and select "Delete". Verify it is removed.
-- Click a preset and verify the current tool color and color wheel update to match.
-- Restart the app and verify presets are persisted.
+- **Dynamic Height**: Rotate the device or open the popup and verify it uses the full height down to the screen edge without being cut off or having unnecessary scroll space if content is short.
+- **Color Presets**:
+    - Verify defaults are seeded.
+    - Add a custom color from the wheel.
+    - Long-press and delete a color.
+    - Click a preset and ensure the wheel and tool update.
