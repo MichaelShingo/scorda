@@ -2,7 +2,6 @@ package com.example.scorda.ui.components.organisms.drawing
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,15 +12,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +34,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
 import com.example.scorda.ui.viewmodel.ToolType
+import com.github.skydoves.colorpicker.compose.AlphaSlider
+import com.github.skydoves.colorpicker.compose.BrightnessSlider
+import com.github.skydoves.colorpicker.compose.HsvColorPicker
+import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 
 @Composable
 fun BrushSettingsPopup() {
@@ -43,13 +45,16 @@ fun BrushSettingsPopup() {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val tool = uiState.selectedTool
     val isEraser = tool == ToolType.ERASER
-    val color = Color(uiState.currentColor)
     val thickness = uiState.currentThickness
 
-    val colors = listOf(
-        Color.Black, Color.DarkGray, Color.Gray, Color.LightGray, Color.White,
-        Color.Red, Color.Magenta, Color.Yellow, Color.Green, Color.Cyan, Color.Blue
-    )
+    val controller = rememberColorPickerController()
+
+    LaunchedEffect(uiState.currentColor) {
+        val currentColor = Color(uiState.currentColor)
+        if (controller.selectedColor.value != currentColor) {
+            controller.selectByColor(currentColor, fromUser = false)
+        }
+    }
 
     val thicknessPresets = listOf(2f, 5f, 10f, 20f, 40f)
 
@@ -57,15 +62,15 @@ fun BrushSettingsPopup() {
         modifier = Modifier
             .padding(16.dp)
             .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
     ) {
         Text(
             text = "${tool.label} Settings",
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Thickness
         Text("Thickness: ${thickness.toInt()}", style = MaterialTheme.typography.bodySmall)
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -80,14 +85,13 @@ fun BrushSettingsPopup() {
                     thickness = preset,
                     isSelected = thickness.toInt() == preset.toInt(),
                     color = MaterialTheme.colorScheme.onSurface,
-                    onClick = {
-                        if (isEraser) {
-                            viewModel.updateEraserThickness(preset)
-                        } else {
-                            viewModel.updateToolThickness(tool, preset)
-                        }
+                ) {
+                    if (isEraser) {
+                        viewModel.updateEraserThickness(preset)
+                    } else {
+                        viewModel.updateToolThickness(tool, preset)
                     }
-                )
+                }
             }
         }
 
@@ -104,53 +108,46 @@ fun BrushSettingsPopup() {
         )
 
         if (!isEraser) {
-        // Transparency
-            val alpha = color.alpha
-            Text(
-                "Transparency: ${(alpha * 100).toInt()}%",
-                style = MaterialTheme.typography.bodySmall
-            )
-            Slider(
-                value = alpha,
-                onValueChange = {
-                    val newColor = color.copy(alpha = it)
-                    viewModel.updateToolColor(tool, newColor.toArgb())
-                },
-                valueRange = 0f..1f
-            )
-
             Spacer(modifier = Modifier.height(8.dp))
             HorizontalDivider()
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Color Grid
             Text("Color", style = MaterialTheme.typography.bodySmall)
             Spacer(modifier = Modifier.height(8.dp))
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(5),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.height(100.dp)
-            ) {
-                items(colors) { presetColor ->
-                    val isSelected = color.copy(alpha = 1f) == presetColor
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(presetColor)
-                            .border(
-                                width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.LightGray,
-                                shape = CircleShape
-                            )
-                            .clickable {
-                                val newColor = presetColor.copy(alpha = color.alpha)
-                                viewModel.updateToolColor(tool, newColor.toArgb())
-                            }
-                    )
+
+            HsvColorPicker(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp),
+                controller = controller,
+                onColorChanged = { colorEnvelope ->
+                    if (colorEnvelope.fromUser) {
+                        viewModel.updateToolColor(tool, colorEnvelope.color.toArgb())
+                    }
                 }
-            }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Alpha", style = MaterialTheme.typography.bodySmall)
+            AlphaSlider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(35.dp),
+                controller = controller,
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Brightness", style = MaterialTheme.typography.bodySmall)
+            BrightnessSlider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(35.dp),
+                controller = controller,
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -174,7 +171,7 @@ fun ThicknessPresetButton(
         Canvas(modifier = Modifier.size(32.dp)) {
             // Compress large thickness values for display to prevent "blobs"
             val displayThickness = if (thickness > 10f) {
-                10f + (thickness - 10f) * 0.2f
+                10f + ((thickness - 10f) * 0.2f)
             } else {
                 thickness
             }

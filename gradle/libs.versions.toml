@@ -22,6 +22,7 @@ reorderable = "3.1.0"
 lifecycle = "2.11.0"
 telephoto = "0.19.0"
 androidx-ink = "1.0.0"
+colorpicker-compose = "1.1.2"
 
 
 [libraries]
@@ -67,6 +68,7 @@ androidx-ink-rendering = { group = "androidx.ink", name = "ink-rendering", versi
 androidx-ink-authoring-compose = { group = "androidx.ink", name = "ink-authoring-compose", version.ref = "androidx-ink" }
 androidx-ink-storage = { group = "androidx.ink", name = "ink-storage", version.ref = "androidx-ink" }
 androidx-ink-nativeloader = { group = "androidx.ink", name = "ink-nativeloader", version.ref = "androidx-ink" }
+skydoves-colorpicker = { group = "com.github.skydoves", name = "colorpicker-compose", version.ref = "colorpicker-compose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

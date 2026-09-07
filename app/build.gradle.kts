@@ -110,4 +110,6 @@ dependencies {
     implementation(libs.androidx.ink.storage)
     implementation(libs.androidx.ink.nativeloader)
 
+    implementation(libs.skydoves.colorpicker)
+
 }
