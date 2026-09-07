@@ -71,6 +71,7 @@ sealed interface CustomAnchoredPopupSize {
 fun AnchoredPopup(
     modifier: Modifier = Modifier,
     size: CustomAnchoredPopupSize = CustomAnchoredPopupSize.Medium,
+    fitToScreenBottom: Boolean = false,
     anchor: @Composable (onOpen: () -> Unit, isExpanded: Boolean) -> Unit,
     content: @Composable (onDismiss: () -> Unit) -> Unit,
 ) {
@@ -98,9 +99,13 @@ fun AnchoredPopup(
                 val x = idealX.coerceIn(0, windowSize.width - popupContentSize.width)
                 val y = anchorBounds.top + with(density) { 56.dp.roundToPx() }
 
-                // Calculate available height from popup top to screen bottom (minus some padding)
-                val availableHeightPx = windowSize.height - y - with(density) { 16.dp.roundToPx() }
-                dynamicMaxHeight = with(density) { availableHeightPx.toDp() }
+                if (fitToScreenBottom) {
+                    // Calculate available height from popup top to screen bottom (minus some padding)
+                    val availableHeightPx = windowSize.height - y - with(density) { 16.dp.roundToPx() }
+                    dynamicMaxHeight = with(density) { availableHeightPx.toDp() }
+                } else {
+                    dynamicMaxHeight = size.maxHeight
+                }
 
                 val anchorCenterX = anchorBounds.left + anchorBounds.width / 2
                 val minCaretX = with(density) { (caretWidth / 2 + 12.dp).roundToPx() }

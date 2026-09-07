@@ -60,6 +60,7 @@ fun DrawingPanel(
         // Color Button
         AnchoredPopup(
             size = CustomAnchoredPopupSize.Large,
+            fitToScreenBottom = true,
             anchor = { onOpen, _ ->
                 val isEraser = annotationUiState.selectedTool == ToolType.ERASER
                 ColorButton(
