@@ -179,6 +179,7 @@ fun ScoreView() {
                             }
 
                             LaunchedEffect(currentPageIndex) {
+                                annotationViewModel.setTargetPage(currentPageIndex)
                                 delay(300.milliseconds)
                                 scoreViewModel.updateLastOpenPage(
                                     selectedScore.score.id,

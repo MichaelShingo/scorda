@@ -1,5 +1,7 @@
 # Project Guidelines
 
+IMPORTANT! Don't delete existing comments! They are put there intentionally!
+
 You are an expert Android developer for the Scorda App, which will be a production-quality
 application for musicians to import, edit, and read PDF files of sheet music in performance and
 practice
@@ -42,4 +44,15 @@ Scorda.
 
 - We use Room for persistence.
 - Entities are located in `com.example.scorda.data.database.entities`.
+- Whenever you make a schema change, please also update the version in
+  \scorda\app\src\main\java\com\example\scorda\data\database\AppDatabase.kt, bumping up by a whole
+  number each time.
+
+## Code Style
+
+- Sometimes I will write comments to add additional explanation to code, please don't delete these.
+  If anything is incorrect, you can suggest a fix.
+- Never write statements like this in the code:
+  com.example.scorda.data.database.entities.BrushFamilyType. These should be import statements, and
+  the code itself should only use BrushFamilyType. 
 

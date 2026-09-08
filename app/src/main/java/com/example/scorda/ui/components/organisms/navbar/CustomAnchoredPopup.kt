@@ -46,6 +46,11 @@ sealed interface CustomAnchoredPopupSize {
         override val maxHeight = 280.dp
     }
 
+    data object Thin : CustomAnchoredPopupSize {
+        override val width = 56.dp
+        override val maxHeight = 300.dp
+    }
+
     data object Medium : CustomAnchoredPopupSize {
         override val width = 300.dp
         override val maxHeight = 400.dp
@@ -66,6 +71,7 @@ sealed interface CustomAnchoredPopupSize {
 fun AnchoredPopup(
     modifier: Modifier = Modifier,
     size: CustomAnchoredPopupSize = CustomAnchoredPopupSize.Medium,
+    fitToScreenBottom: Boolean = false,
     anchor: @Composable (onOpen: () -> Unit, isExpanded: Boolean) -> Unit,
     content: @Composable (onDismiss: () -> Unit) -> Unit,
 ) {
@@ -78,6 +84,7 @@ fun AnchoredPopup(
 
     val density = LocalDensity.current
     var caretXOffset by remember { mutableStateOf(size.width / 2) }
+    var dynamicMaxHeight by remember { mutableStateOf(size.maxHeight) }
     val caretWidth = 16.dp
 
     val popupPositionProvider = remember(density, size.width) {
@@ -91,6 +98,15 @@ fun AnchoredPopup(
                 val idealX = anchorBounds.left + (anchorBounds.width - popupContentSize.width) / 2
                 val x = idealX.coerceIn(0, windowSize.width - popupContentSize.width)
                 val y = anchorBounds.top + with(density) { 56.dp.roundToPx() }
+
+                if (fitToScreenBottom) {
+                    // Calculate available height from popup top to screen bottom (minus some padding)
+                    val availableHeightPx = windowSize.height - y - with(density) { 16.dp.roundToPx() }
+                    dynamicMaxHeight = with(density) { availableHeightPx.toDp() }
+                } else {
+                    dynamicMaxHeight = size.maxHeight
+                }
+
                 val anchorCenterX = anchorBounds.left + anchorBounds.width / 2
                 val minCaretX = with(density) { (caretWidth / 2 + 12.dp).roundToPx() }
                 val maxCaretX = with(density) { (size.width - caretWidth / 2 - 12.dp).roundToPx() }
@@ -144,7 +160,7 @@ fun AnchoredPopup(
                         Surface(
                             modifier = Modifier
                                 .width(size.width)
-                                .heightIn(min = size.width, max = size.maxHeight),
+                                .heightIn(min = size.width, max = dynamicMaxHeight),
                             shape = MaterialTheme.shapes.extraLarge,
                             tonalElevation = 6.dp,
                             shadowElevation = 12.dp,

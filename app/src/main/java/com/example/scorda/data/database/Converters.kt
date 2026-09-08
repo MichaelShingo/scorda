@@ -1,11 +1,9 @@
 package com.example.scorda.data.database
 
 import androidx.room.TypeConverter
-import com.example.scorda.data.database.entities.AnnotationPoint
+import com.example.scorda.data.database.entities.BrushFamilyType
 import com.example.scorda.data.database.entities.KeySignature
 import com.example.scorda.data.database.entities.LayerType
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 class Converters {
     @TypeConverter
@@ -23,12 +21,8 @@ class Converters {
     fun toLayerType(value: String): LayerType = enumValueOf<LayerType>(value)
 
     @TypeConverter
-    fun fromPoints(value: List<AnnotationPoint>): String {
-        return Json.encodeToString(value)
-    }
+    fun fromBrushFamilyType(value: BrushFamilyType): String = value.name
 
     @TypeConverter
-    fun toPoints(value: String): List<AnnotationPoint> {
-        return Json.decodeFromString(value)
-    }
+    fun toBrushFamilyType(value: String): BrushFamilyType = BrushFamilyType.fromString(value)
 }

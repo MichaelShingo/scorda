@@ -66,32 +66,23 @@ fun Navbar(modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         TopAppBar(
             title = {
-                if (selectedScore != null) {
+                if (selectedScore != null && !isSmallScreen) {
                     AnchoredPopup(
                         size = CustomAnchoredPopupSize.Medium,
                         anchor = { onOpen, isExpanded ->
-                            if (isSmallScreen) {
-                                NavbarButton(
-                                    imageVector = Icons.Rounded.Info,
-                                    contentDescription = "Score Info",
-                                    onClick = onOpen,
-                                    isSelected = isExpanded
-                                )
-                            } else {
-                                Text(
-                                    text = selectedScore.score.title,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        textDecoration = TextDecoration.Underline
-                                    ),
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier
-                                        .clickable { onOpen() }
-                                        .padding(vertical = 4.dp)
-                                        .widthIn(max = 300.dp)
-                                )
-                            }
+                            Text(
+                                text = selectedScore.score.title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    textDecoration = TextDecoration.Underline
+                                ),
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier
+                                    .clickable { onOpen() }
+                                    .padding(vertical = 4.dp)
+                                    .widthIn(max = 300.dp)
+                            )
                         }
                     ) { onDismiss ->
                         ScoreInfoPopup(
@@ -102,7 +93,7 @@ fun Navbar(modifier: Modifier = Modifier) {
                             }
                         )
                     }
-                } else {
+                } else if (selectedScore == null) {
                     Text("Scorda")
                 }
             },
@@ -129,6 +120,28 @@ fun Navbar(modifier: Modifier = Modifier) {
                         DrawingPanel()
                     } else {
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (isSmallScreen && selectedScore != null) {
+                                AnchoredPopup(
+                                    size = CustomAnchoredPopupSize.Medium,
+                                    anchor = { onOpen, isExpanded ->
+                                        NavbarButton(
+                                            imageVector = Icons.Rounded.Info,
+                                            contentDescription = "Score Info",
+                                            onClick = onOpen,
+                                            isSelected = isExpanded
+                                        )
+                                    }
+                                ) { onDismiss ->
+                                    ScoreInfoPopup(
+                                        scoreWithDetails = selectedScore,
+                                        onEditClick = {
+                                            onDismiss()
+                                            isEditDialogVisible = true
+                                        }
+                                    )
+                                }
+                            }
+
                             AddScoreButton(viewModel = scoreViewModel)
 
                             AnchoredPopup(
