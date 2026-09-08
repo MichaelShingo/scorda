@@ -23,6 +23,7 @@ I have successfully implemented a persistent color preset system and enhanced th
 ### UI Layer (Brush Settings)
 - **[BrushSettingsPopup.kt](file:///D:/apps/scorda/app/src/main/java/com/example/scorda/ui/components/organisms/drawing/BrushSettingsPopup.kt)**:
     - Added a scrollable `LazyRow` to display color presets as circular buttons.
+    - Wrapped the `HsvColorPicker` in a centered `Box` with `CircleShape` clipping, ensuring that the "blank space" around the wheel allows for vertical scrolling.
     - Clicking a preset immediately sets the tool color and updates the HSV wheel.
     - Long-pressing a preset opens a "Delete" menu.
     - Added a "+" button to save the current selection from the HSV wheel as a new preset.

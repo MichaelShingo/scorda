@@ -179,17 +179,21 @@ fun BrushSettingsPopup() {
             Text("Color", style = MaterialTheme.typography.bodySmall)
             Spacer(modifier = Modifier.height(8.dp))
 
-            HsvColorPicker(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp),
-                controller = controller,
-                onColorChanged = { colorEnvelope ->
-                    if (colorEnvelope.fromUser) {
-                        viewModel.updateToolColor(tool, colorEnvelope.color.toArgb())
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                HsvColorPicker(
+                    modifier = Modifier
+                        .size(180.dp),
+                    controller = controller,
+                    onColorChanged = { colorEnvelope ->
+                        if (colorEnvelope.fromUser) {
+                            viewModel.updateToolColor(tool, colorEnvelope.color.toArgb())
+                        }
                     }
-                }
-            )
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
