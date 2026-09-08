@@ -68,9 +68,8 @@ fun BrushSettingsPopup() {
     val controller = rememberColorPickerController()
 
     LaunchedEffect(uiState.currentColor) {
-        val currentColor = Color(uiState.currentColor)
-        if (controller.selectedColor.value != currentColor) {
-            controller.selectByColor(currentColor, fromUser = false)
+        if (controller.selectedColor.value.toArgb() != uiState.currentColor) {
+            controller.selectByColor(Color(uiState.currentColor), fromUser = false)
         }
     }
 

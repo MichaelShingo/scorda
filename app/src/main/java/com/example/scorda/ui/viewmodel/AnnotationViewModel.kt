@@ -7,8 +7,6 @@ import androidx.compose.material.icons.rounded.Highlight
 import androidx.compose.material.icons.rounded.HistoryEdu
 import androidx.compose.material.icons.rounded.LinearScale
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -23,6 +21,8 @@ import com.example.scorda.data.database.entities.LayerType
 import com.example.scorda.data.database.entities.Stroke
 import com.example.scorda.data.repository.AnnotationRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 enum class ToolType(
     val brushFamily: BrushFamilyType?,
@@ -71,10 +72,12 @@ data class AnnotationUiState(
     val colorPresets: List<Int> = emptyList()
 ) {
     val currentColor: Int
-        get() = toolColors[selectedTool] ?: Color.Black.toArgb()
+        get() = toolColors[selectedTool]
+            ?: com.example.scorda.data.SettingsRepository.COLOR_MIDNIGHT
 
     val currentThickness: Float
-        get() = if (selectedTool == ToolType.ERASER) eraserThickness else toolThicknesses[selectedTool] ?: 5f
+        get() = if (selectedTool == ToolType.ERASER) eraserThickness else toolThicknesses[selectedTool]
+            ?: 5f
 }
 
 class AnnotationViewModel(
@@ -89,36 +92,54 @@ class AnnotationViewModel(
     private val _targetPage = MutableStateFlow(0)
     private val _activeLayerId = MutableStateFlow<Long?>(null)
 
+    private val _toolColors = MutableStateFlow<Map<ToolType, Int>>(emptyMap())
+    private val _toolThicknesses = MutableStateFlow<Map<ToolType, Float>>(emptyMap())
+    private val _eraserThickness = MutableStateFlow(20f)
+
+    private var saveJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            val colors = combine(
+                settingsRepository.toolColor(BrushFamilyType.PRESSURE_PEN),
+                settingsRepository.toolColor(BrushFamilyType.MARKER),
+                settingsRepository.toolColor(BrushFamilyType.HIGHLIGHTER),
+                settingsRepository.toolColor(BrushFamilyType.DASHED_LINE)
+            ) { p, m, h, d ->
+                mapOf(
+                    ToolType.PEN to p,
+                    ToolType.MARKER to m,
+                    ToolType.HIGHLIGHTER to h,
+                    ToolType.DASHED to d
+                )
+            }.first()
+            _toolColors.value = colors
+
+            val thicknesses = combine(
+                settingsRepository.toolThickness(BrushFamilyType.PRESSURE_PEN),
+                settingsRepository.toolThickness(BrushFamilyType.MARKER),
+                settingsRepository.toolThickness(BrushFamilyType.HIGHLIGHTER),
+                settingsRepository.toolThickness(BrushFamilyType.DASHED_LINE)
+            ) { p, m, h, d ->
+                mapOf(
+                    ToolType.PEN to p,
+                    ToolType.MARKER to m,
+                    ToolType.HIGHLIGHTER to h,
+                    ToolType.DASHED to d
+                )
+            }.first()
+            _toolThicknesses.value = thicknesses
+
+            _eraserThickness.value = settingsRepository.eraserThickness.first()
+        }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<AnnotationUiState> = combine(
         _selectedTool,
-        combine(
-            settingsRepository.toolColor(BrushFamilyType.PRESSURE_PEN),
-            settingsRepository.toolColor(BrushFamilyType.MARKER),
-            settingsRepository.toolColor(BrushFamilyType.HIGHLIGHTER),
-            settingsRepository.toolColor(BrushFamilyType.DASHED_LINE)
-        ) { p, m, h, d ->
-            mapOf(
-                ToolType.PEN to p,
-                ToolType.MARKER to m,
-                ToolType.HIGHLIGHTER to h,
-                ToolType.DASHED to d
-            )
-        },
-        combine(
-            settingsRepository.toolThickness(BrushFamilyType.PRESSURE_PEN),
-            settingsRepository.toolThickness(BrushFamilyType.MARKER),
-            settingsRepository.toolThickness(BrushFamilyType.HIGHLIGHTER),
-            settingsRepository.toolThickness(BrushFamilyType.DASHED_LINE)
-        ) { p, m, h, d ->
-            mapOf(
-                ToolType.PEN to p,
-                ToolType.MARKER to m,
-                ToolType.HIGHLIGHTER to h,
-                ToolType.DASHED to d
-            )
-        },
-        settingsRepository.eraserThickness,
+        _toolColors,
+        _toolThicknesses,
+        _eraserThickness,
         _isDrawingMode,
         _isLayersPanelOpen,
         _activeLayerId,
@@ -190,23 +211,23 @@ class AnnotationViewModel(
 
     fun updateToolColor(tool: ToolType, color: Int) {
         val family = tool.brushFamily ?: return
-        viewModelScope.launch {
+        _toolColors.value += (tool to color)
+
+        saveJob?.cancel()
+        saveJob = viewModelScope.launch {
+            delay(300.milliseconds)
             settingsRepository.saveToolColor(family, color)
         }
     }
 
     fun updateToolThickness(tool: ToolType, thickness: Float) {
         val family = tool.brushFamily ?: return
-        viewModelScope.launch {
-            settingsRepository.saveToolThickness(family, thickness)
-        }
-    }
+        _toolThicknesses.value += (tool to thickness)
 
-    fun toggleEraserMode() {
-        if (_selectedTool.value == ToolType.ERASER) {
-            _selectedTool.value = ToolType.PEN
-        } else {
-            _selectedTool.value = ToolType.ERASER
+        saveJob?.cancel()
+        saveJob = viewModelScope.launch {
+            delay(300.milliseconds)
+            settingsRepository.saveToolThickness(family, thickness)
         }
     }
 
@@ -255,7 +276,10 @@ class AnnotationViewModel(
     }
 
     fun updateEraserThickness(thickness: Float) {
-        viewModelScope.launch {
+        _eraserThickness.value = thickness
+        saveJob?.cancel()
+        saveJob = viewModelScope.launch {
+            delay(300) // Debounce DataStore save
             settingsRepository.saveEraserThickness(thickness)
         }
     }

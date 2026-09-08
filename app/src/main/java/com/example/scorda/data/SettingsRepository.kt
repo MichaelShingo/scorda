@@ -1,7 +1,6 @@
 package com.example.scorda.data
 
 import android.content.Context
-import android.graphics.Color
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
@@ -49,14 +48,24 @@ class SettingsRepository(private val context: Context) {
     private val _dashedThickness = floatPreferencesKey("dashed_thickness")
     private val _colorPresets = stringPreferencesKey("color_presets")
 
+    companion object {
+        const val COLOR_MIDNIGHT = 0xFF1A1C1E.toInt()
+        const val COLOR_IRON = 0xFF45474F.toInt()
+        const val COLOR_CORAL = 0xFFD14343.toInt()
+        const val COLOR_ROSE = 0xFFD16086.toInt()
+        const val COLOR_AMBER = 0xFFD1A543.toInt()
+        const val COLOR_SAGE = 0xFF4B915E.toInt()
+        const val COLOR_OCEAN = 0xFF4386D1.toInt()
+    }
+
     private val defaultColorPresets = listOf(
-        0xFF2C3E50.toInt(), // Charcoal
-        0xFF7F8C8D.toInt(), // Slate
-        0xFFE74C3C.toInt(), // Muted Red
-        0xFFEC407A.toInt(), // Soft Pink
-        0xFFF39C12.toInt(), // Amber
-        0xFF27AE60.toInt(), // Emerald
-        0xFF3498DB.toInt()  // Sky Blue
+        COLOR_MIDNIGHT,
+        COLOR_IRON,
+        COLOR_CORAL,
+        COLOR_ROSE,
+        COLOR_AMBER,
+        COLOR_SAGE,
+        COLOR_OCEAN
     )
 
     val colorPresets: Flow<List<Int>> = context.dataStore.data
@@ -148,10 +157,10 @@ class SettingsRepository(private val context: Context) {
     fun toolColor(family: BrushFamilyType): Flow<Int> = context.dataStore.data
         .map { preferences ->
             when (family) {
-                BrushFamilyType.PRESSURE_PEN -> preferences[_penColor] ?: Color.BLACK
-                BrushFamilyType.MARKER -> preferences[_markerColor] ?: Color.BLUE
-                BrushFamilyType.HIGHLIGHTER -> preferences[_highlighterColor] ?: Color.YELLOW
-                BrushFamilyType.DASHED_LINE -> preferences[_dashedColor] ?: Color.GRAY
+                BrushFamilyType.PRESSURE_PEN -> preferences[_penColor] ?: COLOR_MIDNIGHT
+                BrushFamilyType.MARKER -> preferences[_markerColor] ?: COLOR_OCEAN
+                BrushFamilyType.HIGHLIGHTER -> preferences[_highlighterColor] ?: COLOR_AMBER
+                BrushFamilyType.DASHED_LINE -> preferences[_dashedColor] ?: COLOR_IRON
             }
         }
 
