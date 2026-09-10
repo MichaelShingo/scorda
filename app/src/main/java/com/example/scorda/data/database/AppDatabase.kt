@@ -40,7 +40,7 @@ import com.example.scorda.data.database.entities.Tag
         AnnotationLayer::class,
         Stroke::class
     ],
-    version = 16,
+    version = 17,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

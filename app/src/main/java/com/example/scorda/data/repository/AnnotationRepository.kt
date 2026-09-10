@@ -26,6 +26,9 @@ class AnnotationRepository(private val db: AppDatabase) {
 
     suspend fun deleteStrokes(strokeIds: List<Long>) = annotationDao.deleteStrokes(strokeIds)
 
+    suspend fun replaceStrokeWithSplits(strokeId: Long, newStrokes: List<Stroke>) =
+        annotationDao.replaceStrokeWithSplits(strokeId, newStrokes)
+
     suspend fun undoLastStroke(layerId: Long, pageIndex: Int) =
         annotationDao.undoLastStroke(layerId, pageIndex)
 

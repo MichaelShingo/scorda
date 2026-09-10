@@ -36,6 +36,7 @@ data class Stroke(
     val color: Int,
     val thickness: Float,
     val brushFamily: BrushFamilyType = BrushFamilyType.PRESSURE_PEN,
+    val isEraser: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 ) {
     /**
@@ -57,6 +58,7 @@ data class Stroke(
         if (color != other.color) return false
         if (thickness != other.thickness) return false
         if (brushFamily != other.brushFamily) return false
+        if (isEraser != other.isEraser) return false
         if (createdAt != other.createdAt) return false
 
         return true
@@ -71,6 +73,7 @@ data class Stroke(
         result = 31 * result + color.hashCode()
         result = 31 * result + thickness.hashCode()
         result = 31 * result + brushFamily.hashCode()
+        result = 31 * result + isEraser.hashCode()
         result = 31 * result + createdAt.hashCode()
         return result
     }

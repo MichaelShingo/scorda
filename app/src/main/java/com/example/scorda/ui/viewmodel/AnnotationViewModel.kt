@@ -17,6 +17,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.scorda.ScordaApplication
 import com.example.scorda.data.database.entities.AnnotationLayer
 import com.example.scorda.data.database.entities.BrushFamilyType
+import com.example.scorda.data.database.entities.EraserMode
 import com.example.scorda.data.database.entities.LayerType
 import com.example.scorda.data.database.entities.Stroke
 import com.example.scorda.data.repository.AnnotationRepository
@@ -64,6 +65,7 @@ data class AnnotationUiState(
     val toolColors: Map<ToolType, Int> = emptyMap(),
     val toolThicknesses: Map<ToolType, Float> = emptyMap(),
     val eraserThickness: Float = 20f,
+    val eraserMode: EraserMode = EraserMode.WHOLE_STROKE,
     val isDrawingMode: Boolean = false,
     val isLayersPanelOpen: Boolean = false,
     val activeLayerId: Long? = null,
@@ -95,6 +97,7 @@ class AnnotationViewModel(
     private val _toolColors = MutableStateFlow<Map<ToolType, Int>>(emptyMap())
     private val _toolThicknesses = MutableStateFlow<Map<ToolType, Float>>(emptyMap())
     private val _eraserThickness = MutableStateFlow(20f)
+    private val _eraserMode = MutableStateFlow(EraserMode.WHOLE_STROKE)
 
     private var saveJob: Job? = null
 
@@ -131,6 +134,7 @@ class AnnotationViewModel(
             _toolThicknesses.value = thicknesses
 
             _eraserThickness.value = settingsRepository.eraserThickness.first()
+            _eraserMode.value = settingsRepository.eraserMode.first()
         }
     }
 
@@ -140,6 +144,7 @@ class AnnotationViewModel(
         _toolColors,
         _toolThicknesses,
         _eraserThickness,
+        _eraserMode,
         _isDrawingMode,
         _isLayersPanelOpen,
         _activeLayerId,
@@ -168,18 +173,19 @@ class AnnotationViewModel(
         },
         settingsRepository.colorPresets
     ) { arr ->
-        val strokes = arr[9] as List<Stroke>
+        val strokes = arr[10] as List<Stroke>
         AnnotationUiState(
             selectedTool = arr[0] as ToolType,
             toolColors = arr[1] as Map<ToolType, Int>,
             toolThicknesses = arr[2] as Map<ToolType, Float>,
             eraserThickness = arr[3] as Float,
-            isDrawingMode = arr[4] as Boolean,
-            isLayersPanelOpen = arr[5] as Boolean,
-            activeLayerId = arr[6] as Long?,
-            layers = arr[8] as List<AnnotationLayer>,
+            eraserMode = arr[4] as EraserMode,
+            isDrawingMode = arr[5] as Boolean,
+            isLayersPanelOpen = arr[6] as Boolean,
+            activeLayerId = arr[7] as Long?,
+            layers = arr[9] as List<AnnotationLayer>,
             strokesByPage = strokes.groupBy { it.pageIndex },
-            colorPresets = arr[10] as List<Int>
+            colorPresets = arr[11] as List<Int>
         )
     }.stateIn(
         scope = viewModelScope,
@@ -284,6 +290,13 @@ class AnnotationViewModel(
         }
     }
 
+    fun updateEraserMode(mode: EraserMode) {
+        _eraserMode.value = mode
+        viewModelScope.launch {
+            settingsRepository.saveEraserMode(mode)
+        }
+    }
+
     fun addColorPreset(color: Int) {
         viewModelScope.launch {
             settingsRepository.saveColorPreset(color)
@@ -307,6 +320,12 @@ class AnnotationViewModel(
         if (strokeIds.isEmpty()) return
         viewModelScope.launch {
             annotationRepository.deleteStrokes(strokeIds)
+        }
+    }
+
+    fun replaceStrokeWithSplits(strokeId: Long, newStrokes: List<Stroke>) {
+        viewModelScope.launch {
+            annotationRepository.replaceStrokeWithSplits(strokeId, newStrokes)
         }
     }
 

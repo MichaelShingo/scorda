@@ -35,6 +35,7 @@ class SettingsRepository(private val context: Context) {
     private val _currentTabIndex = longPreferencesKey("current_tab_index")
     private val _openScores = stringPreferencesKey("open_scores")
     private val _eraserThickness = floatPreferencesKey("eraser_thickness")
+    private val _eraserMode = stringPreferencesKey("eraser_mode")
     private val _isTabsVisible = booleanPreferencesKey("is_tabs_visible")
 
     // Tool Settings
@@ -154,6 +155,23 @@ class SettingsRepository(private val context: Context) {
             preferences[_eraserThickness] ?: 20f
         }
 
+    val eraserMode: Flow<com.example.scorda.data.database.entities.EraserMode> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            val modeStr = preferences[_eraserMode] ?: com.example.scorda.data.database.entities.EraserMode.WHOLE_STROKE.name
+            try {
+                com.example.scorda.data.database.entities.EraserMode.valueOf(modeStr)
+            } catch (_: Exception) {
+                com.example.scorda.data.database.entities.EraserMode.WHOLE_STROKE
+            }
+        }
+
     fun toolColor(family: BrushFamilyType): Flow<Int> = context.dataStore.data
         .map { preferences ->
             when (family) {
@@ -224,6 +242,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun saveEraserThickness(thickness: Float) {
         context.dataStore.edit { preferences ->
             preferences[_eraserThickness] = thickness
+        }
+    }
+
+    suspend fun saveEraserMode(mode: com.example.scorda.data.database.entities.EraserMode) {
+        context.dataStore.edit { preferences ->
+            preferences[_eraserMode] = mode.name
         }
     }
 

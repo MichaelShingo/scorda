@@ -44,6 +44,9 @@ interface AnnotationDao {
     @Insert
     suspend fun insertStroke(stroke: Stroke): Long
 
+    @Insert
+    suspend fun insertStrokes(strokes: List<Stroke>)
+
     @Query("SELECT * FROM strokes WHERE layerId IN (:layerIds) AND pageIndex = :pageIndex ORDER BY createdAt ASC")
     fun getStrokesForLayersOnPage(layerIds: List<Long>, pageIndex: Int): Flow<List<Stroke>>
 
@@ -79,4 +82,10 @@ interface AnnotationDao {
 
     @Query("DELETE FROM strokes WHERE id IN (:strokeIds)")
     suspend fun deleteStrokes(strokeIds: List<Long>)
+
+    @androidx.room.Transaction
+    suspend fun replaceStrokeWithSplits(strokeId: Long, newStrokes: List<Stroke>) {
+        deleteStrokes(listOf(strokeId))
+        insertStrokes(newStrokes)
+    }
 }

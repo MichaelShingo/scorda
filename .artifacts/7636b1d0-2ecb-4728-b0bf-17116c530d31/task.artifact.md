@@ -1,0 +1,4 @@
+- [x] Re-introduce `eraseAt` geometric intersection logic for `WHOLE_STROKE` eraser
+- [x] Implement hybrid touch logic: Destructive for Whole-Stroke, Masking for Partial
+- [x] Fix "Double Transformation" to restore vector sharpness on zoom
+- [x] Verify both eraser modes and high-zoom rendering fidelity

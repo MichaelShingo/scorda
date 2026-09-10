@@ -48,6 +48,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.scorda.data.database.entities.EraserMode
 import com.example.scorda.ui.viewmodel.LocalAnnotationViewModel
 import com.example.scorda.ui.viewmodel.ToolType
 import com.github.skydoves.colorpicker.compose.AlphaSlider
@@ -86,6 +87,49 @@ fun BrushSettingsPopup() {
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        if (isEraser) {
+            Text("Eraser Mode", style = MaterialTheme.typography.bodySmall)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(40.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(if (uiState.eraserMode == EraserMode.WHOLE_STROKE) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.medium)
+                        .clickable { viewModel.updateEraserMode(EraserMode.WHOLE_STROKE) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "Path Eraser",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (uiState.eraserMode == EraserMode.WHOLE_STROKE) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(40.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(if (uiState.eraserMode == EraserMode.PARTIAL) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.medium)
+                        .clickable { viewModel.updateEraserMode(EraserMode.PARTIAL) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "Partial Eraser",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (uiState.eraserMode == EraserMode.PARTIAL) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         Text("Thickness: ${thickness.toInt()}", style = MaterialTheme.typography.bodySmall)
 
